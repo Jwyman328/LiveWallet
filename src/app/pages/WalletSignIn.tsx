@@ -25,7 +25,7 @@ export const WalletSignIn = () => {
   return (
     <div>
       sign in bitch
-      <button type="button" onClick={signIn}>
+      <button className="ml-4 text-red-500" type="button" onClick={signIn}>
         Sign in here
       </button>
     </div>
