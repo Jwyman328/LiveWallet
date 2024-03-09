@@ -13,6 +13,9 @@ module.exports = {
     '@typescript-eslint/no-shadow': 'error',
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
+    'react/button-has-type': 'off',
+    'import/order': 'off',
+    radix: 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

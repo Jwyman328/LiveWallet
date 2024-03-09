@@ -15,7 +15,7 @@ function Home() {
 
   const [feeRate, setFeeRate] = useState(1);
   return (
-    <div className="mt-4 h-full">
+    <div className="mt-4 h-full ml-4">
       <div className="mt-4 text-red-400"> Welcome to the family wallet </div>
       <p>{getBalanceQueryRequest?.data?.total} sats</p>
       <CurrentFeeRates />
