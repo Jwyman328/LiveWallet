@@ -2,7 +2,11 @@ import {
   GetUtxosResponseType,
   GetBalanceResponseType,
   CurrentFeesResponseType,
+  UtxoRequestParam,
 } from './types';
+
+import { Network } from '../types/network';
+
 async function fetchHandler(url: string, method = 'GET', body?: any) {
   const response = await fetch(url, {
     method: method,
@@ -15,12 +19,6 @@ async function fetchHandler(url: string, method = 'GET', body?: any) {
 
   return response;
 }
-
-// TODO move to types file
-export type UtxoRequestParam = {
-  id: string;
-  vout: number;
-};
 
 export class ApiClient {
   static async getBalance() {
@@ -56,11 +54,15 @@ export class ApiClient {
     return data as CurrentFeesResponseType;
   }
 
-  static async initiateWallet(walletDescriptor: string) {
+  static async initiateWallet(
+    walletDescriptor: string,
+    network: Network,
+    electrumUrl: string,
+  ) {
     const response = await fetchHandler(
       `http://localhost:5011/wallet`,
       'POST',
-      { descriptor: walletDescriptor },
+      { descriptor: walletDescriptor, electrumUrl, network },
     );
 
     const data = await response.json();

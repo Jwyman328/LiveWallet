@@ -2,6 +2,11 @@ export type GetUtxosResponseType = {
   utxos: Utxo[];
 };
 
+export type UtxoRequestParam = {
+  id: string;
+  vout: number;
+};
+
 export type Utxo = {
   amount: number;
   txid: string;

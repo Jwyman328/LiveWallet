@@ -96,6 +96,11 @@
     }
   },
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.0",
+    "@mantine/core": "^7.6.1",
+    "@mantine/hooks": "^7.6.1",
+    "@mui/material": "^5.15.12",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^6.1.4",
@@ -154,6 +159,8 @@
     "mini-css-extract-plugin": "^2.7.6",
     "postcss": "^8.4.35",
     "postcss-loader": "^8.1.1",
+    "postcss-preset-mantine": "^1.13.0",
+    "postcss-simple-vars": "^7.0.1",
     "prettier": "^3.0.3",
     "react-refresh": "^0.14.0",
     "react-test-renderer": "^18.2.0",
