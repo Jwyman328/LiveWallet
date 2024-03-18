@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
 
 import {
@@ -10,7 +10,15 @@ import {
   InputLabel,
   Button,
   Textarea,
+  Tabs,
+  Radio,
+  Stack,
 } from '@mantine/core';
+
+type PublicElectrumUrl = {
+  name: string;
+  ports: Record<Network, number>;
+};
 
 export const WalletSignIn = () => {
   const mockDescriptor =
@@ -19,14 +27,51 @@ export const WalletSignIn = () => {
   const mockElectrumUrl = '127.0.0.1:50000';
 
   const [descriptor, setDescriptor] = useState(mockDescriptor);
-  const [electrumUrl, setElectrumUrl] = useState(mockElectrumUrl);
+  const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
+  const [activeTab, setActiveTab] = useState<string | null>('public');
+  const [isUsingPublicServer, setIsUsingPublicServer] = useState(true);
 
   const networkOptions = [
     { value: Network.TESTNET, label: Network.TESTNET },
-    { value: Network.REGTEST, label: Network.REGTEST },
+    // TODO implement regtest { value: Network.REGTEST, label: Network.REGTEST },
     { value: Network.BITCOIN, label: Network.BITCOIN },
-    { value: Network.SIGNET, label: Network.SIGNET },
+    // TODO implement signet { value: Network.SIGNET, label: Network.SIGNET },
   ];
+
+  // Testnet electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers_testnet.json
+  // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
+  const publicElectrumUrls: PublicElectrumUrl[] = [
+    {
+      name: 'electrum.blockstream.info',
+      ports: {
+        [Network.TESTNET]: 60001,
+        [Network.BITCOIN]: 50001,
+      },
+    },
+    {
+      name: 'bitcoin.aranguren.org',
+      ports: {
+        [Network.TESTNET]: 51001,
+        [Network.BITCOIN]: 50001,
+      },
+    },
+    {
+      name: 'blockstream.info',
+      ports: {
+        [Network.TESTNET]: 143,
+        [Network.BITCOIN]: 110,
+      },
+    },
+  ];
+
+  const publicElectrumOptions = publicElectrumUrls.map((server) => ({
+    value: server.name,
+    label: server.name,
+  }));
+
+  const [selectedPublicServer, setSelectedPublicServer] = useState(
+    publicElectrumOptions[0],
+  );
 
   const [network, setNetwork] = useState<ComboboxItem>(networkOptions[0]);
 
@@ -40,6 +85,36 @@ export const WalletSignIn = () => {
     console.log('Error initiating wallet');
   };
 
+  const electrumUrl = useMemo(() => {
+    if (isUsingPublicServer) {
+      const electrumServer = publicElectrumUrls.find(
+        (server) => server.name === selectedPublicServer?.value,
+      );
+
+      if (!electrumServer) {
+        return '';
+      }
+
+      if (
+        electrumServer.name === 'bitcoin.aranguren.org' &&
+        network.value === Network.TESTNET
+      ) {
+        electrumServer.name = 'testnet.aranguren.org';
+      }
+
+      return `${electrumServer.name}:${
+        electrumServer.ports[network.value as Network]
+      }`;
+    }
+    return privateElectrumUrl;
+  }, [
+    isUsingPublicServer,
+    selectedPublicServer,
+    privateElectrumUrl,
+    network,
+    publicElectrumUrls,
+  ]);
+
   const initiateWalletRequest = useCreateWallet(
     descriptor,
     network.value as Network,
@@ -52,8 +127,10 @@ export const WalletSignIn = () => {
     setDescriptor(e.target.value);
   };
 
-  const handleElectrumInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setElectrumUrl(e.target.value);
+  const handlePrivateElectrumInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setPrivateElectrumUrl(e.target.value);
   };
 
   const isLoginEnabled = !!descriptor && !!network.value && !!electrumUrl;
@@ -79,16 +156,56 @@ export const WalletSignIn = () => {
         data={networkOptions}
         value={network ? network.value : null}
         onChange={(_value, option) => setNetwork(option)}
-        clearable
       />
 
-      <InputLabel>Electrum url</InputLabel>
-      <Input
-        type="text"
-        placeholder="Enter electrum url"
-        onInput={handleElectrumInput}
-        value={electrumUrl}
-      />
+      <InputLabel className="mt-4">Select server type</InputLabel>
+      <Stack>
+        <Radio
+          checked={isUsingPublicServer}
+          onClick={(e) => {
+            // @ts-ignore
+            const isSelected = e?.target.value === 'on';
+            setIsUsingPublicServer(isSelected);
+          }}
+          label="Public electrum server"
+        />
+        <Radio
+          checked={!isUsingPublicServer}
+          onClick={(e) => {
+            // @ts-ignore
+            const isSelected = e?.target.value === 'on';
+            setIsUsingPublicServer(!isSelected);
+          }}
+          label="Private electrum server"
+        />
+      </Stack>
+
+      <InputLabel className="mt-4">Electrum url</InputLabel>
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List>
+          <Tabs.Tab value="public">Public electrum</Tabs.Tab>
+          <Tabs.Tab value="private">Private electrum</Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="public">
+          <Select
+            disabled={!isUsingPublicServer}
+            data={publicElectrumOptions}
+            value={selectedPublicServer ? selectedPublicServer.value : null}
+            onChange={(_value, option) => setSelectedPublicServer(option)}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="private">
+          <Input
+            disabled={isUsingPublicServer}
+            type="text"
+            placeholder="Enter electrum url"
+            onInput={handlePrivateElectrumInput}
+            value={privateElectrumUrl}
+            className="mt-2"
+          />
+        </Tabs.Panel>
+      </Tabs>
       <Button
         disabled={!isLoginEnabled}
         className="mt-4"
