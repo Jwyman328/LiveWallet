@@ -153,6 +153,7 @@ export const WalletSignIn = () => {
       />
       <InputLabel className="mt-2">Choose a network</InputLabel>
       <Select
+        className="w-40"
         data={networkOptions}
         value={network ? network.value : null}
         onChange={(_value, option) => setNetwork(option)}
@@ -181,7 +182,7 @@ export const WalletSignIn = () => {
       </Stack>
 
       <InputLabel className="mt-4">Electrum url</InputLabel>
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs className="w-80" value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
           <Tabs.Tab value="public">Public electrum</Tabs.Tab>
           <Tabs.Tab value="private">Private electrum</Tabs.Tab>
@@ -193,6 +194,7 @@ export const WalletSignIn = () => {
             data={publicElectrumOptions}
             value={selectedPublicServer ? selectedPublicServer.value : null}
             onChange={(_value, option) => setSelectedPublicServer(option)}
+            className="w-80"
           />
         </Tabs.Panel>
         <Tabs.Panel value="private">
@@ -202,7 +204,7 @@ export const WalletSignIn = () => {
             placeholder="Enter electrum url"
             onInput={handlePrivateElectrumInput}
             value={privateElectrumUrl}
-            className="mt-2"
+            className="mt-2 w-80"
           />
         </Tabs.Panel>
       </Tabs>

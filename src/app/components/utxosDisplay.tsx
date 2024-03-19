@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { UtxoRequestParam } from "../api/api";
-import { Utxo } from "../api/types";
-import { useCreateTxFeeEstimate } from "../hooks/utxos";
+import React, { useEffect, useState } from 'react';
+import { UtxoRequestParam } from '../api/api';
+import { Utxo } from '../api/types';
+import { useCreateTxFeeEstimate } from '../hooks/utxos';
+import { Button } from '@mantine/core';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
@@ -35,7 +36,7 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
 
   const calculateFeeEstimate = async () => {
     const response = await mutateAsync();
-    console.log("response", response);
+    console.log('response', response);
   };
 
   const UtxoDisplay = (utxo: Utxo) => {
@@ -60,12 +61,15 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
 
         {isSpendable ? (
           <div>
+            {/*
+
             <p className="text-black">
               fee estimate: {(fee / 100000000).toFixed(8) || "pending"}
             </p>
             <p className="text-black">
               % of tx fee: {percentOfTxFee.toFixed(5).replace(/\.?0+$/, "")}%
             </p>
+            */}
           </div>
         ) : (
           <p className="text-red-600">not spendable</p>
@@ -105,12 +109,9 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
         return UtxoDisplay(utxo);
       })}
 
-      <button
-        className="border rounded border-black"
-        onClick={calculateFeeEstimate}
-      >
-        estimate fee for a transaction using the selected utxos
-      </button>
+      <Button className="mt-4 mb-4" onClick={calculateFeeEstimate}>
+        Estimate fee
+      </Button>
       {batchedTxData ? <DisplayBatchTxData /> : null}
     </div>
   );

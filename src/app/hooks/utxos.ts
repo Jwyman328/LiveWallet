@@ -1,10 +1,10 @@
-import { ApiClient, UtxoRequestParam } from "../api/api";
-import { useMutation, useQuery } from "react-query";
+import { ApiClient, UtxoRequestParam } from '../api/api';
+import { useMutation, useQuery } from 'react-query';
 
 const queryKeys = {
-  getBalance: ["getBalance"],
-  getUtxos: ["getUtxos"],
-  getCurrentFees: ["getCurrentFees"],
+  getBalance: ['getBalance'],
+  getUtxos: ['getUtxos'],
+  getCurrentFees: ['getCurrentFees'],
 };
 
 export function useGetBalance() {
@@ -13,6 +13,7 @@ export function useGetBalance() {
 export function useGetUtxos() {
   return useQuery(queryKeys.getUtxos, () => ApiClient.getUtxos());
 }
+
 export function useCreateTxFeeEstimate(
   utxos: UtxoRequestParam[],
   feeRate: number,
