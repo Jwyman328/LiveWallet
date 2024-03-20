@@ -41,6 +41,7 @@ function Home() {
             rightSectionWidth={80}
           />
         </div>
+
         {getUtxosQueryRequest.isSuccess ? (
           <UtxosDisplay
             feeRate={feeRate}

@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { UtxoRequestParam } from '../api/api';
+
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+} from 'material-react-table';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import { Button } from '@mantine/core';
@@ -9,83 +14,75 @@ type UtxosDisplayProps = {
   feeRate: number;
 };
 export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
-  const [selectedUtxos, setSelectedUtxos] = useState<UtxoRequestParam[]>([]);
-
-  const addUtxoToSelectedList = (e: any, txid: string, vout: number) => {
-    const isAlreadyChecked = selectedUtxos.some((selectedUtxo) => {
-      return txid === selectedUtxo.id && selectedUtxo.vout === vout;
-    });
-    if (isAlreadyChecked) {
-      const newSelectedUtxos: UtxoRequestParam[] = selectedUtxos.filter(
-        (selectedUtxo) => {
-          return selectedUtxo.id !== txid && selectedUtxo.vout !== vout;
+  const columns = useMemo(
+    () => [
+      {
+        header: 'Txid',
+        accessorKey: 'txid',
+        Cell: ({ row }: { row: any }) => {
+          return (
+            <div>
+              <p> {row.original.txid}</p>
+            </div>
+          );
         },
-      );
-      setSelectedUtxos(newSelectedUtxos);
-    } else {
-      setSelectedUtxos([...selectedUtxos, { id: txid, vout: vout }]);
-    }
-  };
+      },
 
-  const {
-    mutate,
-    isLoading,
-    data: batchedTxData,
-    mutateAsync,
-  } = useCreateTxFeeEstimate(selectedUtxos, feeRate);
+      {
+        header: 'vout',
+        accessorKey: 'vout',
+        Cell: ({ row }: { row: any }) => {
+          return (
+            <div>
+              <p> {row.original.vout}</p>
+            </div>
+          );
+        },
+      },
+      {
+        header: 'Amount',
+        accessorKey: 'amount',
+        Cell: ({ row }: { row: any }) => {
+          return (
+            <div>
+              <p> {row.original.amount}</p>
+            </div>
+          );
+        },
+      },
+    ],
+    [],
+  );
+  const table = useMaterialReactTable({
+    columns,
+    data: utxos,
+    enableRowSelection: true,
+    enableDensityToggle: false,
+    enableFullScreenToggle: false,
+    getRowId: (originalRow) => {
+      return originalRow.txid;
+    },
+  });
+
+  const selectedTxs = table.getState().rowSelection;
+
+  const selectedUtxos: UtxoRequestParam = useMemo(() => {
+    const selectedUtxosFromatted: UtxoRequestParam = [];
+    utxos.forEach((utxo: any) => {
+      if (selectedTxs[utxo.txid]) {
+        selectedUtxosFromatted.push({ id: utxo.txid, vout: utxo.vout });
+      }
+    });
+    return selectedUtxosFromatted;
+  }, [selectedTxs, utxos]);
+
+  const { data: batchedTxData, mutateAsync } = useCreateTxFeeEstimate(
+    selectedUtxos,
+    feeRate,
+  );
 
   const calculateFeeEstimate = async () => {
     const response = await mutateAsync();
-    console.log('response', response);
-  };
-
-  const UtxoDisplay = (utxo: Utxo) => {
-    const { mutate, data } = useCreateTxFeeEstimate(
-      [{ id: utxo.txid, vout: utxo.vout }],
-      feeRate,
-    );
-    const fee = data?.fee;
-    const percentOfTxFee = fee && utxo?.amount ? (fee / utxo.amount) * 100 : 0;
-    const isSpendable: boolean = data?.spendable;
-
-    useEffect(() => {
-      mutate();
-    }, [mutate]);
-    return (
-      <div>
-        <p className="text-black">txid: {utxo.txid}</p>
-        <p className="text-black">txvout: {utxo.vout} </p>
-        <p className="text-black">
-          amount: {(utxo.amount / 100000000).toFixed(8)}
-        </p>
-
-        {isSpendable ? (
-          <div>
-            {/*
-
-            <p className="text-black">
-              fee estimate: {(fee / 100000000).toFixed(8) || "pending"}
-            </p>
-            <p className="text-black">
-              % of tx fee: {percentOfTxFee.toFixed(5).replace(/\.?0+$/, "")}%
-            </p>
-            */}
-          </div>
-        ) : (
-          <p className="text-red-600">not spendable</p>
-        )}
-        <input
-          type="checkbox"
-          onClick={(e) => addUtxoToSelectedList(e, utxo.txid, utxo.vout)}
-          className="mt-3 bg-blue-400"
-          checked={selectedUtxos.some((selectedUtxo) => {
-            return (
-              utxo.txid === selectedUtxo.id && selectedUtxo.vout === utxo.vout
-            );
-          })}
-        />
-      </div>
-    );
   };
 
   const DisplayBatchTxData = () => {
@@ -102,14 +99,17 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
       <p className="text-red-600">not spendable</p>
     );
   };
+
   return (
     <div>
       <p className="text-blue-600">utxos display</p>
-      {utxos.map((utxo) => {
-        return UtxoDisplay(utxo);
-      })}
 
-      <Button className="mt-4 mb-4" onClick={calculateFeeEstimate}>
+      <MaterialReactTable table={table} />
+      <Button
+        disabled={selectedUtxos.length === 0}
+        className="mt-4 mb-4"
+        onClick={calculateFeeEstimate}
+      >
         Estimate fee
       </Button>
       {batchedTxData ? <DisplayBatchTxData /> : null}
