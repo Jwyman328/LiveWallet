@@ -3,6 +3,7 @@ import { useCreateWallet } from '../hooks/wallet';
 import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
 
+import vaultImage from '../images/vault.jpeg';
 import {
   ComboboxItem,
   Select,
@@ -142,80 +143,108 @@ export const WalletSignIn = () => {
       console.log('Error', e);
     }
   };
+
+  const formItemWidth = 'w-80';
+  const labelWidth = 'w-80';
   return (
-    <div className="px-4">
-      <h1>Setup wallet</h1>
-      <InputLabel>Enter xpub descriptor</InputLabel>
-      <Textarea
-        placeholder="Enter xpub descriptor"
-        onInput={handleInput}
-        value={descriptor}
-      />
-      <InputLabel className="mt-2">Choose a network</InputLabel>
-      <Select
-        className="w-40"
-        data={networkOptions}
-        value={network ? network.value : null}
-        onChange={(_value, option) => setNetwork(option)}
-      />
-
-      <InputLabel className="mt-4">Select server type</InputLabel>
-      <Stack>
-        <Radio
-          checked={isUsingPublicServer}
-          onClick={(e) => {
-            // @ts-ignore
-            const isSelected = e?.target.value === 'on';
-            setIsUsingPublicServer(isSelected);
-          }}
-          label="Public electrum server"
+    <div className="flex flex-row w-screen h-screen">
+      <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center">
+        <h1
+          className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
+        >
+          Setup wallet
+        </h1>
+        <InputLabel className={`mb-2 ${labelWidth}`}>
+          Enter xpub descriptor
+        </InputLabel>
+        <Textarea
+          className={`${formItemWidth}`}
+          styles={{ input: { minHeight: '8rem' } }}
+          placeholder="Enter xpub descriptor"
+          onInput={handleInput}
+          value={descriptor}
         />
-        <Radio
-          checked={!isUsingPublicServer}
-          onClick={(e) => {
-            // @ts-ignore
-            const isSelected = e?.target.value === 'on';
-            setIsUsingPublicServer(!isSelected);
-          }}
-          label="Private electrum server"
+        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
+          Choose a network
+        </InputLabel>
+        <Select
+          className={formItemWidth}
+          data={networkOptions}
+          value={network ? network.value : null}
+          onChange={(_value, option) => setNetwork(option)}
         />
-      </Stack>
 
-      <InputLabel className="mt-4">Electrum url</InputLabel>
-      <Tabs className="w-80" value={activeTab} onChange={setActiveTab}>
-        <Tabs.List>
-          <Tabs.Tab value="public">Public electrum</Tabs.Tab>
-          <Tabs.Tab value="private">Private electrum</Tabs.Tab>
-        </Tabs.List>
+        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
+          Select server type
+        </InputLabel>
+        <Stack className={labelWidth}>
+          <Radio
+            checked={isUsingPublicServer}
+            onClick={(e) => {
+              // @ts-ignore
+              const isSelected = e?.target.value === 'on';
+              setIsUsingPublicServer(isSelected);
+            }}
+            label="Public electrum server"
+          />
+          <Radio
+            checked={!isUsingPublicServer}
+            onClick={(e) => {
+              // @ts-ignore
+              const isSelected = e?.target.value === 'on';
+              setIsUsingPublicServer(!isSelected);
+            }}
+            label="Private electrum server"
+          />
+        </Stack>
 
-        <Tabs.Panel value="public">
-          <Select
-            disabled={!isUsingPublicServer}
-            data={publicElectrumOptions}
-            value={selectedPublicServer ? selectedPublicServer.value : null}
-            onChange={(_value, option) => setSelectedPublicServer(option)}
-            className="w-80"
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="private">
-          <Input
-            disabled={isUsingPublicServer}
-            type="text"
-            placeholder="Enter electrum url"
-            onInput={handlePrivateElectrumInput}
-            value={privateElectrumUrl}
-            className="mt-2 w-80"
-          />
-        </Tabs.Panel>
-      </Tabs>
-      <Button
-        disabled={!isLoginEnabled}
-        className="mt-4"
-        type="button"
-        onClick={signIn}
-      >
-        login here
-      </Button>
+        <InputLabel className={`mt-6 mb-0 ${labelWidth}`}>
+          Electrum url
+        </InputLabel>
+        <Tabs
+          className={formItemWidth}
+          value={activeTab}
+          onChange={setActiveTab}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="public">Public electrum</Tabs.Tab>
+            <Tabs.Tab value="private">Private electrum</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="public">
+            <Select
+              disabled={!isUsingPublicServer}
+              data={publicElectrumOptions}
+              value={selectedPublicServer ? selectedPublicServer.value : null}
+              onChange={(_value, option) => setSelectedPublicServer(option)}
+              className={formItemWidth}
+            />
+          </Tabs.Panel>
+          <Tabs.Panel value="private">
+            <Input
+              disabled={isUsingPublicServer}
+              type="text"
+              placeholder="Enter electrum url"
+              onInput={handlePrivateElectrumInput}
+              value={privateElectrumUrl}
+              className="mt-2 w-80"
+            />
+          </Tabs.Panel>
+        </Tabs>
+        <div className={formItemWidth}>
+          <Button
+            disabled={!isLoginEnabled}
+            className="mt-4"
+            fullWidth
+            type="button"
+            onClick={signIn}
+          >
+            Setup
+          </Button>
+        </div>
+      </div>
+
+      <img src={vaultImage} className=" w-1/2 h-screen" />
     </div>
   );
 };
