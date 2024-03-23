@@ -7,22 +7,68 @@ import {
 } from 'material-react-table';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
-import { Button } from '@mantine/core';
+import { Button, Tooltip, CopyButton, ActionIcon, rem } from '@mantine/core';
 
+import { IconCopy, IconCheck } from '@tabler/icons-react';
 type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
 };
 export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
+  // TODO add color of row based off of fee rate percent
+  const estimateVBtyePerInput = 200;
+  const estimateVBtyeOverheadAndOutput = 50;
+
+  const avgInputCost = estimateVBtyePerInput * feeRate;
+  const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
+
+  const calculateFeePercent = (amount: Number) => {
+    const totalCost = avgBaseCost + avgInputCost;
+    const percentOfAmount = (totalCost / amount) * 100;
+    const formatted =
+      percentOfAmount > 1
+        ? percentOfAmount.toFixed(2)
+        : percentOfAmount.toFixed(4);
+
+    return formatted;
+  };
   const columns = useMemo(
     () => [
       {
         header: 'Txid',
         accessorKey: 'txid',
         Cell: ({ row }: { row: any }) => {
+          const prefix = row.original.txid.substring(0, 7);
+          const suffix = row.original.txid.substring(
+            row.original.txid.length - 7,
+          );
+          const abrv = `${prefix}....${suffix}`;
           return (
-            <div>
-              <p> {row.original.txid}</p>
+            <div className="flex justify-center items-center">
+              <Tooltip label={row.original.txid}>
+                <p className="mr-2">{abrv}</p>
+              </Tooltip>
+              <CopyButton value={row.original.txid} timeout={2000}>
+                {({ copied, copy }) => (
+                  <Tooltip
+                    label={copied ? 'Copied' : 'Copy'}
+                    withArrow
+                    position="right"
+                  >
+                    <ActionIcon
+                      color={copied ? 'teal' : 'gray'}
+                      variant="subtle"
+                      onClick={copy}
+                    >
+                      {copied ? (
+                        <IconCheck style={{ width: rem(16) }} />
+                      ) : (
+                        <IconCopy style={{ width: rem(16) }} />
+                      )}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
             </div>
           );
         },
@@ -39,6 +85,38 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
           );
         },
       },
+
+      {
+        header: '~ Fee rate %',
+        accessorKey: 'selfCost',
+        Cell: ({ row }: { row: any }) => {
+          const feePct = row.original.amount
+            ? `${calculateFeePercent(row.original.amount)}%`
+            : '...';
+          return (
+            <div>
+              <p> {feePct}</p>
+            </div>
+          );
+        },
+      },
+      {
+        header: 'Spendable',
+        accessorKey: 'Spendable',
+        Cell: ({ row }: { row: any }) => {
+          const feePct = row.original.amount
+            ? calculateFeePercent(row.original.amount)
+            : null;
+
+          const isSpendable = feePct === null ? '...' : Number(feePct) < 100;
+          // TODO use check and x icons
+          return (
+            <div>
+              <p>{isSpendable ? 'yes' : 'no'}</p>
+            </div>
+          );
+        },
+      },
       {
         header: 'Amount',
         accessorKey: 'amount',
@@ -51,7 +129,7 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
         },
       },
     ],
-    [],
+    [avgBaseCost, avgInputCost],
   );
   const table = useMaterialReactTable({
     columns,
@@ -59,6 +137,8 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     enableRowSelection: true,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
+    enablePagination: false,
+    muiTableContainerProps: { className: 'min-h-96 overflow-auto' },
     getRowId: (originalRow) => {
       return originalRow.txid;
     },
@@ -102,8 +182,6 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
 
   return (
     <div>
-      <p className="text-blue-600">utxos display</p>
-
       <MaterialReactTable table={table} />
       <Button
         disabled={selectedUtxos.length === 0}
