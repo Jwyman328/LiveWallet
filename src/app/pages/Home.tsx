@@ -73,7 +73,7 @@ function Home() {
       </header>
       <div className="ml-4 flex flex-col items-center">
         <CurrentFeeRates />
-        <div>
+        <div className="mb-8">
           <div className="flex flex-row items-center">
             <Select
               className={'w-36'}

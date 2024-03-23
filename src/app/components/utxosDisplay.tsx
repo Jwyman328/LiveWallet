@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UtxoRequestParam } from '../api/api';
 import {
   MaterialReactTable,
@@ -8,7 +8,12 @@ import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import { Button, Tooltip, CopyButton, ActionIcon, rem } from '@mantine/core';
 
-import { IconCopy, IconCheck } from '@tabler/icons-react';
+import {
+  IconCopy,
+  IconCheck,
+  IconCircleCheck,
+  IconCircleX,
+} from '@tabler/icons-react';
 type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
@@ -127,10 +132,13 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
             : null;
 
           const isSpendable = feePct === null ? '...' : Number(feePct) < 100;
-          // TODO use check and x icons
           return (
-            <div>
-              <p>{isSpendable ? 'yes' : 'no'}</p>
+            <div className="flex items-center justify-center">
+              {isSpendable ? (
+                <IconCircleCheck color="green" />
+              ) : (
+                <IconCircleX color="red" />
+              )}
             </div>
           );
         },
@@ -141,7 +149,7 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
         Cell: ({ row }: { row: any }) => {
           return (
             <div>
-              <p> {row.original.amount}</p>
+              <p> {Number(row.original.amount).toLocaleString()}</p>
             </div>
           );
         },
@@ -156,6 +164,7 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     enablePagination: false,
+    enableTableFooter: false,
     muiTableContainerProps: { className: 'min-h-96 overflow-auto' },
 
     muiTableBodyCellProps: ({ row }) => {
@@ -187,41 +196,74 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     return selectedUtxosFromatted;
   }, [selectedTxs, utxos]);
 
-  const { data: batchedTxData, mutateAsync } = useCreateTxFeeEstimate(
-    selectedUtxos,
-    feeRate,
-  );
+  const {
+    data: batchedTxData,
+    mutateAsync,
+    isLoading: batchIsLoading,
+  } = useCreateTxFeeEstimate(selectedUtxos, feeRate);
+
+  useEffect(() => {
+    setCurrentBatchedTxData(batchedTxData);
+  }, [batchedTxData]);
+
+  useEffect(() => {
+    console.log('selected utxos changed clear local batch data');
+    setCurrentBatchedTxData(null);
+  }, [selectedUtxos]);
+
+  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
 
   const calculateFeeEstimate = async () => {
     const response = await mutateAsync();
   };
 
   const DisplayBatchTxData = () => {
-    const fee = batchedTxData?.fee;
-    const percentOfTxFee = batchedTxData?.percent_fee_is_of_utxo;
+    const borderClasses = 'rounded border-2 w-full ml-8 p-1.5';
+    if (!currentBatchedTxData || !selectedUtxos.length || batchIsLoading) {
+      return (
+        <div className={borderClasses}>
+          <p>Total fees: ...</p>
+          <p>Fee rate %: ...</p>
+        </div>
+      );
+    }
+
+    const fee: string = batchedTxData?.fee;
+    const percentOfTxFee = Number(
+      batchedTxData?.percent_fee_is_of_utxo,
+    ).toFixed(4);
     const isSpendable: boolean = batchedTxData?.spendable;
+    const bgColor = getFeeRateColor(Number(percentOfTxFee));
 
     return isSpendable ? (
-      <div>
-        <p>batched tx fee: {fee}</p>
-        <p>batched % of tx fee: {percentOfTxFee}</p>
+      <div className={borderClasses} style={{ backgroundColor: bgColor }}>
+        <p>Total fees: {Number(fee).toLocaleString()} sats</p>
+        <p>Fee rate %: {percentOfTxFee}%</p>
       </div>
     ) : (
-      <p className="text-red-600">not spendable</p>
+      <div
+        className={`flex items-center justify-center bg-red-600 ${borderClasses}`}
+      >
+        <p className="text-black font-bold">Tx not spendable</p>
+      </div>
     );
   };
 
   return (
     <div>
       <MaterialReactTable table={table} />
-      <Button
-        disabled={selectedUtxos.length === 0}
-        className="mt-4 mb-4"
-        onClick={calculateFeeEstimate}
-      >
-        Estimate fee
-      </Button>
-      {batchedTxData ? <DisplayBatchTxData /> : null}
+      <div className="flex flex-row mt-4 mb-4">
+        <Button
+          fullWidth
+          disabled={selectedUtxos.length === 0}
+          onClick={calculateFeeEstimate}
+          size="xl"
+        >
+          Estimate tx fees
+        </Button>
+
+        <DisplayBatchTxData />
+      </div>
     </div>
   );
 };
