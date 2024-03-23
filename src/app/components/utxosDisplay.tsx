@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { UtxoRequestParam } from '../api/api';
-
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -15,8 +14,27 @@ type UtxosDisplayProps = {
   feeRate: number;
 };
 export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
-  // TODO add color of row based off of fee rate percent
-  const estimateVBtyePerInput = 200;
+  const getFeeRateColor = (amount: number) => {
+    const feeRateColorMap = {
+      0: 'rgb(220 252 231)', // 'bg-green-100',
+      2: 'rgb(254 240 138)', // 'bg-yellow-200',
+      // 10: 'rgb(252 165 165)', // 'bg-red-300',
+      10: 'rgb(248 113 113)', // 'bg-red-400',
+      45: 'rgb(239 68 68)', // 'bg-red-500',
+      65: 'rgb(220 38 38)', // 'bg-red-600',
+      85: 'rgb(185 28 28)', // 'bg-red-700',
+      100: 'rgb(153 27 27)', // 'bg-red-800',
+    };
+    let selectedColor = feeRateColorMap[0];
+
+    for (let key in feeRateColorMap) {
+      if (amount > Number(key)) {
+        selectedColor = feeRateColorMap[key];
+      }
+    }
+    return selectedColor;
+  };
+  const estimateVBtyePerInput = 150;
   const estimateVBtyeOverheadAndOutput = 50;
 
   const avgInputCost = estimateVBtyePerInput * feeRate;
@@ -139,6 +157,19 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     enableFullScreenToggle: false,
     enablePagination: false,
     muiTableContainerProps: { className: 'min-h-96 overflow-auto' },
+
+    muiTableBodyCellProps: ({ row }) => {
+      const feeRatePct = row.original.amount
+        ? calculateFeePercent(row.original.amount)
+        : 0;
+      const color = getFeeRateColor(Number(feeRatePct));
+
+      return {
+        className: row.original?.amount ? `${color} !important` : '',
+        style: { backgroundColor: color },
+      };
+    },
+
     getRowId: (originalRow) => {
       return originalRow.txid;
     },
