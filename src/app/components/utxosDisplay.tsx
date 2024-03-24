@@ -7,6 +7,7 @@ import {
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import { Button, Tooltip, CopyButton, ActionIcon, rem } from '@mantine/core';
+import { WalletTypes } from '../types/scriptTypes';
 
 import {
   IconCopy,
@@ -17,30 +18,26 @@ import {
 type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
+  walletType: WalletTypes;
 };
-export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
-  const getFeeRateColor = (amount: number) => {
-    const feeRateColorMap = {
-      0: 'rgb(220 252 231)', // 'bg-green-100',
-      2: 'rgb(254 240 138)', // 'bg-yellow-200',
-      // 10: 'rgb(252 165 165)', // 'bg-red-300',
-      10: 'rgb(248 113 113)', // 'bg-red-400',
-      45: 'rgb(239 68 68)', // 'bg-red-500',
-      65: 'rgb(220 38 38)', // 'bg-red-600',
-      85: 'rgb(185 28 28)', // 'bg-red-700',
-      100: 'rgb(153 27 27)', // 'bg-red-800',
-    };
-    let selectedColor = feeRateColorMap[0];
-
-    for (let key in feeRateColorMap) {
-      if (amount > Number(key)) {
-        selectedColor = feeRateColorMap[key];
-      }
-    }
-    return selectedColor;
+export const UtxosDisplay = ({
+  utxos,
+  feeRate,
+  walletType,
+}: UtxosDisplayProps) => {
+  const estimateVBtyePerInput = 125;
+  const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
+  // for a batch tx that doesn't include the script sig.
+  const estimateVBtyePerScriptSig: Record<WalletTypes, number> = {
+    P2PKH: 107,
+    P2SH: 200, //not really sure on this one. there is a large range, if it is a multisig script hash it could be like 250. I'll use 200 for now.
+    P2WPKH: 27,
+    // P2WSH2O3: 63,
+    // P2TR: 16,
   };
-  const estimateVBtyePerInput = 150;
-  const estimateVBtyeOverheadAndOutput = 50;
+
+  const batchedSigInputEstimateFeeTotal =
+    estimateVBtyePerScriptSig[walletType] * feeRate;
 
   const avgInputCost = estimateVBtyePerInput * feeRate;
   const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
@@ -54,6 +51,27 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
         : percentOfAmount.toFixed(4);
 
     return formatted;
+  };
+
+  const getFeeRateColor = (amount: number) => {
+    const feeRateColorMap = {
+      0: 'rgb(220 252 231)', // 'bg-green-100',
+      2: 'rgb(254 240 138)', // 'bg-yellow-200',
+      // 10: 'rgb(252 165 165)', // 'bg-red-300',
+      10: 'rgb(248 113 113)', // 'bg-red-400',
+      45: 'rgb(239 68 68)', // 'bg-red-500',
+      65: 'rgb(220 38 38)', // 'bg-red-600',
+      85: 'rgb(185 28 28)', // 'bg-red-700',
+      100: 'rgb(153 27 27)', // 'bg-red-800',
+    };
+    let selectedColor = feeRateColorMap[0];
+
+    for (const key in feeRateColorMap) {
+      if (amount > Number(key)) {
+        selectedColor = feeRateColorMap[key];
+      }
+    }
+    return selectedColor;
   };
   const columns = useMemo(
     () => [
@@ -110,7 +128,7 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
       },
 
       {
-        header: '~ Fee rate %',
+        header: '~ Fee %',
         accessorKey: 'selfCost',
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
@@ -165,8 +183,16 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     enableFullScreenToggle: false,
     enablePagination: false,
     enableTableFooter: false,
-    muiTableContainerProps: { className: 'min-h-96 overflow-auto' },
-
+    enableBottomToolbar: false,
+    muiTableContainerProps: { className: 'max-h-96 overflow-auto' },
+    initialState: {
+      sorting: [
+        {
+          id: 'amount',
+          desc: false,
+        },
+      ],
+    },
     muiTableBodyCellProps: ({ row }) => {
       const feeRatePct = row.original.amount
         ? calculateFeePercent(row.original.amount)
@@ -190,7 +216,11 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
     const selectedUtxosFromatted: UtxoRequestParam = [];
     utxos.forEach((utxo: any) => {
       if (selectedTxs[utxo.txid]) {
-        selectedUtxosFromatted.push({ id: utxo.txid, vout: utxo.vout });
+        selectedUtxosFromatted.push({
+          id: utxo.txid,
+          vout: utxo.vout,
+          amount: utxo.amount,
+        });
       }
     });
     return selectedUtxosFromatted;
@@ -223,22 +253,27 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
       return (
         <div className={borderClasses}>
           <p>Total fees: ...</p>
-          <p>Fee rate %: ...</p>
+          <p>Fee pct: ...</p>
         </div>
       );
     }
+    const utxoInputTotal = selectedUtxos.reduce(
+      (total, utxo) => total + utxo.amount,
+      0,
+    );
 
-    const fee: string = batchedTxData?.fee;
-    const percentOfTxFee = Number(
-      batchedTxData?.percent_fee_is_of_utxo,
-    ).toFixed(4);
+    const inputSigFees = batchedSigInputEstimateFeeTotal * selectedUtxos.length;
+
+    const fee = Number(batchedTxData?.fee) + inputSigFees;
+    const percentOfTxFee = (Number(fee / utxoInputTotal) * 100).toFixed(4);
+
     const isSpendable: boolean = batchedTxData?.spendable;
     const bgColor = getFeeRateColor(Number(percentOfTxFee));
 
     return isSpendable ? (
       <div className={borderClasses} style={{ backgroundColor: bgColor }}>
-        <p>Total fees: {Number(fee).toLocaleString()} sats</p>
-        <p>Fee rate %: {percentOfTxFee}%</p>
+        <p>Total fees: ~{fee.toLocaleString()} sats</p>
+        <p>Fee pct: ~{percentOfTxFee}%</p>
       </div>
     ) : (
       <div
@@ -255,11 +290,11 @@ export const UtxosDisplay = ({ utxos, feeRate }: UtxosDisplayProps) => {
       <div className="flex flex-row mt-4 mb-4">
         <Button
           fullWidth
-          disabled={selectedUtxos.length === 0}
+          disabled={selectedUtxos.length < 2}
           onClick={calculateFeeEstimate}
           size="xl"
         >
-          Estimate tx fees
+          Estimate batch tx
         </Button>
 
         <DisplayBatchTxData />

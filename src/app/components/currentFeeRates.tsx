@@ -9,22 +9,21 @@ export const CurrentFeeRates = () => {
 
   const Fee = ({ title, rate }: { title: string; rate: string }) => {
     return (
-      <div className="border-black rounded border-[1] w-20 p-2 text-center">
-        <p className="font-bold">{title}</p>
+      <div className=" w-20 p-1  text-center">
+        <p className="font-semibold">{title}</p>
         <p>{rate} sat/vB </p>
       </div>
     );
   };
 
   return (
-    <div className="mt-4">
+    <div className="mt-0">
       {getCurrentFeesQueryRequest.isSuccess ? (
-        <div className="ml-auto mr-auto w-80">
-          <h2 className="font-bold text-xl text-center">
-            {' '}
-            Current fee rate priority{' '}
-          </h2>
-          <div className="flex flex-row mt-1 mb-2 justify-between ">
+        <div className="ml-auto mr-auto">
+          <div className="flex flex-row mt-1 mb-2 justify-between items-center ">
+            <h2 className="font-semibold text-md text-center w-12 mr-5 text-center">
+              Current fees
+            </h2>
             {feeRates.map((feeRate) => (
               <Fee title={feeRate.title} rate={feeRate.value} />
             ))}

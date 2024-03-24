@@ -6,6 +6,7 @@ import {
 } from './types';
 
 import { Network } from '../types/network';
+import { WalletTypes } from '../types/scriptTypes';
 
 async function fetchHandler(url: string, method = 'GET', body?: any) {
   const response = await fetch(url, {
@@ -67,5 +68,14 @@ export class ApiClient {
 
     const data = await response.json();
     return data;
+  }
+  static async getWalletType() {
+    const response = await fetchHandler(
+      `http://localhost:5011/wallet/type`,
+      'GET',
+    );
+
+    const data = await response.json();
+    return data.type as WalletTypes;
   }
 }

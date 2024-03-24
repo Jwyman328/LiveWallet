@@ -11,11 +11,13 @@ import {
   InputLabel,
   Select,
 } from '@mantine/core';
+import { useGetWalletType } from '../hooks/wallet';
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
   const navigate = useNavigate();
   const getUtxosQueryRequest = useGetUtxos();
+  const getWalletTypeQueryRequest = useGetWalletType();
 
   const logOut = () => {
     navigate('/');
@@ -60,19 +62,27 @@ function Home() {
   };
   return (
     <div className="h-full">
-      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-14">
-        <Container size="md" className="flex justify-between items-center h-14">
+      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-16">
+        <Container size="xl" className="flex justify-between items-center h-16">
+          <CurrentFeeRates />
           <Group gap={5} visibleFrom="xs">
-            <p>Balance: {getBalanceQueryRequest?.data?.total} sats</p>
-          </Group>
+            <p className="mr-5">
+              Balance:{' '}
+              {Number(getBalanceQueryRequest?.data?.total).toLocaleString()}{' '}
+              sats
+            </p>
 
-          <Button className="bg-blue-200" onClick={logOut}>
-            Log out
-          </Button>
+            <Button className="bg-blue-200" onClick={logOut}>
+              Log out
+            </Button>
+          </Group>
         </Container>
       </header>
+
       <div className="ml-4 flex flex-col items-center">
-        <CurrentFeeRates />
+        <h1 className="text-center font-bold text-xl">
+          Custom Fee environment{' '}
+        </h1>
         <div className="mb-8">
           <div className="flex flex-row items-center">
             <Select
@@ -107,10 +117,12 @@ function Home() {
           </div>
         </div>
 
-        {getUtxosQueryRequest.isSuccess ? (
+        {getUtxosQueryRequest.isSuccess &&
+        getWalletTypeQueryRequest.isSuccess ? (
           <UtxosDisplay
             feeRate={feeRate}
             utxos={getUtxosQueryRequest?.data?.utxos}
+            walletType={getWalletTypeQueryRequest.data}
           />
         ) : null}
       </div>

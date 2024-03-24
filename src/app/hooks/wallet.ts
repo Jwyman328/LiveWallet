@@ -1,6 +1,10 @@
-import { useMutation } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
 import { ApiClient } from '../api/api';
 import { Network } from '../types/network';
+
+const queryKeys = {
+  getWalletType: 'getWalletType',
+};
 
 export function useCreateWallet(
   descriptor: string,
@@ -20,4 +24,8 @@ export function useCreateWallet(
       },
     },
   );
+}
+
+export function useGetWalletType() {
+  return useQuery(queryKeys.getWalletType, () => ApiClient.getWalletType());
 }
