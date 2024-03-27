@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { UtxoRequestParam } from '../api/api';
 import {
   MaterialReactTable,
+  MRT_RowSelectionState,
   useMaterialReactTable,
 } from 'material-react-table';
 
@@ -178,6 +179,47 @@ export const UtxosDisplay = ({
     ],
     [avgBaseCost, avgInputCost],
   );
+
+  const getSelectedUtxos = React.useCallback(
+    (selectedTxRows: MRT_RowSelectionState) => {
+      const selectedUtxosFromatted: UtxoRequestParam = [];
+      utxos.forEach((utxo: any) => {
+        if (selectedTxRows[utxo.txid]) {
+          selectedUtxosFromatted.push({
+            id: utxo.txid,
+            vout: utxo.vout,
+            amount: utxo.amount,
+          });
+        }
+      });
+      return selectedUtxosFromatted;
+    },
+    [utxos],
+  );
+
+  const DisplaySelectedUtxosData = ({
+    selectedRows,
+  }: {
+    selectedRows: MRT_RowSelectionState;
+  }) => {
+    const totalUtxosSelected = Object.keys(selectedRows).length;
+    const utxosWithData = getSelectedUtxos(selectedRows);
+    const totalAmount: number = utxosWithData.reduce(
+      (total, utxo) => total + utxo.amount,
+      0,
+    );
+    return (
+      <div className="h-16">
+        <p className="pl-4 font-semibold text-lg">
+          Selected: {totalUtxosSelected}{' '}
+        </p>
+        <p className="pl-4 font-semibold text-lg">
+          amount: {totalAmount.toLocaleString()} sats{' '}
+        </p>
+      </div>
+    );
+  };
+
   const table = useMaterialReactTable({
     columns,
     data: utxos,
@@ -187,9 +229,19 @@ export const UtxosDisplay = ({
     enablePagination: false,
     enableTableFooter: false,
     enableBottomToolbar: false,
-    muiTableContainerProps: { className: 'max-h-96 overflow-auto' },
-    // enableStickyHeader: true, I wish I could do this but it doesn't work with the fixed height scrolling container
-    positionToolbarAlertBanner: 'none',
+    muiTableContainerProps: {
+      className: 'overflow-auto',
+      style: { maxHeight: '24rem' },
+    },
+    enableStickyHeader: true,
+    positionToolbarAlertBanner: 'top',
+    positionToolbarDropZone: 'bottom',
+    renderTopToolbarCustomActions: () => (
+      <h1 className="text-lg font-bold text-center ml-2 mt-2">UTXOS</h1>
+    ),
+    renderToolbarAlertBannerContent: ({ table }) => (
+      <DisplaySelectedUtxosData selectedRows={table.getState().rowSelection} />
+    ),
     muiSelectCheckboxProps: {
       color: 'primary',
     },
@@ -221,19 +273,10 @@ export const UtxosDisplay = ({
   const selectedTxs = table.getState().rowSelection;
 
   const selectedUtxos: UtxoRequestParam = useMemo(() => {
-    const selectedUtxosFromatted: UtxoRequestParam = [];
-    utxos.forEach((utxo: any) => {
-      if (selectedTxs[utxo.txid]) {
-        selectedUtxosFromatted.push({
-          id: utxo.txid,
-          vout: utxo.vout,
-          amount: utxo.amount,
-        });
-      }
-    });
-    return selectedUtxosFromatted;
-  }, [selectedTxs, utxos]);
+    return getSelectedUtxos(selectedTxs);
+  }, [selectedTxs, getSelectedUtxos]);
 
+  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
   const {
     data: batchedTxData,
     mutateAsync,
@@ -248,8 +291,6 @@ export const UtxosDisplay = ({
     console.log('selected utxos changed clear local batch data');
     setCurrentBatchedTxData(null);
   }, [selectedUtxos]);
-
-  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
 
   const calculateFeeEstimate = async () => {
     const response = await mutateAsync();
