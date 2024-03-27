@@ -4,6 +4,8 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from 'material-react-table';
+
+import { createTheme, ThemeProvider } from '@mui/material';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import { Button, Tooltip, CopyButton, ActionIcon, rem } from '@mantine/core';
@@ -115,18 +117,19 @@ export const UtxosDisplay = ({
         },
       },
 
-      {
-        header: 'vout',
-        accessorKey: 'vout',
-        Cell: ({ row }: { row: any }) => {
-          return (
-            <div>
-              <p> {row.original.vout}</p>
-            </div>
-          );
-        },
-      },
-
+      // I just don't think anyone will care about the vout
+      // {
+      //   header: 'vout',
+      //   accessorKey: 'vout',
+      //   Cell: ({ row }: { row: any }) => {
+      //     return (
+      //       <div>
+      //         <p> {row.original.vout}</p>
+      //       </div>
+      //     );
+      //   },
+      // },
+      //
       {
         header: '~ Fee %',
         accessorKey: 'selfCost',
@@ -185,6 +188,11 @@ export const UtxosDisplay = ({
     enableTableFooter: false,
     enableBottomToolbar: false,
     muiTableContainerProps: { className: 'max-h-96 overflow-auto' },
+    // enableStickyHeader: true, I wish I could do this but it doesn't work with the fixed height scrolling container
+    positionToolbarAlertBanner: 'none',
+    muiSelectCheckboxProps: {
+      color: 'primary',
+    },
     initialState: {
       sorting: [
         {
@@ -193,6 +201,7 @@ export const UtxosDisplay = ({
         },
       ],
     },
+    muiTableBodyRowProps: { classes: { root: { after: 'bg-green-100' } } },
     muiTableBodyCellProps: ({ row }) => {
       const feeRatePct = row.original.amount
         ? calculateFeePercent(row.original.amount)
@@ -200,7 +209,6 @@ export const UtxosDisplay = ({
       const color = getFeeRateColor(Number(feeRatePct));
 
       return {
-        className: row.original?.amount ? `${color} !important` : '',
         style: { backgroundColor: color },
       };
     },
@@ -286,7 +294,29 @@ export const UtxosDisplay = ({
 
   return (
     <div>
-      <MaterialReactTable table={table} />
+      <ThemeProvider
+        theme={createTheme({
+          palette: {
+            secondary: { main: '#339AF0' },
+          },
+          components: {
+            MuiTableRow: {
+              styleOverrides: {
+                root: {
+                  '&.MuiTableRow-root td:after': {
+                    backgroundColor: 'rgb(255,255,255, 0.0)', // make the opcity 0 so that the color doesn't even show, it clashes too much with the color of the cell anyways so it isn't really needed
+                  },
+                  '&.MuiTableRow-root:hover td:after': {
+                    backgroundColor: 'rgb(225,225,225, 0.5)', // white with an opacity
+                  },
+                },
+              },
+            },
+          },
+        })}
+      >
+        <MaterialReactTable table={table} />
+      </ThemeProvider>
       <div className="flex flex-row mt-4 mb-4">
         <Button
           fullWidth
