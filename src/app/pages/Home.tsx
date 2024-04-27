@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CurrentFeeRates } from '../components/currentFeeRates';
 import { UtxosDisplay } from '../components/utxosDisplay';
 import { useGetBalance, useGetUtxos } from '../hooks/utxos';
@@ -29,8 +29,6 @@ function Home() {
     { value: '10000', label: '10,000' },
     { value: '100000', label: '100,000' },
     { value: '1000000', label: '1,000,000' },
-    { value: '10000000', label: '10,000,000' },
-    { value: '100000000', label: '100,000,000' },
   ];
 
   const minScaleOptions = [
@@ -40,8 +38,6 @@ function Home() {
     { value: '1000', label: '1,000' },
     { value: '10000', label: '10,000' },
     { value: '100000', label: '100,000' },
-    { value: '1000000', label: '1,000,000' },
-    { value: '10000000', label: '10,000,000' },
   ];
   const [feeScale, setFeeScale] = useState(scaleOptions[0]);
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
@@ -55,9 +51,11 @@ function Home() {
       setMinFeeScale(option);
     } else {
       const minScaleOption = minScaleOptions.find(
-        (option) => option.value === feeScale.value,
+        (scaleOption) => scaleOption.value === feeScale.value,
       );
-      setMinFeeScale(minScaleOption);
+      if (minScaleOption) {
+        setMinFeeScale(minScaleOption);
+      }
     }
   };
   return (

@@ -1,4 +1,5 @@
-import { ApiClient, UtxoRequestParam } from '../api/api';
+import { ApiClient } from '../api/api';
+import { UtxoRequestParam } from '../api/types';
 import { useMutation, useQuery } from 'react-query';
 
 const queryKeys = {

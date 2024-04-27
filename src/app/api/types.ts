@@ -7,6 +7,12 @@ export type UtxoRequestParam = {
   vout: number;
 };
 
+export type UtxoRequestParamWithAmount = {
+  id: string;
+  vout: number;
+  amount: number;
+};
+
 export type Utxo = {
   amount: number;
   txid: string;

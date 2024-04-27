@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { UtxoRequestParam } from '../api/api';
+import { UtxoRequestParamWithAmount } from '../api/types';
 import {
   MaterialReactTable,
   MRT_RowSelectionState,
@@ -18,11 +18,13 @@ import {
   IconCircleCheck,
   IconCircleX,
 } from '@tabler/icons-react';
+
 type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
   walletType: WalletTypes;
 };
+
 export const UtxosDisplay = ({
   utxos,
   feeRate,
@@ -45,7 +47,7 @@ export const UtxosDisplay = ({
   const avgInputCost = estimateVBtyePerInput * feeRate;
   const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
 
-  const calculateFeePercent = (amount: Number) => {
+  const calculateFeePercent = (amount: number) => {
     const totalCost = avgBaseCost + avgInputCost;
     const percentOfAmount = (totalCost / amount) * 100;
     const formatted =
@@ -60,7 +62,6 @@ export const UtxosDisplay = ({
     const feeRateColorMap = {
       0: 'rgb(220 252 231)', // 'bg-green-100',
       2: 'rgb(254 240 138)', // 'bg-yellow-200',
-      // 10: 'rgb(252 165 165)', // 'bg-red-300',
       10: 'rgb(248 113 113)', // 'bg-red-400',
       45: 'rgb(239 68 68)', // 'bg-red-500',
       65: 'rgb(220 38 38)', // 'bg-red-600',
@@ -117,20 +118,6 @@ export const UtxosDisplay = ({
           );
         },
       },
-
-      // I just don't think anyone will care about the vout
-      // {
-      //   header: 'vout',
-      //   accessorKey: 'vout',
-      //   Cell: ({ row }: { row: any }) => {
-      //     return (
-      //       <div>
-      //         <p> {row.original.vout}</p>
-      //       </div>
-      //     );
-      //   },
-      // },
-      //
       {
         header: '~ Fee %',
         accessorKey: 'selfCost',
@@ -182,7 +169,7 @@ export const UtxosDisplay = ({
 
   const getSelectedUtxos = React.useCallback(
     (selectedTxRows: MRT_RowSelectionState) => {
-      const selectedUtxosFromatted: UtxoRequestParam = [];
+      const selectedUtxosFromatted: UtxoRequestParamWithAmount[] = [];
       utxos.forEach((utxo: any) => {
         if (selectedTxRows[utxo.txid]) {
           selectedUtxosFromatted.push({
@@ -272,7 +259,7 @@ export const UtxosDisplay = ({
 
   const selectedTxs = table.getState().rowSelection;
 
-  const selectedUtxos: UtxoRequestParam = useMemo(() => {
+  const selectedUtxos: UtxoRequestParamWithAmount[] = useMemo(() => {
     return getSelectedUtxos(selectedTxs);
   }, [selectedTxs, getSelectedUtxos]);
 
@@ -288,17 +275,20 @@ export const UtxosDisplay = ({
   }, [batchedTxData]);
 
   useEffect(() => {
-    console.log('selected utxos changed clear local batch data');
     setCurrentBatchedTxData(null);
   }, [selectedUtxos]);
 
   const calculateFeeEstimate = async () => {
-    const response = await mutateAsync();
+    try {
+      await mutateAsync();
+    } catch (e) {
+      console.log('Error calculating fee estimate', e);
+    }
   };
 
   const DisplayBatchTxData = () => {
     const borderClasses = 'rounded border-2 w-full ml-8 p-1.5';
-    if (!currentBatchedTxData || !selectedUtxos.length || batchIsLoading) {
+    if (!currentBatchedTxData || !selectedUtxos?.length || batchIsLoading) {
       return (
         <div className={borderClasses}>
           <p>Total fees: ...</p>
