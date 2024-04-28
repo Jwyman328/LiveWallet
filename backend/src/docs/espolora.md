@@ -1,0 +1,3 @@
+- all the esplora endpoint are locally at localhost:3000
+    - https://github.com/blockstream/esplora/blob/master/API.md
+    - http://localhost:3000/fee-estimates

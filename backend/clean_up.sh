@@ -1,0 +1,1 @@
+nigiri stop --delete

@@ -29,3 +29,54 @@ npm-debug.log.*
 *.css.d.ts
 *.sass.d.ts
 *.scss.d.ts
+
+
+# backend git ignores
+backend/.DS_Store
+backend/.env
+backed/.flaskenv
+backend/*.pyc
+backend/*.pyo
+backend/env/
+backend/venv/
+backend/.venv/
+backend/env*
+backend/dist/
+backend/build/
+backend/*.egg
+backend/*.egg-info/
+backend/.tox/
+backend/.cache/
+backend/.pytest_cache/
+backend/.idea/
+backend/docs/_build/
+backend/.vscode
+
+# Coverage reports
+backend/htmlcov/
+backend/.coverage
+backend/.coverage.*
+backend/*,cover
+
+
+# Byte-compiled / optimized / DLL files
+backend/*/__pycache__/*
+backend/*.py[cod]
+
+# C extensions
+backend/*.so
+
+# Distribution / packaging
+backend/bin/
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
