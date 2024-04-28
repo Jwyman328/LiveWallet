@@ -43,6 +43,7 @@ if (isDebug) {
   require('electron-debug')();
 }
 
+let backendProcess: any;
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
@@ -69,7 +70,6 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  let backendProcess: any;
   function startupBackend() {
     console.log('starting backend');
     try {
@@ -91,18 +91,20 @@ const createWindow = async () => {
   startupBackend();
 
   // Shutdown backend process if it exists
-  ipcMain.off('clean-up-backend-process', async () => {
-    if (backendProcess) {
-      console.log('killing backend process');
-      backendProcess.kill();
-    }
-  });
-
+  // ipcMain.off('clean-up-backend-process', async () => {
+  //   console.log('in off');
+  //   if (backendProcess) {
+  //     console.log('killing backend process');
+  //     backendProcess.kill();
+  //   }
+  // });
+  //
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
     height: 728,
     icon: getAssetPath('icon.png'),
+    title: 'UXTO Fee Estimator',
     webPreferences: {
       nodeIntegration: true,
       preload: app.isPackaged
@@ -151,6 +153,12 @@ app.on('window-all-closed', () => {
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+app.on('before-quit', () => {
+  if (backendProcess) {
+    console.log('killing backend process');
+    backendProcess.kill();
   }
 });
 
