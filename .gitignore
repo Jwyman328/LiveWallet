@@ -19,6 +19,7 @@ node_modules
 .DS_Store
 
 assets/app
+assets/app.app
 
 release/app/dist
 release/build

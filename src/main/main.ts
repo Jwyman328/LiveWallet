@@ -69,22 +69,34 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  let backendProcess: any;
   function startupBackend() {
-    console.log('starting python thing');
+    console.log('starting backend');
     try {
       const pythonBinary = getAssetPath('app');
       const child = require('child_process');
-      child.execFile(pythonBinary, function (err: any, data: any) {
-        if (err) {
-          console.log('Error starting backend', err);
-        }
-        console.log(data.toString());
-      });
+      backendProcess = child.execFile(
+        pythonBinary,
+        function (err: any, data: any) {
+          if (err) {
+            console.log('Error starting backend', err);
+          }
+          console.log(data.toString());
+        },
+      );
     } catch (err) {
-      console.log('found the stink error', err);
+      console.log('Error starting backend', err);
     }
   }
   startupBackend();
+
+  // Shutdown backend process if it exists
+  ipcMain.off('clean-up-backend-process', async () => {
+    if (backendProcess) {
+      console.log('killing backend process');
+      backendProcess.kill();
+    }
+  });
 
   mainWindow = new BrowserWindow({
     show: false,
