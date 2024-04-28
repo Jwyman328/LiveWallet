@@ -10,12 +10,11 @@ import {
   Input,
   InputLabel,
   Button,
-  Textarea,
   Tabs,
   Radio,
   Stack,
+  Textarea,
 } from '@mantine/core';
-
 type PublicElectrumUrl = {
   name: string;
   ports: Record<Network, number>;

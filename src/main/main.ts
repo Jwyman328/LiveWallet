@@ -69,12 +69,30 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  function startupBackend() {
+    console.log('starting python thing');
+    try {
+      const pythonBinary = getAssetPath('app');
+      const child = require('child_process');
+      child.execFile(pythonBinary, function (err: any, data: any) {
+        if (err) {
+          console.log('Error starting backend', err);
+        }
+        console.log(data.toString());
+      });
+    } catch (err) {
+      console.log('found the stink error', err);
+    }
+  }
+  startupBackend();
+
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
     height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
+      nodeIntegration: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
