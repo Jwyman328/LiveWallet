@@ -24,7 +24,7 @@ export const WalletSignIn = () => {
   const mockDescriptor =
     'wpkh(tprv8ZgxMBicQKsPcx5nBGsR63Pe8KnRUqmbJNENAfGftF3yuXoMMoVJJcYeUw5eVkm9WBPjWYt6HMWYJNesB5HaNVBaFc1M6dRjWSYnmewUMYy/84h/0h/0h/0/*)';
 
-  const mockElectrumUrl = '127.0.0.1:50000';
+  const mockElectrumUrl = '127.0.0.1:50031';
 
   const [descriptor, setDescriptor] = useState(mockDescriptor);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);

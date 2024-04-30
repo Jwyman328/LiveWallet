@@ -12,6 +12,7 @@ import {
   Select,
 } from '@mantine/core';
 import { useGetWalletType } from '../hooks/wallet';
+import { useQueryClient } from 'react-query';
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -19,7 +20,11 @@ function Home() {
   const getUtxosQueryRequest = useGetUtxos();
   const getWalletTypeQueryRequest = useGetWalletType();
 
+  const queryClient = useQueryClient();
+
   const logOut = () => {
+    queryClient.clear();
+
     navigate('/');
   };
 
@@ -115,14 +120,18 @@ function Home() {
           </div>
         </div>
 
-        {getUtxosQueryRequest.isSuccess &&
-        getWalletTypeQueryRequest.isSuccess ? (
-          <UtxosDisplay
-            feeRate={feeRate}
-            utxos={getUtxosQueryRequest?.data?.utxos}
-            walletType={getWalletTypeQueryRequest.data}
-          />
-        ) : null}
+        <UtxosDisplay
+          feeRate={feeRate}
+          utxos={getUtxosQueryRequest?.data?.utxos || []}
+          walletType={getWalletTypeQueryRequest.data || 'P2WPKH'}
+          isLoading={
+            getUtxosQueryRequest.isLoading ||
+            getWalletTypeQueryRequest.isLoading
+          }
+          isError={
+            getUtxosQueryRequest.isError || getWalletTypeQueryRequest.isError
+          }
+        />
       </div>
     </div>
   );

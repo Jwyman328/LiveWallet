@@ -2,17 +2,19 @@ import { ApiClient } from '../api/api';
 import { UtxoRequestParam } from '../api/types';
 import { useMutation, useQuery } from 'react-query';
 
-const queryKeys = {
+export const uxtoQueryKeys = {
   getBalance: ['getBalance'],
   getUtxos: ['getUtxos'],
   getCurrentFees: ['getCurrentFees'],
 };
 
 export function useGetBalance() {
-  return useQuery(queryKeys.getBalance, () => ApiClient.getBalance());
+  return useQuery(uxtoQueryKeys.getBalance, () => ApiClient.getBalance());
 }
 export function useGetUtxos() {
-  return useQuery(queryKeys.getUtxos, () => ApiClient.getUtxos());
+  return useQuery(uxtoQueryKeys.getUtxos, () => ApiClient.getUtxos(), {
+    refetchOnWindowFocus: false,
+  });
 }
 
 export function useCreateTxFeeEstimate(
@@ -23,5 +25,7 @@ export function useCreateTxFeeEstimate(
 }
 
 export function useGetCurrentFees() {
-  return useQuery(queryKeys.getCurrentFees, () => ApiClient.getCurrentFees());
+  return useQuery(uxtoQueryKeys.getCurrentFees, () =>
+    ApiClient.getCurrentFees(),
+  );
 }

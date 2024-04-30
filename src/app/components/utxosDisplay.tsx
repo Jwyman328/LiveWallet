@@ -9,7 +9,14 @@ import {
 import { createTheme, ThemeProvider } from '@mui/material';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
-import { Button, Tooltip, CopyButton, ActionIcon, rem } from '@mantine/core';
+import {
+  Button,
+  Tooltip,
+  CopyButton,
+  ActionIcon,
+  rem,
+  LoadingOverlay,
+} from '@mantine/core';
 import { WalletTypes } from '../types/scriptTypes';
 
 import {
@@ -23,12 +30,16 @@ type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
   walletType: WalletTypes;
+  isLoading: boolean;
+  isError: boolean;
 };
 
 export const UtxosDisplay = ({
   utxos,
   feeRate,
   walletType,
+  isLoading,
+  isError,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
@@ -346,7 +357,27 @@ export const UtxosDisplay = ({
           },
         })}
       >
-        <MaterialReactTable table={table} />
+        <div className="relative">
+          <LoadingOverlay
+            visible={isLoading}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 2 }}
+          />
+
+          <LoadingOverlay
+            visible={isError && !isLoading}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 5 }}
+            loaderProps={{
+              children: (
+                <p className="text-red-700 font-bold text-lg">
+                  Error fetching utxos, please log out and try again.
+                </p>
+              ),
+            }}
+          />
+          <MaterialReactTable table={table} />
+        </div>
       </ThemeProvider>
       <div className="flex flex-row mt-4 mb-4">
         <Button

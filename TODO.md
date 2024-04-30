@@ -1,4 +1,5 @@
 TODO
+- only start the backend from electron in prod
 - better errors when I can't connect to the electrum servers (public or private)
 - Fix the readme to be about my project.
 - switch defaults for product deployment
