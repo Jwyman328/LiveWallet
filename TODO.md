@@ -1,5 +1,4 @@
 # TODO frontend
-- only start the backend from electron in prod or with a environment variable?
 - better errors when I can't connect to the electrum servers (public or private)
 - Fix the readme to be about my project.
 - switch defaults for product deployment
@@ -9,8 +8,6 @@
 - remove the default descriptor
 - change the login page to not just be a textbox descriptor but to have it more like sparrow where you put in the components that build up the descriptor
 - fix the styles for batch button / fee display, they are slightly off.
-
-- get the app build executable to have a fitting icon
 - do I need to wait at all in main.ts for the child process flask?
 - remove all the fe github build pipeline stuff that I don't want that I got from cloning a bioler late project
 
@@ -25,6 +22,11 @@
     - I could do a web socket connection and use a background task for it?
     - maybe this is more of a nice to have after the main project is done.
 - double check the fees are not mock values
+- Also be able to save wallets configs in files. 
+-  Entering in an xpub every time is super annoying 
+- Also set the default custom fee rate to the current rate 
+- Also be able to customize the current fee rate in my dev environment
+
 
 notes
 - to build I must do 

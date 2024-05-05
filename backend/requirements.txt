@@ -6,3 +6,5 @@ flask-cors
 requests
 structlog
 pydantic==2.6.0
+click===8.1.7
+aiohttp===3.9.5

@@ -13,7 +13,7 @@ export function useGetBalance() {
 }
 export function useGetUtxos() {
   return useQuery(uxtoQueryKeys.getUtxos, () => ApiClient.getUtxos(), {
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 }
 

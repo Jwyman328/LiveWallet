@@ -88,17 +88,15 @@ const createWindow = async () => {
       console.log('Error starting backend', err);
     }
   }
-  startupBackend();
 
-  // Shutdown backend process if it exists
-  // ipcMain.off('clean-up-backend-process', async () => {
-  //   console.log('in off');
-  //   if (backendProcess) {
-  //     console.log('killing backend process');
-  //     backendProcess.kill();
-  //   }
-  // });
-  //
+  if (process.env.NODE_ENV === 'production') {
+    startupBackend();
+  } else {
+    console.log(
+      'Backend is not starting via electron, please start it separately via backend/start_app.sh',
+    );
+  }
+
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
