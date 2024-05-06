@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
+import { Loader, Notification } from '@mantine/core';
 
 import vaultImage from '../images/vault.jpeg';
 import {
@@ -16,16 +17,23 @@ import {
   Textarea,
 } from '@mantine/core';
 import { configs } from '../configs';
+import { useGetServerHealthStatus } from '../hooks/healthStatus';
+import { IconX } from '@tabler/icons-react';
 
 type PublicElectrumUrl = {
   name: string;
   ports: Record<Network, number>;
 };
+const xIcon = <IconX style={{ width: '20rem', height: '20rem' }} />;
 
 export const WalletSignIn = () => {
   const defaultDescriptor = configs.defaultDescriptor;
 
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
+  const serverHealthStatusQuery = useGetServerHealthStatus();
+  const isServerAvailableAndHealthy =
+    serverHealthStatusQuery.isSuccess &&
+    serverHealthStatusQuery.data.status === 'good';
 
   const [descriptor, setDescriptor] = useState(defaultDescriptor);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
@@ -146,7 +154,8 @@ export const WalletSignIn = () => {
 
   const formItemWidth = 'w-80';
   const labelWidth = 'w-80';
-  return (
+
+  return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen">
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center">
         <h1
@@ -245,6 +254,23 @@ export const WalletSignIn = () => {
       </div>
 
       <img src={vaultImage} className=" w-1/2 h-screen" />
+    </div>
+  ) : serverHealthStatusQuery.isLoading ? (
+    <div className="flex flex-row justify-center items-center h-screen w-screen">
+      <Loader size={50} />
+    </div>
+  ) : (
+    <div className="p-8">
+      <Notification
+        withCloseButton={false}
+        className="border-red-500 border-2"
+        icon={xIcon}
+        color="red"
+        title="Error!"
+      >
+        There is a problem connecting with the server, please restart the app
+        and try again.
+      </Notification>
     </div>
   );
 };

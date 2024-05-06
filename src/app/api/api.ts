@@ -78,4 +78,14 @@ export class ApiClient {
     const data = await response.json();
     return data.type as WalletTypes;
   }
+
+  static async getServerHealthStatus() {
+    const response = await fetchHandler(
+      `http://localhost:5011/health-check/status`,
+      'GET',
+    );
+
+    const data = await response.json();
+    return data as HealthStatusResponseType;
+  }
 }

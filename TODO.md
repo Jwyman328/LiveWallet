@@ -1,7 +1,6 @@
 # TODO frontend
 - better errors when I can't connect to the electrum servers (public or private)
 - improve the readme.md
-- switch defaults for product deployment
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
 - Componentize a bit more 

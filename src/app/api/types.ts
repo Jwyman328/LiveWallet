@@ -30,3 +30,7 @@ export type CurrentFeesResponseType = {
   medium: number;
   high: number;
 };
+
+export type HealthStatusResponseType = {
+  status: 'good' | 'bad';
+};

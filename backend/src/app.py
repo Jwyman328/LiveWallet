@@ -14,7 +14,13 @@ class AppCreator:
 
     @classmethod
     def create_app(cls) -> Flask:
-        from src.views import balance_page, utxo_page, fees_api, wallet_api
+        from src.views import (
+            balance_page,
+            utxo_page,
+            fees_api,
+            wallet_api,
+            health_check_api,
+        )
         from src.containers.service_container import ServiceContainer
         from src.containers.global_data_store_container import GlobalStoreContainer
 
@@ -37,6 +43,7 @@ class AppCreator:
             cls.app.register_blueprint(utxo_page)
             cls.app.register_blueprint(fees_api)
             cls.app.register_blueprint(wallet_api)
+            cls.app.register_blueprint(health_check_api)
 
             return cls.app
 
