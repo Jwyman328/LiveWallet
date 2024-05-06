@@ -15,18 +15,19 @@ import {
   Stack,
   Textarea,
 } from '@mantine/core';
+import { configs } from '../configs';
+
 type PublicElectrumUrl = {
   name: string;
   ports: Record<Network, number>;
 };
 
 export const WalletSignIn = () => {
-  const mockDescriptor =
-    'wpkh(tprv8ZgxMBicQKsPcx5nBGsR63Pe8KnRUqmbJNENAfGftF3yuXoMMoVJJcYeUw5eVkm9WBPjWYt6HMWYJNesB5HaNVBaFc1M6dRjWSYnmewUMYy/84h/0h/0h/0/*)';
+  const defaultDescriptor = configs.defaultDescriptor;
 
-  const mockElectrumUrl = '127.0.0.1:50000';
+  const mockElectrumUrl = configs.defaultElectrumServerUrl;
 
-  const [descriptor, setDescriptor] = useState(mockDescriptor);
+  const [descriptor, setDescriptor] = useState(defaultDescriptor);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [activeTab, setActiveTab] = useState<string | null>('public');
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(true);
