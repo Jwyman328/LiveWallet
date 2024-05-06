@@ -1,6 +1,6 @@
 # TODO frontend
 - better errors when I can't connect to the electrum servers (public or private)
-- Fix the readme to be about my project.
+- improve the readme.md
 - switch defaults for product deployment
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
@@ -9,7 +9,6 @@
 - change the login page to not just be a textbox descriptor but to have it more like sparrow where you put in the components that build up the descriptor
 - fix the styles for batch button / fee display, they are slightly off.
 - do I need to wait at all in main.ts for the child process flask?
-- remove all the fe github build pipeline stuff that I don't want that I got from cloning a bioler late project
 
 
 # TODOs backend
