@@ -33,7 +33,8 @@ export const WalletSignIn = () => {
   const serverHealthStatusQuery = useGetServerHealthStatus();
   const isServerAvailableAndHealthy =
     serverHealthStatusQuery.isSuccess &&
-    serverHealthStatusQuery.data.status === 'good';
+    serverHealthStatusQuery.data.status === 'good' &&
+    !serverHealthStatusQuery.isLoading;
 
   const [descriptor, setDescriptor] = useState(defaultDescriptor);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);

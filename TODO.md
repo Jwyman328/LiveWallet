@@ -1,5 +1,6 @@
 # TODO frontend
 - better errors when I can't connect to the electrum servers (public or private)
+  - use mantine notifications for when there are network failures
 - improve the readme.md
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
@@ -26,6 +27,3 @@
 - Also be able to customize the current fee rate in my dev environment
 
 
-notes
-- to build I must do 
-$ sudo npm run package

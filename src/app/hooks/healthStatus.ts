@@ -11,8 +11,8 @@ export function useGetServerHealthStatus() {
     () => ApiClient.getServerHealthStatus(),
     {
       refetchOnWindowFocus: true,
-      retryDelay: 5,
-      retry: 10,
+      retryDelay: 2500,
+      retry: 20,
     },
   );
 }
