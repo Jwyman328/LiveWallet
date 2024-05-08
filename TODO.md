@@ -12,6 +12,7 @@
 
 
 # TODOs backend
+- don't use the default dev server, use something like gunicorn.
 - test using various descriptors
 - can remove the pct_fee_rate value being returned since I am not using it anymore.
 - add mypy

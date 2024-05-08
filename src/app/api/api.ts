@@ -3,10 +3,12 @@ import {
   GetBalanceResponseType,
   CurrentFeesResponseType,
   UtxoRequestParam,
+  HealthStatusResponseType,
 } from './types';
 
 import { Network } from '../types/network';
 import { WalletTypes } from '../types/scriptTypes';
+import { configs } from '../configs';
 
 async function fetchHandler(url: string, method = 'GET', body?: any) {
   const response = await fetch(url, {
@@ -23,13 +25,15 @@ async function fetchHandler(url: string, method = 'GET', body?: any) {
 
 export class ApiClient {
   static async getBalance() {
-    const response = await fetchHandler('http://localhost:5011/balance');
+    const response = await fetchHandler(`${configs.backendServerBaseUrl}/balance
+`);
 
     const data = await response.json();
     return data as GetBalanceResponseType;
   }
   static async getUtxos() {
-    const response = await fetchHandler('http://localhost:5011/utxos');
+    const response = await fetchHandler(`${configs.backendServerBaseUrl}/utxos
+`);
 
     const data = await response.json();
 
@@ -40,7 +44,7 @@ export class ApiClient {
     feeRate: number = 1,
   ) {
     const response = await fetchHandler(
-      `http://localhost:5011/utxos/fees?feeRate=${feeRate}`,
+      `${configs.backendServerBaseUrl}/utxos/fees?feeRate=${feeRate}`,
       'POST',
       utxos,
     );
@@ -50,7 +54,9 @@ export class ApiClient {
   }
 
   static async getCurrentFees() {
-    const response = await fetchHandler('http://localhost:5011/fees/current');
+    const response =
+      await fetchHandler(`${configs.backendServerBaseUrl}/fees/current
+`);
     const data = await response.json();
     return data as CurrentFeesResponseType;
   }
@@ -61,7 +67,7 @@ export class ApiClient {
     electrumUrl: string,
   ) {
     const response = await fetchHandler(
-      `http://localhost:5011/wallet`,
+      `${configs.backendServerBaseUrl}/wallet`,
       'POST',
       { descriptor: walletDescriptor, electrumUrl, network },
     );
@@ -71,7 +77,7 @@ export class ApiClient {
   }
   static async getWalletType() {
     const response = await fetchHandler(
-      `http://localhost:5011/wallet/type`,
+      `${configs.backendServerBaseUrl}/wallet/type`,
       'GET',
     );
 
@@ -81,7 +87,7 @@ export class ApiClient {
 
   static async getServerHealthStatus() {
     const response = await fetchHandler(
-      `http://localhost:5011/health-check/status`,
+      `${configs.backendServerBaseUrl}/health-check/status`,
       'GET',
     );
 
