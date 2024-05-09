@@ -34,3 +34,4 @@ export type CurrentFeesResponseType = {
 export type HealthStatusResponseType = {
   status: 'good' | 'bad';
 };
+

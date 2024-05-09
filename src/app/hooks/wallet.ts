@@ -7,14 +7,14 @@ export const walletTypeQueryKeys = {
 };
 
 export function useCreateWallet(
-  descriptor: string,
   network: Network,
   electrumUrl: string,
   onSuccess: () => void,
   onError: () => void,
 ) {
   return useMutation(
-    () => ApiClient.initiateWallet(descriptor, network, electrumUrl),
+    (descriptor: string) =>
+      ApiClient.initiateWallet(descriptor, network, electrumUrl),
     {
       onSuccess: () => {
         onSuccess();

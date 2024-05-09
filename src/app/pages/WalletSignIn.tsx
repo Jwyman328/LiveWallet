@@ -19,6 +19,7 @@ import {
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { IconX } from '@tabler/icons-react';
+import { ScriptTypes, scriptTypeToDescriptorMap } from '../types/scriptTypes';
 
 type PublicElectrumUrl = {
   name: string;
@@ -40,6 +41,13 @@ export const WalletSignIn = () => {
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [activeTab, setActiveTab] = useState<string | null>('public');
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(true);
+
+  const scriptTypeOptions = [
+    { value: ScriptTypes.P2WPKH, label: 'Native Segwit (P2WPKH)' },
+    { value: ScriptTypes.P2PKH, label: 'Legacy (P2PKH)' },
+    { value: ScriptTypes.P2SHP2WPKH, label: 'Nested Segwit (P2SH-P2WPKH)' },
+    { value: ScriptTypes.P2TR, label: 'Taproot (P2TR)' },
+  ];
 
   const networkOptions = [
     { value: Network.TESTNET, label: Network.TESTNET },
@@ -85,6 +93,10 @@ export const WalletSignIn = () => {
 
   const [network, setNetwork] = useState<ComboboxItem>(networkOptions[0]);
 
+  const [scriptType, setScriptType] = useState<ComboboxItem>(
+    scriptTypeOptions[0],
+  );
+
   const navigate = useNavigate();
 
   const handleWalletInitiated = () => {
@@ -125,14 +137,6 @@ export const WalletSignIn = () => {
     publicElectrumUrls,
   ]);
 
-  const initiateWalletRequest = useCreateWallet(
-    descriptor,
-    network.value as Network,
-    electrumUrl,
-    handleWalletInitiated,
-    handleWalletError,
-  );
-
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDescriptor(e.target.value);
   };
@@ -145,38 +149,117 @@ export const WalletSignIn = () => {
 
   const isLoginEnabled = !!descriptor && !!network.value && !!electrumUrl;
 
+  const formItemWidth = 'w-80';
+  const labelWidth = 'w-80';
+
+  const [derivationPath, setDerivationPath] = useState<string>(
+    configs.defaultDerivationPath,
+  );
+  const handleDerivationPathChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setDerivationPath(e.target.value);
+  };
+
+  const [xpub, setXpub] = useState<string>(configs.defaultXpub);
+  const handleXpubChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setXpub(e.target.value);
+  };
+
+  const [masterFingerPrint, setMasterFingerPrint] = useState<string>(
+    configs.defaultMasterFingerprint,
+  );
+  const handleMasterFingerPrint = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMasterFingerPrint(e.target.value);
+  };
+
+  const generateDescriptor = () => {
+    // take the inputs from the various fields and create a descriptor
+    // @ts-ignore
+    let scriptTypeDescription: any = scriptTypeToDescriptorMap[
+      scriptType.value
+    ] as any;
+
+    const isNestedSegWit =
+      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WPKH;
+    const closingParam = isNestedSegWit ? '))' : ')';
+    const pubType = network.value === Network.TESTNET ? 'tpub' : 'xpub';
+
+    const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationPath}]${pubType}${xpub}/0/*${closingParam}`;
+    return computedDescriptor;
+  };
+
+  const initiateWalletRequest = useCreateWallet(
+    network.value as Network,
+    electrumUrl,
+    handleWalletInitiated,
+    handleWalletError,
+  );
+
   const signIn = async () => {
     try {
-      await initiateWalletRequest.mutateAsync();
+      const fullDescriptor = generateDescriptor();
+      await initiateWalletRequest.mutateAsync(fullDescriptor);
     } catch (e) {
       console.log('Error', e);
     }
   };
-
-  const formItemWidth = 'w-80';
-  const labelWidth = 'w-80';
-
   return isServerAvailableAndHealthy ? (
-    <div className="flex flex-row w-screen h-screen">
+    <div className="flex flex-row w-screen h-full">
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center">
         <h1
           className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
         >
           Setup wallet
         </h1>
+
+        <InputLabel className={`mb-2 ${labelWidth}`}>Script type</InputLabel>
+        <Select
+          className={`mb-4 ${formItemWidth}`}
+          data={scriptTypeOptions}
+          value={scriptType ? scriptType.value : null}
+          onChange={(_value, option) => setScriptType(option)}
+        />
+
         <InputLabel className={`mb-2 ${labelWidth}`}>
-          Enter xpub descriptor
+          Master fingerprint
         </InputLabel>
+        <Input
+          className={`${formItemWidth}`}
+          placeholder="00000000"
+          value={masterFingerPrint}
+          onInput={handleMasterFingerPrint}
+        />
+        <InputLabel className={`mb-2 mt-6 ${labelWidth}`}>
+          Derivation path
+        </InputLabel>
+        <Input
+          className={`${formItemWidth}`}
+          placeholder="m/49'/0'/0'"
+          value={derivationPath}
+          onInput={handleDerivationPathChange}
+        />
+
+        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>xpub</InputLabel>
         <Textarea
           className={`${formItemWidth}`}
-          styles={{ input: { minHeight: '8rem' } }}
-          placeholder="Enter xpub descriptor"
-          onInput={handleInput}
-          value={descriptor}
+          styles={{ input: { minHeight: '6.3rem' } }}
+          placeholder="xpub"
+          onInput={handleXpubChange}
+          value={xpub}
         />
+
         <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
-          Choose a network
+          Descriptor (view only)
         </InputLabel>
+        <Textarea
+          disabled={true}
+          className={`${formItemWidth}`}
+          styles={{ input: { minHeight: '6.3rem' } }}
+          onInput={handleInput}
+          value={generateDescriptor()}
+        />
+        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>Network</InputLabel>
         <Select
           className={formItemWidth}
           data={networkOptions}
@@ -185,7 +268,7 @@ export const WalletSignIn = () => {
         />
 
         <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
-          Select server type
+          Server type
         </InputLabel>
         <Stack className={labelWidth}>
           <Radio
@@ -254,10 +337,10 @@ export const WalletSignIn = () => {
         </div>
       </div>
 
-      <img src={vaultImage} className=" w-1/2 h-screen" />
+      <img src={vaultImage} className=" w-1/2 min-h-full" />
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
-    <div className="flex flex-row justify-center items-center h-screen w-screen">
+    <div className="flex flex-row justify-center items-center h-full w-screen">
       <Loader size={50} />
     </div>
   ) : (
