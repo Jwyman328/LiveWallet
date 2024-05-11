@@ -56,7 +56,8 @@ class TestWalletController(TestCase):
             set_global_network_mock.assert_called_with(network)
             set_global_eletrum_url_mock.assert_called_with(electrum_url)
 
-            set_global_wallet_mock.asset_called_with(self.mock_wallet_service.wallet)
+            set_global_wallet_mock.asset_called_with(
+                self.mock_wallet_service.wallet)
 
             assert wallet_response.status == "200 OK"
             assert json.loads(wallet_response.data) == {
@@ -133,3 +134,23 @@ class TestWalletController(TestCase):
             assert len(response_data["errors"]) == 1
 
             self.mock_wallet_service.get_script_type.assert_called_once()
+
+    def test_remove_wallet_success(self):
+        self.mock_wallet_service = MagicMock(WalletService)
+
+        self.mock_wallet_service.wallet = MagicMock(bdk.Wallet)
+
+        with (
+            patch.object(
+                GlobalDataStore, "remove_global_wallet_and_details"
+            ) as remove_global_wallet_mock,
+        ):
+            wallet_response = self.test_client.delete(
+                "/wallet/remove",
+            )
+
+            assert wallet_response.status == "200 OK"
+            assert json.loads(wallet_response.data) == {
+                "message": "wallet successfully deleted",
+            }
+            remove_global_wallet_mock.assert_called_once()
