@@ -1,5 +1,4 @@
 # TODO frontend
-- potentially dont need the descriptor state in the login page now that I have the generateDescriptor function
 - fix full height styles on login screen 
 - better errors when I can't connect to the electrum servers (public or private)
   - use mantine notifications for when there are network failures

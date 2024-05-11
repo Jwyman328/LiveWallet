@@ -28,8 +28,6 @@ type PublicElectrumUrl = {
 const xIcon = <IconX style={{ width: '20rem', height: '20rem' }} />;
 
 export const WalletSignIn = () => {
-  const defaultDescriptor = configs.defaultDescriptor;
-
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
   const serverHealthStatusQuery = useGetServerHealthStatus();
   const isServerAvailableAndHealthy =
@@ -37,7 +35,6 @@ export const WalletSignIn = () => {
     serverHealthStatusQuery.data.status === 'good' &&
     !serverHealthStatusQuery.isLoading;
 
-  const [descriptor, setDescriptor] = useState(defaultDescriptor);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [activeTab, setActiveTab] = useState<string | null>('public');
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(true);
@@ -139,10 +136,6 @@ export const WalletSignIn = () => {
     network,
     publicElectrumUrls,
   ]);
-
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescriptor(e.target.value);
-  };
 
   const handlePrivateElectrumInput = (
     e: React.ChangeEvent<HTMLInputElement>,
