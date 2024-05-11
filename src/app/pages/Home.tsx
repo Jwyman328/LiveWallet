@@ -11,7 +11,7 @@ import {
   InputLabel,
   Select,
 } from '@mantine/core';
-import { useGetWalletType } from '../hooks/wallet';
+import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 
 function Home() {
@@ -19,11 +19,17 @@ function Home() {
   const navigate = useNavigate();
   const getUtxosQueryRequest = useGetUtxos();
   const getWalletTypeQueryRequest = useGetWalletType();
+  const deleteCurrentWalletMutation = useDeleteCurrentWallet();
 
   const queryClient = useQueryClient();
 
-  const logOut = () => {
-    queryClient.clear();
+  const logOut = async () => {
+    try {
+      await deleteCurrentWalletMutation.mutateAsync();
+      queryClient.clear();
+    } catch (e) {
+      // error handled via toast
+    }
 
     navigate('/');
   };

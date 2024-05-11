@@ -94,4 +94,14 @@ export class ApiClient {
     const data = await response.json();
     return data as HealthStatusResponseType;
   }
+
+  static async deleteCurrentWallet() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/wallet/remove`,
+      'DELETE',
+    );
+
+    const data = await response.json();
+    return data;
+  }
 }

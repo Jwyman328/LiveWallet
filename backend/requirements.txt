@@ -1,7 +1,7 @@
 flask
 bdkpython==0.28.0
 dependency-injector==4.40.0
-pytest
+pytest==3.7.0
 flask-cors
 requests
 structlog

@@ -9,7 +9,9 @@ export const uxtoQueryKeys = {
 };
 
 export function useGetBalance() {
-  return useQuery(uxtoQueryKeys.getBalance, () => ApiClient.getBalance());
+  return useQuery(uxtoQueryKeys.getBalance, () => ApiClient.getBalance(), {
+    refetchOnWindowFocus: false,
+  });
 }
 export function useGetUtxos() {
   return useQuery(uxtoQueryKeys.getUtxos, () => ApiClient.getUtxos(), {

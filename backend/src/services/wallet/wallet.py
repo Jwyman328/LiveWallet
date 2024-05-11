@@ -61,6 +61,12 @@ class WalletService:
     ) -> bdk.Wallet:
         """Using a given descriptor, connect to an electrum server and return the bdk wallet"""
 
+        if global_data_store.wallet:
+            LOGGER.info(
+                "A wallet is already connected, therefore use that instead of connecting another one."
+            )
+            return global_data_store.wallet
+
         descriptor = global_data_store.wallet_details.descriptor
         network = global_data_store.wallet_details.network
         electrum_url = global_data_store.wallet_details.electrum_url
@@ -80,8 +86,11 @@ class WalletService:
             network=network,
             database_config=db_config,
         )
+        LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
+
+        global_data_store.set_global_wallet(wallet)
 
         return wallet
 
@@ -150,8 +159,7 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(
-                self.wallet)
+            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

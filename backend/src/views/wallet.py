@@ -34,6 +34,10 @@ class GetWalletTypeResponseDto(BaseModel):
     type: ScriptType
 
 
+class DeleteWalletResponseDto(BaseModel):
+    message: str
+
+
 @wallet_api.route("/", methods=["POST"])
 @inject
 def create_wallet(
@@ -51,6 +55,9 @@ def create_wallet(
         global_data_store.set_global_network(data.network)
         global_data_store.set_global_electrum_url(data.electrumUrl)
 
+        wallet_service = WalletService()
+        global_data_store.set_global_wallet(wallet_service.wallet)
+
         return CreateWalletResponseDto(
             message="wallet created successfully",
             descriptor=data.descriptor,
@@ -60,6 +67,27 @@ def create_wallet(
 
     except ValidationError as e:
         return {"message": "Error creating wallet", "errors": e.errors()}, 400
+
+
+@wallet_api.route("/remove", methods=["DELETE"])
+@inject
+def delete_wallet(
+    global_data_store: GlobalDataStore = Provide[
+        GlobalStoreContainer.global_data_store
+    ],
+):
+    """
+    Remove the current wallet data from the global data store.
+    """
+    try:
+        global_data_store.remove_global_wallet_and_details()
+
+        return DeleteWalletResponseDto(
+            message="wallet successfully deleted",
+        ).model_dump()
+
+    except ValidationError as e:
+        return {"message": "Error deleting wallet", "errors": e.errors()}, 400
 
 
 @wallet_api.route("/type", methods=["GET"])

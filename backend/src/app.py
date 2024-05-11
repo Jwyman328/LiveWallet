@@ -33,7 +33,7 @@ class AppCreator:
             CORS(
                 cls.app,
                 resources={r"/*": {"origins": "*"}},
-                methods=["GET", "POST"],
+                methods=["GET", "POST", "DELETE"],
                 allow_headers=["Content-Type"],
             )
 
@@ -78,4 +78,4 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="127.0.0.1", port=5011)
+    app.run(host="127.0.0.1", port=5011, debug=True)

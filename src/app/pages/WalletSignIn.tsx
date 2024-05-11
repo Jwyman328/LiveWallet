@@ -90,6 +90,8 @@ export const WalletSignIn = () => {
   const [selectedPublicServer, setSelectedPublicServer] = useState(
     publicElectrumOptions[0],
   );
+  const [displayInitiateWalletError, setDisplayInitateWalletError] =
+    useState(false);
 
   const [network, setNetwork] = useState<ComboboxItem>(networkOptions[0]);
 
@@ -104,6 +106,7 @@ export const WalletSignIn = () => {
   };
 
   const handleWalletError = () => {
+    setDisplayInitateWalletError(true);
     console.log('Error initiating wallet');
   };
 
@@ -205,15 +208,38 @@ export const WalletSignIn = () => {
     }
   };
   return isServerAvailableAndHealthy ? (
-    <div className="flex flex-row w-screen h-full">
-      <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center">
+    <div className="flex flex-row w-screen h-screen overflow-scroll">
+      <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">
+        {displayInitiateWalletError && (
+          <Notification
+            withCloseButton={true}
+            onClose={() => setDisplayInitateWalletError(false)}
+            className="border-red-500 border-2 top-2 right-1 self-end w-1/2 z-10"
+            style={{ position: 'absolute' }}
+            icon={xIcon}
+            color="red"
+            title="Error!"
+          >
+            Error initiating wallet
+          </Notification>
+        )}
         <h1
           className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
         >
           Setup wallet
         </h1>
 
-        <InputLabel className={`mb-2 ${labelWidth}`}>Script type</InputLabel>
+        <InputLabel className={`mt-0 mb-2 ${labelWidth}`}>Network</InputLabel>
+        <Select
+          className={formItemWidth}
+          data={networkOptions}
+          value={network ? network.value : null}
+          onChange={(_value, option) => setNetwork(option)}
+        />
+
+        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+          Script type
+        </InputLabel>
         <Select
           className={`mb-4 ${formItemWidth}`}
           data={scriptTypeOptions}
@@ -240,7 +266,7 @@ export const WalletSignIn = () => {
           onInput={handleDerivationPathChange}
         />
 
-        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>xpub</InputLabel>
+        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>xpub</InputLabel>
         <Textarea
           className={`${formItemWidth}`}
           styles={{ input: { minHeight: '6.3rem' } }}
@@ -249,25 +275,7 @@ export const WalletSignIn = () => {
           value={xpub}
         />
 
-        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
-          Descriptor (view only)
-        </InputLabel>
-        <Textarea
-          disabled={true}
-          className={`${formItemWidth}`}
-          styles={{ input: { minHeight: '6.3rem' } }}
-          onInput={handleInput}
-          value={generateDescriptor()}
-        />
-        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>Network</InputLabel>
-        <Select
-          className={formItemWidth}
-          data={networkOptions}
-          value={network ? network.value : null}
-          onChange={(_value, option) => setNetwork(option)}
-        />
-
-        <InputLabel className={`mt-6 mb-2 ${labelWidth}`}>
+        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
           Server type
         </InputLabel>
         <Stack className={labelWidth}>
@@ -291,7 +299,7 @@ export const WalletSignIn = () => {
           />
         </Stack>
 
-        <InputLabel className={`mt-6 mb-0 ${labelWidth}`}>
+        <InputLabel className={`mt-4 mb-0 ${labelWidth}`}>
           Electrum url
         </InputLabel>
         <Tabs
@@ -332,12 +340,16 @@ export const WalletSignIn = () => {
             type="button"
             onClick={signIn}
           >
-            Setup
+            {initiateWalletRequest.isLoading ? (
+              <Loader size={20} color="white" />
+            ) : (
+              'Setup'
+            )}
           </Button>
         </div>
       </div>
 
-      <img src={vaultImage} className=" w-1/2 min-h-full" />
+      <img src={vaultImage} className=" w-1/2 min-h-screen" />
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
     <div className="flex flex-row justify-center items-center h-full w-screen">

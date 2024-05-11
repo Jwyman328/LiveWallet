@@ -99,8 +99,10 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1224,
+    height: 900,
+    minHeight: 874,
+    minWidth: 824,
     icon: getAssetPath('icon.png'),
     title: 'UXTO Fee Estimator',
     webPreferences: {
@@ -110,6 +112,7 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 

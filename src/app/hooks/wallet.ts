@@ -31,3 +31,21 @@ export function useGetWalletType() {
     ApiClient.getWalletType(),
   );
 }
+
+export function useDeleteCurrentWallet(
+  onSuccess?: () => void,
+  onError?: () => void,
+) {
+  return useMutation(() => ApiClient.deleteCurrentWallet(), {
+    onSuccess: () => {
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: () => {
+      if (onError) {
+        onError();
+      }
+    },
+  });
+}
