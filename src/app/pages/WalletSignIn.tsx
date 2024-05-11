@@ -150,8 +150,6 @@ export const WalletSignIn = () => {
     setPrivateElectrumUrl(e.target.value);
   };
 
-  const isLoginEnabled = !!descriptor && !!network.value && !!electrumUrl;
-
   const formItemWidth = 'w-80';
   const labelWidth = 'w-80';
 
@@ -207,6 +205,15 @@ export const WalletSignIn = () => {
       console.log('Error', e);
     }
   };
+
+  const isLoginEnabled =
+    !!xpub &&
+    !!generateDescriptor() &&
+    !!scriptType?.value &&
+    !!masterFingerPrint &&
+    !!derivationPath &&
+    !!network.value &&
+    !!electrumUrl;
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">
