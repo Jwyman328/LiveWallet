@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 from src.services.global_data_store.global_data_store import GlobalDataStore
 from bdkpython import bdk
 from src.types.wallet import WalletDetails
@@ -39,3 +40,12 @@ class TestGlobalDataStoreService(TestCase):
         instance.set_global_electrum_url("new local host url")
 
         assert instance.wallet_details.electrum_url == "new local host url"
+
+    def test_set_global_wallet(self):
+        instance = GlobalDataStore(
+            "mock_descriptor", bdk.Network.REGTEST, "mock_url", None
+        )
+        mock_wallet = MagicMock(bdk.Wallet)
+        instance.set_global_wallet(mock_wallet)
+
+        assert instance.wallet == mock_wallet
