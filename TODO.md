@@ -14,7 +14,6 @@
 
 # TODOs backend
 - add tests for 
-  - setting wallet when GlobalDataStore initiated, 
   - that set_global_wallet when connect_wallet is run and returning the current data store wallet if there is one when connect_wallet is run. 
   - /remove endpoint removes current wallet.
 - make testbridge like endpoint to generate different wallets and get their xpubs to test with different wallet types.

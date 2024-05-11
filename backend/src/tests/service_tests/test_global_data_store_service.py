@@ -7,11 +7,15 @@ from src.types.wallet import WalletDetails
 
 class TestGlobalDataStoreService(TestCase):
     def test_global_data_store_initiate(self):
+        mock_wallet = MagicMock(bdk.Wallet)
         instance = GlobalDataStore(
-            "mock_descriptor", bdk.Network.REGTEST, "mock_url")
+            "mock_descriptor", bdk.Network.REGTEST, "mock_url", mock_wallet
+        )
 
         expected_wallet_details = WalletDetails(
-            "mock_descriptor", bdk.Network.REGTEST, "mock_url"
+            "mock_descriptor",
+            bdk.Network.REGTEST,
+            "mock_url",
         )
 
         assert instance.wallet_details.network == expected_wallet_details.network
@@ -19,6 +23,7 @@ class TestGlobalDataStoreService(TestCase):
         assert (
             instance.wallet_details.electrum_url == expected_wallet_details.electrum_url
         )
+        assert instance.wallet == mock_wallet
 
     def test_set_global_descriptor(self):
         instance = GlobalDataStore(
