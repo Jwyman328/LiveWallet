@@ -49,3 +49,15 @@ class TestGlobalDataStoreService(TestCase):
         instance.set_global_wallet(mock_wallet)
 
         assert instance.wallet == mock_wallet
+
+    def test_remove_global_wallet_and_details(self):
+        mock_wallet = MagicMock(bdk.Wallet)
+        instance = GlobalDataStore(
+            "mock_descriptor", bdk.Network.REGTEST, "mock_url", mock_wallet
+        )
+        instance.remove_global_wallet_and_details()
+
+        assert instance.wallet == None
+        assert instance.wallet_details.descriptor == None
+        assert instance.wallet_details.electrum_url == None
+        assert instance.wallet_details.network == None
