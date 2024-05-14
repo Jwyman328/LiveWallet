@@ -50,8 +50,9 @@ class WalletService:
     def __init__(
         self,
     ):
-        self.wallet = self.connect_wallet()
+        self.wallet = WalletService.connect_wallet()
 
+    @classmethod
     @inject
     def connect_wallet(
         cls,
@@ -74,6 +75,7 @@ class WalletService:
         wallet_descriptor = bdk.Descriptor(descriptor, network)
 
         db_config = bdk.DatabaseConfig.MEMORY()
+
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
             bdk.ElectrumConfig(electrum_url, None, 2, 30, 100, True)
         )
@@ -159,7 +161,8 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
+            built_transaction: TxBuilderResultType = tx_builder.finish(
+                self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

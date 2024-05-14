@@ -1,6 +1,7 @@
 from unittest.case import TestCase
 import os
 from unittest.mock import MagicMock, patch, Mock
+from src.containers.global_data_store_container import GlobalStoreContainer
 from src.services import WalletService
 from src.services.wallet.wallet import (
     GetFeeEstimateForUtxoResponseType,
@@ -40,6 +41,95 @@ class TestWalletService(TestCase):
             WalletService, "connect_wallet", return_value=self.bdk_wallet_mock
         ):
             self.wallet_service = WalletService()
+
+    def test_connect_wallet(self):
+        descriptor_mock = MagicMock(spec=bdk.Descriptor)
+
+        memory_mock = MagicMock()
+        block_chain_config_mock = MagicMock(spec=bdk.BlockchainConfig)
+        electrum_config_mock = MagicMock(spec=bdk.ElectrumConfig)
+        block_chain_mock = MagicMock(spec=bdk.Blockchain)
+        wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
+        wallet_sync_mock = MagicMock()
+        wallet_mock.sync = wallet_sync_mock
+        global_data_store_mock = MagicMock()
+        wallet_details_mock = MagicMock()
+        wallet_details_mock.descriptor = "mock_descriptor"
+        wallet_details_mock.network = "mock_network"
+        wallet_details_mock.electrum_url = "mock_url"
+        global_data_store_mock.wallet_details = wallet_details_mock
+        global_data_store_mock.wallet = None
+
+        with (
+            patch.object(
+                bdk, "Descriptor", return_value=descriptor_mock
+            ) as descriptor_patch,
+            patch.object(
+                bdk.DatabaseConfig, "MEMORY", return_value=memory_mock
+            ) as database_config_memory_patch,
+            patch.object(
+                bdk.BlockchainConfig, "ELECTRUM", return_value=block_chain_config_mock
+            ) as block_chain_config_electrum_mock,
+            patch.object(
+                bdk, "ElectrumConfig", return_value=electrum_config_mock
+            ) as electrum_config_patch,
+            patch.object(
+                bdk, "Blockchain", return_value=block_chain_mock
+            ) as blockchain_patch,
+            patch.object(bdk, "Wallet", return_value=wallet_mock) as wallet_patch,
+        ):
+            container = GlobalStoreContainer()
+            container.global_data_store.override(global_data_store_mock)
+            response = WalletService.connect_wallet()
+
+            descriptor_patch.assert_called_with(
+                wallet_details_mock.descriptor, wallet_details_mock.network
+            )
+
+            database_config_memory_patch.assert_called()
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
+            electrum_config_patch.assert_called_with(
+                wallet_details_mock.electrum_url, None, 2, 30, 100, True
+            )
+
+            blockchain_patch.assert_called_with(block_chain_config_mock)
+            wallet_patch.assert_called_with(
+                descriptor=descriptor_mock,
+                change_descriptor=None,
+                network=wallet_details_mock.network,
+                database_config=memory_mock,
+            )
+
+            assert response == wallet_mock
+            wallet_sync_mock.assert_called_with(block_chain_mock, None)
+            global_data_store_mock.set_global_wallet.assert_called_with(
+                wallet_mock)
+
+    def test_connect_wallet_with_existing_wallet_in_global_store_returns_existing_wallet(
+        self,
+    ):
+        wallet_mock = MagicMock()
+        wallet_sync_mock = MagicMock()
+        wallet_mock.sync = wallet_sync_mock
+        global_data_store_mock = MagicMock()
+        wallet_details_mock = MagicMock()
+        wallet_details_mock.descriptor = "mock_descriptor"
+        wallet_details_mock.network = "mock_network"
+        wallet_details_mock.electrum_url = "mock_url"
+        global_data_store_mock.wallet_details = wallet_details_mock
+        global_data_store_mock.wallet = wallet_mock
+
+        with (
+            patch.object(bdk, "Wallet", return_value=wallet_mock) as bdk_wallet_patch,
+        ):
+            container = GlobalStoreContainer()
+            container.global_data_store.override(global_data_store_mock)
+            response = WalletService.connect_wallet()
+
+            assert response == wallet_mock
+            bdk_wallet_patch.assert_not_called()
+            wallet_sync_mock.assert_not_called()
 
     def test_get_all_utxos(self):
         utxos = self.wallet_service.get_all_utxos()
@@ -131,8 +221,10 @@ class TestWalletService(TestCase):
 
             assert fee_estimate_response.status == "success"
             fee: int = cast(int, transaction_details_mock.fee)
-            expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
-            assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
+            expected_fee_percent = (
+                fee / (transaction_details_mock.sent + fee)) * 100
+            assert fee_estimate_response.data == FeeDetails(
+                expected_fee_percent, fee)
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
         build_transaction_error_response = BuildTransactionResponseType(
@@ -151,7 +243,8 @@ class TestWalletService(TestCase):
             assert get_fee_estimate_response.data == None
 
     def test_get_fee_estimate_for_utxo_with_build_tx_error(self):
-        build_transaction_error_response = BuildTransactionResponseType("error", None)
+        build_transaction_error_response = BuildTransactionResponseType(
+            "error", None)
         with patch.object(
             WalletService,
             "build_transaction",
@@ -182,13 +275,16 @@ class TestWalletService(TestCase):
             status="success", data=FeeDetails(0.1, 100)
         )
 
-        with patch.object(
-            WalletService, "get_utxos_info", return_value=mock_utxos
-        ) as mock_get_utxos_info, patch.object(
-            WalletService,
-            "get_fee_estimate_for_utxos",
-            return_value=mock_fee_estimates_response,
-        ) as mock_get_fee_estimate_for_utxos:
+        with (
+            patch.object(
+                WalletService, "get_utxos_info", return_value=mock_utxos
+            ) as mock_get_utxos_info,
+            patch.object(
+                WalletService,
+                "get_fee_estimate_for_utxos",
+                return_value=mock_fee_estimates_response,
+            ) as mock_get_fee_estimate_for_utxos,
+        ):
             fee_estimate_response = (
                 self.wallet_service.get_fee_estimate_for_utxos_from_request(
                     mock_get_utxos_request_dto
@@ -203,7 +299,8 @@ class TestWalletService(TestCase):
             )
 
             mock_get_fee_estimate_for_utxos.assert_called_with(
-                mock_utxos, ScriptType.P2PKH, int(mock_get_utxos_request_dto.fee_rate)
+                mock_utxos, ScriptType.P2PKH, int(
+                    mock_get_utxos_request_dto.fee_rate)
             )
             assert fee_estimate_response == mock_fee_estimates_response
 

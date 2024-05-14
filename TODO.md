@@ -13,8 +13,6 @@
 
 
 # TODOs backend
-- add tests for 
-  - that set_global_wallet when connect_wallet is run and returning the current data store wallet if there is one when connect_wallet is run. Actually connect_wallet isn't being tested at all, so will need a test for it 
 - make testbridge like endpoint to generate different wallets and get their xpubs to test with different wallet types.
 - don't use the default dev server, use something like gunicorn.
 - test using various descriptors
