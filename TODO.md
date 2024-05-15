@@ -1,5 +1,4 @@
 # TODO frontend
-- fix full height styles on login screen 
 - better errors when I can't connect to the electrum servers (public or private)
   - use mantine notifications for when there are network failures
 - improve the readme.md
@@ -7,7 +6,6 @@
   - have it line up with output box size?
 - Componentize a bit more 
 - remove the default descriptor
-- change the login page to not just be a textbox descriptor but to have it more like sparrow where you put in the components that build up the descriptor
 - fix the styles for batch button / fee display, they are slightly off.
 - do I need to wait at all in main.ts for the child process flask?
 

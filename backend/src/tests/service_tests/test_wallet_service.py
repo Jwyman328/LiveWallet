@@ -131,6 +131,75 @@ class TestWalletService(TestCase):
             bdk_wallet_patch.assert_not_called()
             wallet_sync_mock.assert_not_called()
 
+    def test_create_spenable_wallet_creates_P2PKH_descriptor(self):
+        network = bdk.Network.TESTNET
+        script_type = ScriptType.P2PKH
+        mock_mnemonic_value = bdk.Mnemonic.from_string(
+            "fever win palace mountain sunny conduct boat now modify animal birth train"
+        )
+
+        with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
+            mnemonic_mock.return_value = mock_mnemonic_value
+            descriptor = WalletService.create_spendable_wallet(
+                network,
+                script_type,
+            )
+            assert (
+                descriptor.as_string()
+                == "pkh([5d86ed00/44'/1'/0']tpubDDFWcnN4v2p5ydREdKm7f8FdGZWtAqBBGt95UYW7eAP7YNZPzTgam2kN6TY6hfsjBmvNtDiY8QUxSwevEFC7rZCXqKVKuQjNWRD5tasvXxR/0/*)#vrzscgn4"
+            )
+
+    def test_create_spenable_wallet_creates_P2WSH_descriptor(self):
+        network = bdk.Network.TESTNET
+        script_type = ScriptType.P2WSH
+        mock_mnemonic_value = bdk.Mnemonic.from_string(
+            "fever win palace mountain sunny conduct boat now modify animal birth train"
+        )
+
+        with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
+            mnemonic_mock.return_value = mock_mnemonic_value
+            descriptor = WalletService.create_spendable_wallet(
+                network,
+                script_type,
+            )
+            assert (
+                descriptor.as_string()
+                == "sh(wpkh([5d86ed00/49'/1'/0']tpubDDeYrnqbRjyvmeuQep4gdXhuXt1XCfTffct4XPgArNRSuqDnMn5QiW3Ky7E3E8o8GUhJqYWT11qeHwK95q7boKCzEhwLCbhA7XvHPqz7RP9/0/*))#zk8kr5gk"
+            )
+
+    def test_create_spenable_wallet_creates_P2WPKH_descriptor(self):
+        network = bdk.Network.TESTNET
+        script_type = ScriptType.P2WPKH
+        mock_mnemonic_value = bdk.Mnemonic.from_string(
+            "fever win palace mountain sunny conduct boat now modify animal birth train"
+        )
+
+        with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
+            mnemonic_mock.return_value = mock_mnemonic_value
+            descriptor = WalletService.create_spendable_wallet(
+                network,
+                script_type,
+            )
+            assert (
+                descriptor.as_string()
+                == "wpkh([5d86ed00/84'/1'/0']tpubDCL9DkbCYVfZAFtuMNWDnjLy72ZVGe8oDgBwTCVLKQAszo4g551f1Wy2trcxEiFcXWThriVkmF95WE67355UNrqjRb5N4XFzYUvX4pDe19g/0/*)#knjyf0jk"
+            )
+
+    def test_create_spenable_wallet_returns_none_for_invalid_script_type(self):
+        network = bdk.Network.TESTNET
+        script_type = "P2ME"
+        mock_mnemonic_value = bdk.Mnemonic.from_string(
+            "fever win palace mountain sunny conduct boat now modify animal birth train"
+        )
+
+        with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
+            mnemonic_mock.return_value = mock_mnemonic_value
+            descriptor = WalletService.create_spendable_wallet(
+                network,
+                script_type,
+            )
+            assert descriptor is None
+
     def test_get_all_utxos(self):
         utxos = self.wallet_service.get_all_utxos()
         list_unspent: MagicMock = self.bdk_wallet_mock.list_unspent

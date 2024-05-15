@@ -96,6 +96,50 @@ class WalletService:
 
         return wallet
 
+    @classmethod
+    def create_spendable_wallet(
+        cls,
+        network: bdk.Network,
+        script_type: ScriptType,
+    ) -> Optional[bdk.Descriptor]:
+        """Create a spendable wallet"""
+
+        twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
+
+        # xpriv
+        descriptor_secret_key = bdk.DescriptorSecretKey(
+            network, twelve_word_secret, "")
+
+        # Not sure what I want to do with the rest yet
+        # the goal is to get an entire descriptor right?
+        # what is the goal? to be able to easily test out WalletS
+        # I should also have a button to send btc to an address. but i will need to be able to get an address for a wallet. or maybe the button is generate wallet and then you pick how you want to fund it, how many txs and which size?
+
+        wallet_descriptor = None
+        if script_type == ScriptType.P2PKH:
+            # public key has pkh(
+            wallet_descriptor = bdk.Descriptor.new_bip44(
+                descriptor_secret_key, bdk.KeychainKind.EXTERNAL, network
+            )
+        elif script_type == ScriptType.P2WSH:
+            # wrapped segwit (sh(wpkh(
+            wallet_descriptor = bdk.Descriptor.new_bip49(
+                descriptor_secret_key, bdk.KeychainKind.EXTERNAL, network
+            )
+
+        elif script_type == ScriptType.P2WPKH:
+            # native segwit (P2WPKH) wpkh(
+            wallet_descriptor = bdk.Descriptor.new_bip84(
+                descriptor_secret_key, bdk.KeychainKind.EXTERNAL, network
+            )
+        else:
+            LOGGER.error("Invalid script type", script_type=script_type)
+
+        if wallet_descriptor is not None:
+            LOGGER.info(f"new wallet created: {wallet_descriptor.as_string()}")
+
+        return wallet_descriptor
+
     def get_script_type(
         self,
     ) -> ScriptType:
