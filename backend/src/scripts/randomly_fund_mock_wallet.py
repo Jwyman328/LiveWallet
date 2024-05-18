@@ -1,11 +1,5 @@
 import click
-import random
-import asyncio
-from src.testbridge.ngiri import fund_wallet
-
-
-async def gather_multiple_requests(requests):
-    return await asyncio.gather(*requests)
+from src.testbridge.ngiri import randomly_fund_mock_wallet
 
 
 @click.command()
@@ -29,24 +23,11 @@ async def gather_multiple_requests(requests):
     default=1,
     help="Number of transactions to create.",
 )
-def randomly_fund_mock_wallet(
+def randomly_fund_mock_wallet_through_script(
     address: str, amount_min: float, amount_max: float, transaction_count: int
 ):
-    click.echo(
-        f"Funding wallet address: {address},with{transaction_count} randomly generated transactions between min amount: {amount_min}, max amount: {amount_max}, "
-    )
-    requests = []
-    for _ in range(transaction_count):
-        random_number = round(random.uniform(amount_min, amount_max), 8)
-
-        click.echo(f"Creating request for {random_number} btc")
-        requests.append(fund_wallet(address, random_number))
-
-    responses = asyncio.run(gather_multiple_requests(requests))
-
-    for response in responses:
-        click.echo(f"Fund wallet response: {response}")
+    randomly_fund_mock_wallet(address, amount_min, amount_max, transaction_count)
 
 
 if __name__ == "__main__":
-    randomly_fund_mock_wallet()
+    randomly_fund_mock_wallet_through_script()
