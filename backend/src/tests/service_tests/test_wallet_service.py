@@ -87,7 +87,8 @@ class TestWalletService(TestCase):
             )
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -102,7 +103,8 @@ class TestWalletService(TestCase):
 
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
-            global_data_store_mock.set_global_wallet.assert_called_with(wallet_mock)
+            global_data_store_mock.set_global_wallet.assert_called_with(
+                wallet_mock)
 
     def test_connect_wallet_with_existing_wallet_in_global_store_returns_existing_wallet(
         self,
@@ -288,8 +290,10 @@ class TestWalletService(TestCase):
 
             assert fee_estimate_response.status == "success"
             fee: int = cast(int, transaction_details_mock.fee)
-            expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
-            assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
+            expected_fee_percent = (
+                fee / (transaction_details_mock.sent + fee)) * 100
+            assert fee_estimate_response.data == FeeDetails(
+                expected_fee_percent, fee)
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
         build_transaction_error_response = BuildTransactionResponseType(
@@ -308,7 +312,8 @@ class TestWalletService(TestCase):
             assert get_fee_estimate_response.data == None
 
     def test_get_fee_estimate_for_utxo_with_build_tx_error(self):
-        build_transaction_error_response = BuildTransactionResponseType("error", None)
+        build_transaction_error_response = BuildTransactionResponseType(
+            "error", None)
         with patch.object(
             WalletService,
             "build_transaction",
@@ -363,7 +368,8 @@ class TestWalletService(TestCase):
             )
 
             mock_get_fee_estimate_for_utxos.assert_called_with(
-                mock_utxos, ScriptType.P2PKH, int(mock_get_utxos_request_dto.fee_rate)
+                mock_utxos, ScriptType.P2PKH, int(
+                    mock_get_utxos_request_dto.fee_rate)
             )
             assert fee_estimate_response == mock_fee_estimates_response
 
@@ -417,3 +423,51 @@ class TestWalletService(TestCase):
         script_type = self.wallet_service.get_script_type()
 
         assert script_type == ScriptType.P2PKH
+
+    def test_create_spendable_wallet(self):
+        descriptor_mock = MagicMock(spec=bdk.Descriptor)
+        memory_mock = MagicMock()
+        block_chain_config_mock = MagicMock(spec=bdk.BlockchainConfig)
+        electrum_config_mock = MagicMock(spec=bdk.ElectrumConfig)
+        block_chain_mock = MagicMock(spec=bdk.Blockchain)
+        wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
+        wallet_sync_mock = MagicMock()
+        wallet_mock.sync = wallet_sync_mock
+        electrum_url_mock = "mock_electrum_url"
+
+        with (
+            patch.object(
+                bdk.DatabaseConfig, "MEMORY", return_value=memory_mock
+            ) as database_config_memory_patch,
+            patch.object(
+                bdk.BlockchainConfig, "ELECTRUM", return_value=block_chain_config_mock
+            ) as block_chain_config_electrum_mock,
+            patch.object(
+                bdk, "ElectrumConfig", return_value=electrum_config_mock
+            ) as electrum_config_patch,
+            patch.object(
+                bdk, "Blockchain", return_value=block_chain_mock
+            ) as blockchain_patch,
+            patch.object(bdk, "Wallet", return_value=wallet_mock) as wallet_patch,
+        ):
+            response = WalletService.create_spendable_wallet(
+                bdk.Network.TESTNET, descriptor_mock, electrum_url_mock
+            )
+
+            database_config_memory_patch.assert_called()
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
+            electrum_config_patch.assert_called_with(
+                electrum_url_mock, None, 2, 30, 100, True
+            )
+
+            blockchain_patch.assert_called_with(block_chain_config_mock)
+            wallet_patch.assert_called_with(
+                descriptor=descriptor_mock,
+                change_descriptor=None,
+                network=bdk.Network.TESTNET,
+                database_config=memory_mock,
+            )
+
+            assert response == wallet_mock
+            wallet_sync_mock.assert_called_with(block_chain_mock, None)
