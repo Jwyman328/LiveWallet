@@ -87,8 +87,7 @@ class TestWalletService(TestCase):
             )
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(
-                electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -103,8 +102,7 @@ class TestWalletService(TestCase):
 
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
-            global_data_store_mock.set_global_wallet.assert_called_with(
-                wallet_mock)
+            global_data_store_mock.set_global_wallet.assert_called_with(wallet_mock)
 
     def test_connect_wallet_with_existing_wallet_in_global_store_returns_existing_wallet(
         self,
@@ -140,7 +138,7 @@ class TestWalletService(TestCase):
 
         with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
             mnemonic_mock.return_value = mock_mnemonic_value
-            descriptor = WalletService.create_spendable_wallet(
+            descriptor = WalletService.create_spendable_descriptor(
                 network,
                 script_type,
             )
@@ -158,7 +156,7 @@ class TestWalletService(TestCase):
 
         with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
             mnemonic_mock.return_value = mock_mnemonic_value
-            descriptor = WalletService.create_spendable_wallet(
+            descriptor = WalletService.create_spendable_descriptor(
                 network,
                 script_type,
             )
@@ -176,7 +174,7 @@ class TestWalletService(TestCase):
 
         with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
             mnemonic_mock.return_value = mock_mnemonic_value
-            descriptor = WalletService.create_spendable_wallet(
+            descriptor = WalletService.create_spendable_descriptor(
                 network,
                 script_type,
             )
@@ -194,7 +192,7 @@ class TestWalletService(TestCase):
 
         with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
             mnemonic_mock.return_value = mock_mnemonic_value
-            descriptor = WalletService.create_spendable_wallet(
+            descriptor = WalletService.create_spendable_descriptor(
                 network,
                 script_type,
             )
@@ -290,10 +288,8 @@ class TestWalletService(TestCase):
 
             assert fee_estimate_response.status == "success"
             fee: int = cast(int, transaction_details_mock.fee)
-            expected_fee_percent = (
-                fee / (transaction_details_mock.sent + fee)) * 100
-            assert fee_estimate_response.data == FeeDetails(
-                expected_fee_percent, fee)
+            expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
+            assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
         build_transaction_error_response = BuildTransactionResponseType(
@@ -312,8 +308,7 @@ class TestWalletService(TestCase):
             assert get_fee_estimate_response.data == None
 
     def test_get_fee_estimate_for_utxo_with_build_tx_error(self):
-        build_transaction_error_response = BuildTransactionResponseType(
-            "error", None)
+        build_transaction_error_response = BuildTransactionResponseType("error", None)
         with patch.object(
             WalletService,
             "build_transaction",
@@ -368,8 +363,7 @@ class TestWalletService(TestCase):
             )
 
             mock_get_fee_estimate_for_utxos.assert_called_with(
-                mock_utxos, ScriptType.P2PKH, int(
-                    mock_get_utxos_request_dto.fee_rate)
+                mock_utxos, ScriptType.P2PKH, int(mock_get_utxos_request_dto.fee_rate)
             )
             assert fee_estimate_response == mock_fee_estimates_response
 

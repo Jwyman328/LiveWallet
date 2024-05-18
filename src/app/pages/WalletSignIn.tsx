@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
-import { Loader, Notification } from '@mantine/core';
+import { Loader, NativeSelect, Notification } from '@mantine/core';
 
+import { networkOptions, scriptTypeOptions } from '../components/formOptions';
 import vaultImage from '../images/vault.jpeg';
 import {
   ComboboxItem,
@@ -19,7 +20,7 @@ import {
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { IconX } from '@tabler/icons-react';
-import { ScriptTypes, scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 
 type PublicElectrumUrl = {
   name: string;
@@ -28,6 +29,7 @@ type PublicElectrumUrl = {
 const xIcon = <IconX style={{ width: '20rem', height: '20rem' }} />;
 
 export const WalletSignIn = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
   const serverHealthStatusQuery = useGetServerHealthStatus();
   const isServerAvailableAndHealthy =
@@ -36,22 +38,8 @@ export const WalletSignIn = () => {
     !serverHealthStatusQuery.isLoading;
 
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
-  const [activeTab, setActiveTab] = useState<string | null>('public');
-  const [isUsingPublicServer, setIsUsingPublicServer] = useState(true);
-
-  const scriptTypeOptions = [
-    { value: ScriptTypes.P2WPKH, label: 'Native Segwit (P2WPKH)' },
-    { value: ScriptTypes.P2PKH, label: 'Legacy (P2PKH)' },
-    { value: ScriptTypes.P2SHP2WPKH, label: 'Nested Segwit (P2SH-P2WPKH)' },
-    { value: ScriptTypes.P2TR, label: 'Taproot (P2TR)' },
-  ];
-
-  const networkOptions = [
-    { value: Network.TESTNET, label: Network.TESTNET },
-    // TODO implement regtest { value: Network.REGTEST, label: Network.REGTEST },
-    { value: Network.BITCOIN, label: Network.BITCOIN },
-    // TODO implement signet { value: Network.SIGNET, label: Network.SIGNET },
-  ];
+  const [activeTab, setActiveTab] = useState<string | null>('private');
+  const [isUsingPublicServer, setIsUsingPublicServer] = useState(false);
 
   // Testnet electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers_testnet.json
   // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
@@ -59,6 +47,7 @@ export const WalletSignIn = () => {
     {
       name: 'electrum.blockstream.info',
       ports: {
+        [Network.REGTEST]: 60001,
         [Network.TESTNET]: 60001,
         [Network.BITCOIN]: 50001,
       },
@@ -66,6 +55,7 @@ export const WalletSignIn = () => {
     {
       name: 'bitcoin.aranguren.org',
       ports: {
+        [Network.REGTEST]: 51001,
         [Network.TESTNET]: 51001,
         [Network.BITCOIN]: 50001,
       },
@@ -73,6 +63,7 @@ export const WalletSignIn = () => {
     {
       name: 'blockstream.info',
       ports: {
+        [Network.REGTEST]: 143,
         [Network.TESTNET]: 143,
         [Network.BITCOIN]: 110,
       },
@@ -90,11 +81,17 @@ export const WalletSignIn = () => {
   const [displayInitiateWalletError, setDisplayInitateWalletError] =
     useState(false);
 
-  const [network, setNetwork] = useState<ComboboxItem>(networkOptions[0]);
-
-  const [scriptType, setScriptType] = useState<ComboboxItem>(
-    scriptTypeOptions[0],
+  const defaultNetwork = networkOptions.find(
+    (option) => option.value === configs.defaultNetwork,
   );
+  // @ts-ignore
+  const [network, setNetwork] = useState<ComboboxItem>(defaultNetwork);
+
+  const defaultScriptType = scriptTypeOptions.find(
+    (option) => option.value === configs.defaultScriptType,
+  );
+  // @ts-ignore
+  const [scriptType, setScriptType] = useState<ComboboxItem>(defaultScriptType);
 
   const navigate = useNavigate();
 
@@ -175,9 +172,10 @@ export const WalletSignIn = () => {
     ] as any;
 
     const isNestedSegWit =
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WPKH;
+      scriptTypeDescription === scriptTypeToDescriptorMap.P2WSH;
     const closingParam = isNestedSegWit ? '))' : ')';
-    const pubType = network.value === Network.TESTNET ? 'tpub' : 'xpub';
+    const pubType =
+      network.value === Network.TESTNET || Network.REGTEST ? 'tpub' : 'xpub';
 
     const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationPath}]${pubType}${xpub}/0/*${closingParam}`;
     return computedDescriptor;
@@ -207,8 +205,15 @@ export const WalletSignIn = () => {
     !!derivationPath &&
     !!network.value &&
     !!electrumUrl;
+
+  const navigateToGenerateWallet = () => {
+    navigate('/generate-wallet');
+  };
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
+      {!isProduction ? (
+        <Button onClick={navigateToGenerateWallet}>Create dev mocks</Button>
+      ) : null}
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">
         {displayInitiateWalletError && (
           <Notification
@@ -231,22 +236,31 @@ export const WalletSignIn = () => {
 
         <InputLabel className={`mt-0 mb-2 ${labelWidth}`}>Network</InputLabel>
         <Select
+          allowDeselect={false}
           className={formItemWidth}
           data={networkOptions}
-          value={network ? network.value : null}
-          onChange={(_value, option) => setNetwork(option)}
+          value={network.value}
+          onChange={(_value, option) => {
+            if (option) {
+              setNetwork(option);
+            }
+          }}
         />
 
         <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
           Script type
         </InputLabel>
         <Select
+          allowDeselect={false}
           className={`mb-4 ${formItemWidth}`}
           data={scriptTypeOptions}
           value={scriptType ? scriptType.value : null}
-          onChange={(_value, option) => setScriptType(option)}
+          onChange={(_value, option) => {
+            if (option) {
+              setScriptType(option);
+            }
+          }}
         />
-
         <InputLabel className={`mb-2 ${labelWidth}`}>
           Master fingerprint
         </InputLabel>
@@ -314,10 +328,15 @@ export const WalletSignIn = () => {
 
           <Tabs.Panel value="public">
             <Select
+              allowDeselect={false}
               disabled={!isUsingPublicServer}
               data={publicElectrumOptions}
               value={selectedPublicServer ? selectedPublicServer.value : null}
-              onChange={(_value, option) => setSelectedPublicServer(option)}
+              onChange={(_value, option) => {
+                if (option) {
+                  setSelectedPublicServer(option);
+                }
+              }}
               className={formItemWidth}
             />
           </Tabs.Panel>

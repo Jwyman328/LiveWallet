@@ -8,6 +8,7 @@ import { createTheme, MantineProvider } from '@mantine/core';
 import { WalletSignIn } from '../app/pages/WalletSignIn';
 import Home from '../app/pages/Home';
 import { QueryClient, QueryClientProvider } from 'react-query';
+import { GenerateWallet } from '../app/pages/GenerateWallet';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<WalletSignIn />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/generate-wallet" element={<GenerateWallet />} />
           </Routes>
         </Router>
       </QueryClientProvider>

@@ -11,9 +11,10 @@
 
 
 # TODOs backend
-- make testbridge like endpoint to generate different wallets and get their xpubs to test with different wallet types.
+- write tests for
+  - create_sendable_wallet controller
+  -currently funding bitcoin (not testnet) wallets don't work. cant do p2tr wallets.
 - don't use the default dev server, use something like gunicorn.
-- test using various descriptors
 - can remove the pct_fee_rate value being returned since I am not using it anymore.
 - add mypy
 - style the frontend. -x

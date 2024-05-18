@@ -1,3 +1,4 @@
+from bdkpython import bdk
 from flask import Blueprint, request
 
 from src.services import GlobalDataStore
@@ -5,6 +6,7 @@ from dependency_injector.wiring import inject, Provide
 from src.containers.global_data_store_container import GlobalStoreContainer
 import structlog
 
+from src.testbridge.ngiri import randomly_fund_mock_wallet
 from src.types import ScriptType
 from src.services import WalletService
 from src.containers.service_container import ServiceContainer
@@ -36,6 +38,20 @@ class GetWalletTypeResponseDto(BaseModel):
 
 class DeleteWalletResponseDto(BaseModel):
     message: str
+
+
+class CreateSpendableWalletRequestDto(BaseModel):
+    network: str
+    type: ScriptType
+    utxoCount: str
+    minUtxoAmount: str
+    maxUtxoAmount: str
+
+
+class CreateSpendableWalletResponseDto(BaseModel):
+    message: str
+    descriptor: str
+    network: str
 
 
 @wallet_api.route("/", methods=["POST"])
@@ -108,3 +124,42 @@ def get_wallet_type(
 
     except ValidationError as e:
         return {"message": "Error getting wallet type", "errors": e.errors()}, 400
+
+
+@wallet_api.route("/spendable", methods=["POST"])
+def create_spendable_wallet():
+    """
+    Create a new wallet with spendable UTXOs.
+    """
+    try:
+        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
+
+        bdk_network: bdk.Network = bdk.Network.__members__[data.network]
+        wallet_descriptor = WalletService.create_spendable_descriptor(
+            bdk_network, data.type
+        )
+
+        if wallet_descriptor is None:
+            return {"message": "Error creating wallet"}, 400
+
+        wallet = WalletService.create_spendable_wallet(bdk_network, wallet_descriptor)
+        # fund wallet
+        try:
+            wallet_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())
+            randomly_fund_mock_wallet(
+                wallet_address.address.as_string(),
+                float(data.minUtxoAmount),
+                float(data.maxUtxoAmount),
+                int(data.utxoCount),
+            )
+        except Exception:
+            return {"message": "Error funding wallet"}, 400
+
+        return CreateSpendableWalletResponseDto(
+            message="wallet created successfully",
+            descriptor=wallet_descriptor.as_string(),
+            network=data.network,
+        ).model_dump()
+
+    except ValidationError as e:
+        return {"message": "Error creating wallet", "errors": e.errors()}, 400

@@ -1,3 +1,6 @@
+import { Network } from './types/network';
+import { ScriptTypes } from './types/scriptTypes';
+
 const isProduction = process.env.NODE_ENV === 'production';
 export const configs = {
   defaultDescriptor: isProduction
@@ -8,6 +11,10 @@ export const configs = {
   defaultXpub: isProduction
     ? ''
     : 'DD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
-  defaultElectrumServerUrl: isProduction ? '' : '127.0.0.1:50000',
+  defaultElectrumServerUrl: isProduction
+    ? '127.0.0.1:50000'
+    : '127.0.0.1:50000',
   backendServerBaseUrl: 'http://localhost:5011',
+  defaultNetwork: Network.REGTEST,
+  defaultScriptType: ScriptTypes.P2WPKH,
 };

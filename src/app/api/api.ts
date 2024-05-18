@@ -75,6 +75,23 @@ export class ApiClient {
     const data = await response.json();
     return data;
   }
+
+  static async createMockWallet(
+    network: Network,
+    type: WalletTypes,
+    utxoCount: string,
+    minUtxoAmount: string,
+    maxUtxoAmount: string,
+  ) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/wallet/spendable`,
+      'POST',
+      { type, network, utxoCount, minUtxoAmount, maxUtxoAmount },
+    );
+
+    const data = await response.json();
+    return data;
+  }
   static async getWalletType() {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/wallet/type`,

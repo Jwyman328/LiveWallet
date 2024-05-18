@@ -100,6 +100,33 @@ class WalletService:
     def create_spendable_wallet(
         cls,
         network: bdk.Network,
+        wallet_descriptor: bdk.Descriptor,
+        # TODO get this url from a config file
+        electrum_url="127.0.0.1:50000",
+    ) -> bdk.Wallet:
+        db_config = bdk.DatabaseConfig.MEMORY()
+
+        blockchain_config = bdk.BlockchainConfig.ELECTRUM(
+            bdk.ElectrumConfig(electrum_url, None, 2, 30, 100, True)
+        )
+
+        blockchain = bdk.Blockchain(blockchain_config)
+
+        wallet = bdk.Wallet(
+            descriptor=wallet_descriptor,
+            change_descriptor=None,
+            network=network,
+            database_config=db_config,
+        )
+
+        wallet.sync(blockchain, None)
+
+        return wallet
+
+    @classmethod
+    def create_spendable_descriptor(
+        cls,
+        network: bdk.Network,
         script_type: ScriptType,
     ) -> Optional[bdk.Descriptor]:
         """Create a spendable wallet"""
@@ -107,13 +134,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
-
-        # Not sure what I want to do with the rest yet
-        # the goal is to get an entire descriptor right?
-        # what is the goal? to be able to easily test out WalletS
-        # I should also have a button to send btc to an address. but i will need to be able to get an address for a wallet. or maybe the button is generate wallet and then you pick how you want to fund it, how many txs and which size?
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -132,6 +153,14 @@ class WalletService:
             wallet_descriptor = bdk.Descriptor.new_bip84(
                 descriptor_secret_key, bdk.KeychainKind.EXTERNAL, network
             )
+
+        elif script_type == ScriptType.P2TR:
+            # https://docs.rs/bdk_wallet/latest/bdk_wallet/descriptor/template/struct.Bip86.html
+            # why is this not in python
+            LOGGER.error(
+                "Taproot currently not supported I guess", script_type=script_type
+            )
+            raise Exception("Taproot currently not supported")
         else:
             LOGGER.error("Invalid script type", script_type=script_type)
 
@@ -205,8 +234,7 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(
-                self.wallet)
+            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

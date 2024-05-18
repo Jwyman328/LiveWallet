@@ -9,3 +9,5 @@ class ScriptType(str, Enum):
     P2SH = "P2SH"
     P2WPKH = "P2WPKH"
     P2WSH = "P2WSH"
+    P2TR = "P2TR"
+    P2SHP2WPKH = "P2SHP2WPKH"
