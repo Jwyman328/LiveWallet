@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
-import { Loader, NativeSelect, Notification } from '@mantine/core';
+import { Loader, Notification } from '@mantine/core';
 
 import { networkOptions, scriptTypeOptions } from '../components/formOptions';
 import vaultImage from '../images/vault.jpeg';
@@ -19,14 +19,13 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { IconX } from '@tabler/icons-react';
 import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import { XIcon } from '../components/XIcon';
 
 type PublicElectrumUrl = {
   name: string;
   ports: Record<Network, number>;
 };
-const xIcon = <IconX style={{ width: '20rem', height: '20rem' }} />;
 
 export const WalletSignIn = () => {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -221,7 +220,7 @@ export const WalletSignIn = () => {
             onClose={() => setDisplayInitateWalletError(false)}
             className="border-red-500 border-2 top-2 right-1 self-end w-1/2 z-10"
             style={{ position: 'absolute' }}
-            icon={xIcon}
+            icon={XIcon}
             color="red"
             title="Error!"
           >

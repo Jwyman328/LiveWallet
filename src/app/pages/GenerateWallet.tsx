@@ -4,6 +4,8 @@ import {
   NumberInput,
   Select,
   InputLabel,
+  Notification,
+  Loader,
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { Network } from '../types/network';
@@ -18,6 +20,8 @@ import { useState } from 'react';
 import { useCreateMockWallet } from '../hooks/wallet';
 import { configs } from '../configs';
 import { networkOptions, scriptTypeOptions } from '../components/formOptions';
+import { XIcon } from '../components/XIcon';
+
 export const GenerateWallet = () => {
   const navigate = useNavigate();
   const backToSignIn = () => {
@@ -105,7 +109,9 @@ export const GenerateWallet = () => {
   const generateMockWalletMutation = useCreateMockWallet(
     network.value as Network,
     handleMockWalletCreationSuccess,
-    () => {},
+    () => {
+      setDisplayGenerateWalletError(true);
+    },
   );
   const onGenerateWallet = () => {
     generateMockWalletMutation.mutate({
@@ -115,12 +121,28 @@ export const GenerateWallet = () => {
       maxUtxoAmount: maxBtcAmount.toString(),
     });
   };
+
+  const [displayGenerateWalletError, setDisplayGenerateWalletError] =
+    useState(false);
   return (
     <div className="flex flex-col justify-center items-center">
       <Button className="ml-4 mt-4 self-start" onClick={backToSignIn}>
         Back
       </Button>
 
+      {displayGenerateWalletError && (
+        <Notification
+          withCloseButton={true}
+          onClose={() => setDisplayGenerateWalletError(false)}
+          className="border-red-500 border-2 top-2 right-1 self-end w-1/2 z-10"
+          style={{ position: 'absolute' }}
+          icon={XIcon}
+          color="red"
+          title="Error!"
+        >
+          Error generating wallet. Please try again.
+        </Notification>
+      )}
       <h1 className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}>
         Generate wallet
       </h1>
@@ -184,7 +206,11 @@ export const GenerateWallet = () => {
           disabled={!canGenerateWallet}
           onClick={onGenerateWallet}
         >
-          Generate Wallet
+          {generateMockWalletMutation.isLoading ? (
+            <Loader size={20} color="white" />
+          ) : (
+            'Generate Wallet'
+          )}
         </Button>
       </div>
     </div>
