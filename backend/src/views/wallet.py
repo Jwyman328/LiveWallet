@@ -132,7 +132,8 @@ def create_spendable_wallet():
     Create a new wallet with spendable UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(
+            request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
         wallet_descriptor = WalletService.create_spendable_descriptor(
@@ -142,7 +143,8 @@ def create_spendable_wallet():
         if wallet_descriptor is None:
             return {"message": "Error creating wallet"}, 400
 
-        wallet = WalletService.create_spendable_wallet(bdk_network, wallet_descriptor)
+        wallet = WalletService.create_spendable_wallet(
+            bdk_network, wallet_descriptor)
         # fund wallet
         try:
             wallet_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())
