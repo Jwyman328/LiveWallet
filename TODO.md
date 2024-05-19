@@ -1,4 +1,6 @@
 # TODO frontend
+- customize levels of concerns, right now it is hard coded
+- get initial loading spinner centered in the middle
 - better errors when I can't connect to the electrum servers (public or private)
   - use mantine notifications for when there are network failures
 - improve the readme.md
@@ -10,6 +12,7 @@
 
 
 # TODOs backend
+- use sqllite3 python instead of the local python dictionary for config values. I think this should work with multiple gunicorn workers.
 - currently funding bitcoin (not testnet/regtest) wallets don't work. cant do p2tr wallets.
 - don't use the default dev server, use something like gunicorn.
 - can remove the pct_fee_rate value being returned since I am not using it anymore.
