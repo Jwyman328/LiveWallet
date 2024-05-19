@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 from bdkpython import bdk
 
-
 from src.services import WalletService
 from src.app import AppCreator
 from src.services.global_data_store.global_data_store import GlobalDataStore
@@ -178,6 +177,7 @@ class TestWalletController(TestCase):
             patch(
                 "src.views.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
+            patch("src.views.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -239,59 +239,7 @@ class TestWalletController(TestCase):
             patch(
                 "src.views.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
-            patch.object(
-                WalletService,
-                "create_spendable_descriptor",
-                return_value=None,
-            ) as create_spendable_descriptor_mock,
-            patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
-            ) as create_spendable_wallet_mock,
-        ):
-            wallet_response = self.test_client.post(
-                "/wallet/spendable",
-                json={
-                    "network": "TESTNET",
-                    "type": "P2PK",
-                    "utxoCount": "4",
-                    "minUtxoAmount": "1",
-                    "maxUtxoAmount": "2",
-                },
-            )
-            create_spendable_descriptor_mock.assert_called_once_with(
-                bdk.Network.TESTNET, "P2PK"
-            )
-            create_spendable_wallet_mock.assert_not_called()
-            wallet_mock.get_address.assert_not_called()
-            randomly_fund_mock_wallet_mock.assert_not_called()
-            assert json.loads(wallet_response.data) == {
-                "message": "Error creating wallet",
-            }
-            assert wallet_response.status == "400 BAD REQUEST"
-
-    def test_spendable_descriptor_error(self):
-        self.mock_wallet_service = MagicMock(WalletService)
-
-        spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
-        self.mock_wallet_service.create_spendable_descriptor = MagicMock(
-            return_value=spendable_descriptor_mock
-        )
-        wallet_mock = MagicMock(bdk.Wallet)
-        get_address_mock = MagicMock()
-        address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
-        wallet_mock.get_address = address_mock
-        self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
-        )
-
-        with (
-            patch(
-                "src.views.wallet.randomly_fund_mock_wallet"
-            ) as randomly_fund_mock_wallet_mock,
+            patch("src.views.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -345,6 +293,7 @@ class TestWalletController(TestCase):
             patch(
                 "src.views.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
+            patch("src.views.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -402,6 +351,7 @@ class TestWalletController(TestCase):
             patch(
                 "src.views.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
+            patch("src.views.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",

@@ -1,5 +1,6 @@
 from bdkpython import bdk
 from flask import Blueprint, request
+from time import sleep
 
 from src.services import GlobalDataStore
 from dependency_injector.wiring import inject, Provide
@@ -154,6 +155,8 @@ def create_spendable_wallet():
                 float(data.maxUtxoAmount),
                 int(data.utxoCount),
             )
+            # need a second for the tx to be mined
+            sleep(2)
         except Exception:
             return {"message": "Error funding wallet"}, 400
 
