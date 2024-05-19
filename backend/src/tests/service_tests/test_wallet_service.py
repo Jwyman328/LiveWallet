@@ -185,6 +185,24 @@ class TestWalletService(TestCase):
                 == "wpkh([5d86ed00/84'/1'/0']tpubDCL9DkbCYVfZAFtuMNWDnjLy72ZVGe8oDgBwTCVLKQAszo4g551f1Wy2trcxEiFcXWThriVkmF95WE67355UNrqjRb5N4XFzYUvX4pDe19g/0/*)#knjyf0jk"
             )
 
+    def test_create_spenable_wallet_creates_P2TR_descriptor(self):
+        network = bdk.Network.TESTNET
+        script_type = ScriptType.P2TR
+        mock_mnemonic_value = bdk.Mnemonic.from_string(
+            "fever win palace mountain sunny conduct boat now modify animal birth train"
+        )
+
+        with patch("src.services.wallet.wallet.bdk.Mnemonic") as mnemonic_mock:
+            mnemonic_mock.return_value = mock_mnemonic_value
+            descriptor = WalletService.create_spendable_descriptor(
+                network,
+                script_type,
+            )
+            assert (
+                descriptor.as_string()
+                == "tr([5d86ed00/86'/1'/0']tpubDDSm8CbpsqR4S6wi3u2sneQUFjAaVXmqh1S42zQEJTBzSi8HqiKheFZxFToXSojnLJLoKMqXCTDHBoy1AM9h8jmCB7Nds19ZFKGgZmJ118V/0/*)#n6ehly9y"
+            )
+
     def test_create_spenable_wallet_returns_none_for_invalid_script_type(self):
         network = bdk.Network.TESTNET
         script_type = "P2ME"

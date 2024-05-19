@@ -134,7 +134,8 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(
+            network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -156,11 +157,9 @@ class WalletService:
 
         elif script_type == ScriptType.P2TR:
             # https://docs.rs/bdk_wallet/latest/bdk_wallet/descriptor/template/struct.Bip86.html
-            # why is this not in python
-            LOGGER.error(
-                "Taproot currently not supported I guess", script_type=script_type
+            wallet_descriptor = bdk.Descriptor.new_bip86(
+                descriptor_secret_key, bdk.KeychainKind.EXTERNAL, network
             )
-            raise Exception("Taproot currently not supported")
         else:
             LOGGER.error("Invalid script type", script_type=script_type)
 
@@ -234,7 +233,8 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
+            built_transaction: TxBuilderResultType = tx_builder.finish(
+                self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
