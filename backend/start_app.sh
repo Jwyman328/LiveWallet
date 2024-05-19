@@ -12,5 +12,10 @@ python src/scripts/randomly_fund_mock_wallet.py --transaction_count=10 --address
 
 sleep 5 # sleep 5 give nigiri extra start up time before flask run can be run.
 #
-# todo add back in, just want to run electrum server at the moment
-python3 src/app.py
+# run with flask dev server
+# python3 src/app.py
+
+# run with gunicorn
+# Right now you can't use more than one worker, I think that is due
+# to the global store being shared between workers doesn't really work.
+gunicorn --workers=1 -b 127.0.0.1:5011 src.app:app

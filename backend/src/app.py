@@ -48,7 +48,7 @@ class AppCreator:
             return cls.app
 
 
-def create_app() -> Flask:
+def create_app(*args, **kwargs) -> Flask:
     """Initiated the flask app and add pre and post request processing middleware logging functions."""
     app = AppCreator.create_app()
     # Set a secret key for the application
@@ -79,3 +79,6 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     app = create_app()
     app.run(host="127.0.0.1", port=5011, debug=True)
+else:
+    # running from gunicorn
+    app = create_app()

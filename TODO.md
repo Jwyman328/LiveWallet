@@ -5,7 +5,6 @@
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
 - Componentize a bit more 
-- remove the default descriptor
 - fix the styles for batch button / fee display, they are slightly off.
 - do I need to wait at all in main.ts for the child process flask?
 
@@ -17,9 +16,6 @@
 - add mypy
 - style the frontend. -x
 - add a pyproject.toml to manage ruff line length stuff so that ruff formatting is inline with the lsp?
-- do async await getting the current memepool fee rates?
-    - I could do a web socket connection and use a background task for it?
-    - maybe this is more of a nice to have after the main project is done.
 - double check the fees are not mock values
 - Also be able to save wallets configs in files. 
 -  Entering in an xpub every time is super annoying 

@@ -11,3 +11,4 @@ aiohttp===3.9.5
 pyinstaller===6.6.0
 chardet
 charset-normalizer==2.1.0
+gunicorn
