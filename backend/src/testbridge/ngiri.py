@@ -18,6 +18,10 @@ class FundWalletRequestBody:
 
 
 async def fund_wallet(address: str, amount: float):
+    """Generate a transaction to a specified address with a specified amount.
+    Use the ngiri faucet endpoint to fund the wallet.
+    https://github.com/vulpemventures/nigiri?tab=readme-ov-file#bitcoin--liquid
+    """
     try:
         url = "http://localhost:3000/faucet"
         data = FundWalletRequestBody(address, amount)
@@ -25,12 +29,14 @@ async def fund_wallet(address: str, amount: float):
             async with session.post(url, json=asdict(data)) as response:
                 return await response.text()
     except Exception as e:
-        LOGGER.error("Failed to fund wallet", address=address, amount=amount, error=e)
+        LOGGER.error("Failed to fund wallet",
+                     address=address, amount=amount, error=e)
 
 
 async def fund_wallet_with_multiple_txs(
     address: str, amount: float, transaction_count: int
 ):
+    """Generate multiple transactions to a specified address with the same amount"""
     tasks = [fund_wallet(address, amount) for tx in range(transaction_count)]
     return await asyncio.gather(*tasks)
 
@@ -38,6 +44,7 @@ async def fund_wallet_with_multiple_txs(
 def randomly_fund_mock_wallet(
     address: str, amount_min: float, amount_max: float, transaction_count: int
 ):
+    """Generate transactions inside a min and max btc amount to a specified address"""
     LOGGER.info(
         f"Funding wallet address: {address},with {transaction_count} randomly generated transactions between min amount: {amount_min}, max amount: {amount_max}, "
     )

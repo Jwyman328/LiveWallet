@@ -104,6 +104,7 @@ class WalletService:
         # TODO get this url from a config file
         electrum_url="127.0.0.1:50000",
     ) -> bdk.Wallet:
+        """Create a new wallet and sync it to the electrum server."""
         db_config = bdk.DatabaseConfig.MEMORY()
 
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
@@ -129,7 +130,7 @@ class WalletService:
         network: bdk.Network,
         script_type: ScriptType,
     ) -> Optional[bdk.Descriptor]:
-        """Create a spendable wallet"""
+        """Create a new wallet descriptor"""
 
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
