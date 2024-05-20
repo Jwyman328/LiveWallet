@@ -32,4 +32,6 @@ class TestFeesController(TestCase):
 
             response = self.test_client.get("/fees/current")
 
-            assert json.loads(response.data) == {"error": "error fetching current fees"}
+            assert json.loads(response.data) == {
+                "message": "error fetching current fees"
+            }

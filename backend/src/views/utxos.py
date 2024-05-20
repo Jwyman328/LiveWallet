@@ -13,6 +13,7 @@ from src.types import (
     GetUtxosErrorResponseDto,
     GetAllUtxosResponseDto,
 )
+from src.types.controller_types.generic_response_types import SimpleErrorResponse
 
 utxo_page = Blueprint("get_utxos", __name__, url_prefix="/utxos")
 
@@ -102,5 +103,6 @@ def get_utxos(
             )
         ).model_dump()
 
-    except Exception:
-        return {"error": "error getting utxos"}
+    except Exception as e:
+        LOGGER.error("error getting utxos", error=e)
+        return SimpleErrorResponse(message="error getting utxos").model_dump()

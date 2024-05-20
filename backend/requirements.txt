@@ -7,7 +7,7 @@ pytest==8.2.0
 flask-cors
 requests
 structlog
-pydantic==2.6.0
+pydantic==2.7.1
 click===8.1.7
 aiohttp===3.9.5
 pyinstaller===6.6.0

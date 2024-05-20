@@ -3,7 +3,7 @@ from src.services import WalletService
 from dependency_injector.wiring import inject, Provide
 from src.containers.service_container import ServiceContainer
 import structlog
-from src.types import GetBalanceResponseDto
+from src.types import GetBalanceResponseDto, SimpleErrorResponse
 
 LOGGER = structlog.get_logger()
 
@@ -30,4 +30,4 @@ def get_balance(
         ).model_dump()
     except Exception as e:
         LOGGER.error("error fetching balance", error=e)
-        return {"error": "error fetching balance"}
+        return SimpleErrorResponse(message="error fetching balance").model_dump()

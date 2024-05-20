@@ -14,6 +14,11 @@ from src.containers.service_container import ServiceContainer
 
 from pydantic import BaseModel, ValidationError
 
+from src.types.controller_types.generic_response_types import (
+    ValidationErrorResponse,
+    SimpleErrorResponse,
+)
+
 wallet_api = Blueprint("wallet", __name__, url_prefix="/wallet")
 
 LOGGER = structlog.get_logger()
@@ -83,7 +88,12 @@ def create_wallet(
         ).model_dump()
 
     except ValidationError as e:
-        return {"message": "Error creating wallet", "errors": e.errors()}, 400
+        return (
+            ValidationErrorResponse(
+                message="Error creating wallet", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
 
 
 @wallet_api.route("/remove", methods=["DELETE"])
@@ -104,7 +114,12 @@ def delete_wallet(
         ).model_dump()
 
     except ValidationError as e:
-        return {"message": "Error deleting wallet", "errors": e.errors()}, 400
+        return (
+            ValidationErrorResponse(
+                message="Error deleting wallet", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
 
 
 @wallet_api.route("/type", methods=["GET"])
@@ -124,7 +139,12 @@ def get_wallet_type(
         ).model_dump()
 
     except ValidationError as e:
-        return {"message": "Error getting wallet type", "errors": e.errors()}, 400
+        return (
+            ValidationErrorResponse(
+                message="Error getting wallet type", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
 
 
 @wallet_api.route("/spendable", methods=["POST"])
@@ -133,8 +153,7 @@ def create_spendable_wallet():
     Create a new wallet with spendable UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(
-            request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
         wallet_descriptor = WalletService.create_spendable_descriptor(
@@ -142,10 +161,12 @@ def create_spendable_wallet():
         )
 
         if wallet_descriptor is None:
-            return {"message": "Error creating wallet"}, 400
+            return (
+                SimpleErrorResponse(message="Error creating wallet").model_dump(),
+                400,
+            )
 
-        wallet = WalletService.create_spendable_wallet(
-            bdk_network, wallet_descriptor)
+        wallet = WalletService.create_spendable_wallet(bdk_network, wallet_descriptor)
         # fund wallet
         try:
             wallet_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())
@@ -158,7 +179,7 @@ def create_spendable_wallet():
             # need a second for the tx to be mined
             sleep(2)
         except Exception:
-            return {"message": "Error funding wallet"}, 400
+            return SimpleErrorResponse(message="Error funding wallet").model_dump(), 400
 
         return CreateSpendableWalletResponseDto(
             message="wallet created successfully",
@@ -167,4 +188,9 @@ def create_spendable_wallet():
         ).model_dump()
 
     except ValidationError as e:
-        return {"message": "Error creating wallet", "errors": e.errors()}, 400
+        return (
+            ValidationErrorResponse(
+                message="Error creating wallet", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
