@@ -54,7 +54,6 @@ def get_fee_for_utxo(
         ):
             return GetUtxosResponseDto(
                 spendable=True,
-                percent_fee_is_of_utxo=fee_estimate_response.data.percent_fee_is_of_utxo,
                 fee=fee_estimate_response.data.fee,
             ).model_dump()
 

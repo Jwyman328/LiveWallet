@@ -5,6 +5,7 @@
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
 - Componentize a bit more 
+- allow ability to toggle between sats and btc values
 
 
 # TODOs backend
@@ -12,7 +13,6 @@
   - find areas where there could be better typing or just more typing in general
     - find a way for the controller tests to show the pydantic type responses and not the model_dump response version of them.
 - use sqllite3 python instead of the local python dictionary for config values. I think this should work with multiple gunicorn workers.
-- can remove the pct_fee_rate value being returned since I am not using it anymore.
 - add mypy
 - add a pyproject.toml to manage ruff line length stuff so that ruff formatting is inline with the lsp?
 - double check the fees are not mock values

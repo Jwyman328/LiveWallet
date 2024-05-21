@@ -70,7 +70,6 @@ class TestUtxosController(TestCase):
 
             assert json.loads(response.data) == {
                 "spendable": True,
-                "percent_fee_is_of_utxo": self.mock_fee_details.percent_fee_is_of_utxo,
                 "fee": self.mock_fee_details.fee,
             }
 

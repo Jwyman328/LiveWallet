@@ -23,7 +23,6 @@ class GetUtxosRequestDto(BaseModel):
 
 class GetUtxosResponseDto(BaseModel):
     spendable: bool
-    percent_fee_is_of_utxo: float
     fee: int
 
 
