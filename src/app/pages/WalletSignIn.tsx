@@ -370,7 +370,7 @@ export const WalletSignIn = () => {
       <img src={vaultImage} className=" w-1/2 min-h-screen" />
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
-    <div className="flex flex-row justify-center items-center h-full w-screen">
+    <div className="flex flex-row justify-center items-center h-screen w-screen">
       <Loader size={50} />
     </div>
   ) : (
@@ -378,7 +378,7 @@ export const WalletSignIn = () => {
       <Notification
         withCloseButton={false}
         className="border-red-500 border-2"
-        icon={xIcon}
+        icon={XIcon}
         color="red"
         title="Error!"
       >

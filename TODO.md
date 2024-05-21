@@ -1,7 +1,5 @@
 # TODO frontend
 - customize levels of concerns, right now it is hard coded
-- get initial loading spinner centered in the middle
-- better errors when I can't connect to the electrum servers (public or private)
   - use mantine notifications for when there are network failures
 - improve the readme.md
 - Fix the Estimate batch tx button size. 
@@ -11,8 +9,8 @@
 
 # TODOs backend
 - more python cleanup
-  - Remove dicts that could be dto objects or dataclasses. 
   - find areas where there could be better typing or just more typing in general
+    - find a way for the controller tests to show the pydantic type responses and not the model_dump response version of them.
 - use sqllite3 python instead of the local python dictionary for config values. I think this should work with multiple gunicorn workers.
 - can remove the pct_fee_rate value being returned since I am not using it anymore.
 - add mypy
