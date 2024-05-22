@@ -221,7 +221,9 @@ export const UtxosDisplay = ({
           Selected: {totalUtxosSelected}{' '}
         </p>
         <p className="pl-4 font-semibold text-lg">
-          amount: {totalAmount.toLocaleString()} sats{' '}
+          amount:
+          {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
+          {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
         </p>
       </div>
     );
@@ -388,12 +390,13 @@ export const UtxosDisplay = ({
           <MaterialReactTable table={table} />
         </div>
       </ThemeProvider>
-      <div className="flex flex-row mt-4 mb-4">
+      <div className="flex flex-row mt-4 mb-4 h-16">
         <Button
           fullWidth
           disabled={selectedUtxos.length < 2}
           onClick={calculateFeeEstimate}
           size="xl"
+          style={{ height: '100%' }}
         >
           Estimate batch tx
         </Button>

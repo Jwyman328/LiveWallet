@@ -1,9 +1,8 @@
 # TODO frontend
 - customize levels of concerns, right now it is hard coded
-  - use mantine notifications for when there are network failures
+  - add this in the settings slideout
+- use mantine notifications for when there are network failures
 - improve the readme.md
-- Fix the Estimate batch tx button size. 
-  - have it line up with output box size?
 - Componentize a bit more 
 
 

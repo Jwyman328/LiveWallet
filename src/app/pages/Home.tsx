@@ -12,10 +12,13 @@ import {
   Select,
   Tabs,
   SegmentedControl,
+  ActionIcon,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
+import { SettingsSlideout } from '../components/SettingsSlideout';
+import { IconAdjustments } from '@tabler/icons-react';
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -74,8 +77,63 @@ function Home() {
       }
     }
   };
+
+  const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
   return (
     <div className="h-full">
+      <SettingsSlideout
+        opened={isShowSettingsSlideout}
+        onClose={() => setIsShowSettingsSlideout(false)}
+      >
+        <div
+          className="flex w-full justify-start mt-4 flex-col"
+        >
+          <SegmentedControl
+            className="mb-4"
+            value={btcMetric.toString()}
+            onChange={(value) => {
+              const selectedValue =
+                value === BtcMetric.BTC.toString()
+                  ? BtcMetric.BTC
+                  : BtcMetric.SATS;
+              setBtcMetric(selectedValue);
+            }}
+            data={[BtcMetric.SATS.toString(), BtcMetric.BTC.toString()]}
+          />
+          <div className="h-full">
+            <div className="flex flex-row justify-between mb-4">
+              <Select
+                className={'w-36'}
+                data={minScaleOptions}
+                value={minFeeScale.value}
+                onChange={(_value, option) => setMinFeeRate(option)}
+                label={<p>Min fee rate</p>}
+              />
+
+              <Select
+                className={'w-36'}
+                data={scaleOptions}
+                value={feeScale.value}
+                onChange={(_value, option) => setFeeScale(option)}
+                label={<p>Max fee rate</p>}
+              />
+            </div>
+          </div>
+
+          <Button
+            style={{
+              position: 'fixed',
+              marginBottom: '1rem',
+              bottom: '0',
+              width: '93%',
+            }}
+            className="bg-blue-200 "
+            onClick={logOut}
+          >
+            Log out
+          </Button>
+        </div>
+      </SettingsSlideout>
       <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-16">
         <Container size="xl" className="flex justify-between items-center h-16">
           <CurrentFeeRates />
@@ -89,39 +147,26 @@ function Home() {
               {btcMetric === BtcMetric.BTC ? 'BTC' : 'sats'}
             </p>
 
-            <Button className="bg-blue-200" onClick={logOut}>
-              Log out
-            </Button>
+            <ActionIcon
+              onClick={() => setIsShowSettingsSlideout(true)}
+              variant="filled"
+              aria-label="Settings"
+            >
+              <IconAdjustments
+                style={{ width: '70%', height: '70%' }}
+                stroke={1.5}
+              />
+            </ActionIcon>
           </Group>
         </Container>
       </header>
 
       <div className="ml-4 flex flex-col items-center">
-        {/* TODO figure out where to put this */}
-        <SegmentedControl
-          className="mb-4"
-          value={btcMetric.toString()}
-          onChange={(value) => {
-            const selectedValue =
-              value === BtcMetric.BTC.toString()
-                ? BtcMetric.BTC
-                : BtcMetric.SATS;
-            setBtcMetric(selectedValue);
-          }}
-          data={[BtcMetric.SATS.toString(), BtcMetric.BTC.toString()]}
-        />
         <h1 className="text-center font-bold text-xl">
           Custom Fee environment{' '}
         </h1>
         <div className="mb-8">
           <div className="flex flex-row items-center">
-            <Select
-              className={'w-36'}
-              data={minScaleOptions}
-              value={minFeeScale.value}
-              onChange={(_value, option) => setMinFeeRate(option)}
-              label={<p>Min fee rate</p>}
-            />
             <div className="w-80 ml-8 mr-8 relative top-4">
               <Slider
                 defaultValue={parseInt(minFeeScale.value)}
@@ -136,14 +181,6 @@ function Home() {
                 Fee rate: {feeRate.toLocaleString()} sat/vB
               </InputLabel>
             </div>
-
-            <Select
-              className={'w-36'}
-              data={scaleOptions}
-              value={feeScale.value}
-              onChange={(_value, option) => setFeeScale(option)}
-              label={<p>Max fee rate</p>}
-            />
           </div>
         </div>
 
