@@ -25,6 +25,7 @@ import {
   IconCircleCheck,
   IconCircleX,
 } from '@tabler/icons-react';
+import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
@@ -32,6 +33,7 @@ type UtxosDisplayProps = {
   walletType: WalletTypes;
   isLoading: boolean;
   isError: boolean;
+  btcMetric: BtcMetric;
 };
 
 export const UtxosDisplay = ({
@@ -40,6 +42,7 @@ export const UtxosDisplay = ({
   walletType,
   isLoading,
   isError,
+  btcMetric,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
@@ -169,13 +172,19 @@ export const UtxosDisplay = ({
         Cell: ({ row }: { row: any }) => {
           return (
             <div>
-              <p> {Number(row.original.amount).toLocaleString()}</p>
+              <p>
+                {' '}
+                {btcSatHandler(
+                  Number(row.original.amount).toLocaleString(),
+                  btcMetric,
+                )}
+              </p>
             </div>
           );
         },
       },
     ],
-    [avgBaseCost, avgInputCost],
+    [avgBaseCost, avgInputCost, btcMetric],
   );
 
   const getSelectedUtxos = React.useCallback(

@@ -10,9 +10,12 @@ import {
   Slider,
   InputLabel,
   Select,
+  Tabs,
+  SegmentedControl,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
+import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -20,6 +23,8 @@ function Home() {
   const getUtxosQueryRequest = useGetUtxos();
   const getWalletTypeQueryRequest = useGetWalletType();
   const deleteCurrentWalletMutation = useDeleteCurrentWallet();
+
+  const [btcMetric, setBtcMetric] = useState(BtcMetric.SATS);
 
   const queryClient = useQueryClient();
 
@@ -77,8 +82,11 @@ function Home() {
           <Group gap={5} visibleFrom="xs">
             <p className="mr-5">
               Balance:{' '}
-              {Number(getBalanceQueryRequest?.data?.total).toLocaleString()}{' '}
-              sats
+              {btcSatHandler(
+                Number(getBalanceQueryRequest?.data?.total).toLocaleString(),
+                btcMetric,
+              )}{' '}
+              {btcMetric === BtcMetric.BTC ? 'BTC' : 'sats'}
             </p>
 
             <Button className="bg-blue-200" onClick={logOut}>
@@ -89,6 +97,19 @@ function Home() {
       </header>
 
       <div className="ml-4 flex flex-col items-center">
+        {/* TODO figure out where to put this */}
+        <SegmentedControl
+          className="mb-4"
+          value={btcMetric.toString()}
+          onChange={(value) => {
+            const selectedValue =
+              value === BtcMetric.BTC.toString()
+                ? BtcMetric.BTC
+                : BtcMetric.SATS;
+            setBtcMetric(selectedValue);
+          }}
+          data={[BtcMetric.SATS.toString(), BtcMetric.BTC.toString()]}
+        />
         <h1 className="text-center font-bold text-xl">
           Custom Fee environment{' '}
         </h1>
@@ -127,6 +148,7 @@ function Home() {
         </div>
 
         <UtxosDisplay
+          btcMetric={btcMetric}
           feeRate={feeRate}
           utxos={getUtxosQueryRequest?.data?.utxos || []}
           walletType={getWalletTypeQueryRequest.data || 'P2WPKH'}
