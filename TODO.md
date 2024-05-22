@@ -5,7 +5,6 @@
 - Fix the Estimate batch tx button size. 
   - have it line up with output box size?
 - Componentize a bit more 
-- allow ability to toggle between sats and btc values
 
 
 # TODOs backend
