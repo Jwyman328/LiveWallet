@@ -34,6 +34,7 @@ type UtxosDisplayProps = {
   isLoading: boolean;
   isError: boolean;
   btcMetric: BtcMetric;
+  feeRateColorValues: [number, string][];
 };
 
 export const UtxosDisplay = ({
@@ -43,6 +44,7 @@ export const UtxosDisplay = ({
   isLoading,
   isError,
   btcMetric,
+  feeRateColorValues,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
@@ -74,13 +76,13 @@ export const UtxosDisplay = ({
 
   const getFeeRateColor = (amount: number) => {
     const feeRateColorMap = {
-      0: 'rgb(220 252 231)', // 'bg-green-100',
-      2: 'rgb(254 240 138)', // 'bg-yellow-200',
-      10: 'rgb(248 113 113)', // 'bg-red-400',
-      45: 'rgb(239 68 68)', // 'bg-red-500',
-      65: 'rgb(220 38 38)', // 'bg-red-600',
-      85: 'rgb(185 28 28)', // 'bg-red-700',
-      100: 'rgb(153 27 27)', // 'bg-red-800',
+      [feeRateColorValues[0][0]]: feeRateColorValues[0][1],
+      [feeRateColorValues[1][0]]: feeRateColorValues[1][1],
+      [feeRateColorValues[2][0]]: feeRateColorValues[2][1],
+      [feeRateColorValues[3][0]]: feeRateColorValues[3][1],
+      [feeRateColorValues[4][0]]: feeRateColorValues[4][1],
+      [feeRateColorValues[5][0]]: feeRateColorValues[5][1],
+      [feeRateColorValues[6][0]]: feeRateColorValues[6][1],
     };
     let selectedColor = feeRateColorMap[0];
 

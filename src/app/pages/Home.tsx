@@ -13,6 +13,8 @@ import {
   Tabs,
   SegmentedControl,
   ActionIcon,
+  NumberInput,
+  ColorInput,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
@@ -62,6 +64,54 @@ function Home() {
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
 
+  const [feeRateColorMapValues, setFeeRateColorMapValues] = useState<
+    [number, string][]
+  >([
+    [0, 'rgb(220, 252, 231)'],
+    [2, 'rgb(254, 240, 138)'],
+    [10, 'rgb(248, 113, 113)'],
+    [
+      45,
+      'rgb(239, 68, 68)', // 'bg-red-500',
+    ],
+    [
+      65,
+      'rgb(220, 38, 38)', // 'bg-red-600',
+    ],
+    [
+      85,
+      'rgb(185, 28, 28)', // 'bg-red-700',
+    ],
+    [
+      100,
+      'rgb(153, 27, 27)', // 'bg-red-800',
+    ],
+  ]);
+
+  const changeFeeRateColorPercent = (index: number, percent: number) => {
+    const feeRateColorItem = feeRateColorMapValues[index];
+    const newFeeRateColorItem = [percent, feeRateColorItem[1]] as [
+      number,
+      string,
+    ];
+    const newFeeRateColorMapValues = [...feeRateColorMapValues];
+    newFeeRateColorMapValues[index] = newFeeRateColorItem;
+
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
+
+  const changeFeeRateColor = (index: number, color: string) => {
+    const feeRateColorItem = feeRateColorMapValues[index];
+    const newFeeRateColorItem = [feeRateColorItem[0], color] as [
+      number,
+      string,
+    ];
+    const newFeeRateColorMapValues = [...feeRateColorMapValues];
+    newFeeRateColorMapValues[index] = newFeeRateColorItem;
+
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
+
   const setMinFeeRate = (option: { value: string; label: string }) => {
     if (feeRate < Number(option.value)) {
       setFeeRate(Number(option.value));
@@ -85,9 +135,7 @@ function Home() {
         opened={isShowSettingsSlideout}
         onClose={() => setIsShowSettingsSlideout(false)}
       >
-        <div
-          className="flex w-full justify-start mt-4 flex-col"
-        >
+        <div className="flex w-full justify-start mt-4 flex-col">
           <SegmentedControl
             className="mb-4"
             value={btcMetric.toString()}
@@ -118,6 +166,12 @@ function Home() {
                 label={<p>Max fee rate</p>}
               />
             </div>
+            <FeeRateColorChangeInputs
+              numberOfInputs={feeRateColorMapValues.length}
+              feeRateColorMapValues={feeRateColorMapValues}
+              changeFeeRateColorPercent={changeFeeRateColorPercent}
+              changeFeeRateColor={changeFeeRateColor}
+            />
           </div>
 
           <Button
@@ -185,6 +239,7 @@ function Home() {
         </div>
 
         <UtxosDisplay
+          feeRateColorValues={feeRateColorMapValues}
           btcMetric={btcMetric}
           feeRate={feeRate}
           utxos={getUtxosQueryRequest?.data?.utxos || []}
@@ -203,3 +258,42 @@ function Home() {
 }
 
 export default Home;
+type FeeRateColorChangeInputsProps = {
+  numberOfInputs: number;
+  feeRateColorMapValues: [number, string][];
+  changeFeeRateColorPercent: (index: number, percent: number) => void;
+  changeFeeRateColor: (index: number, color: string) => void;
+};
+const FeeRateColorChangeInputs = ({
+  numberOfInputs,
+  feeRateColorMapValues,
+  changeFeeRateColorPercent,
+  changeFeeRateColor,
+}: FeeRateColorChangeInputsProps) => {
+  const components = [];
+  for (let i = 0; i < numberOfInputs; i++) {
+    const margin = i === 0 ? 'mt-4' : '';
+    components.push(
+      <div className={`flex flex-row items-end justify-between ${margin}`}>
+        <NumberInput
+          label={i === 0 ? 'Fee %' : undefined}
+          placeholder="Percents"
+          suffix="%"
+          value={feeRateColorMapValues[i][0]}
+          mt="md"
+          onChange={(value) => changeFeeRateColorPercent(i, Number(value))}
+        />
+        <ColorInput
+          withEyeDropper={false}
+          format="rgb"
+          value={feeRateColorMapValues[i][1]}
+          className="ml-4"
+          width={100}
+          label={i === 0 ? 'Color' : undefined}
+          onChange={(value) => changeFeeRateColor(i, value)}
+        />
+      </div>,
+    );
+  }
+  return <> {components} </>;
+};
