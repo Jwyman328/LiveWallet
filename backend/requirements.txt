@@ -3,6 +3,7 @@ dependency-injector==4.40.0
 bdkpython==0.31.0
 # if bdkpython not install I can use the local wheel file
 # bdkpython-0.31.0-cp310-cp310-macosx_11_0_x86_64.whl
+Flask-SQLAlchemy
 pytest==8.2.0
 flask-cors
 requests

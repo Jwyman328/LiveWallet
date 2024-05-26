@@ -2,7 +2,7 @@ from dependency_injector import containers, providers
 
 
 class ServiceContainer(containers.DeclarativeContainer):
-    from src.services import GlobalDataStore, WalletService, FeeService
+    from src.services import WalletService, FeeService
 
     wiring_config = containers.WiringConfiguration(packages=["..views", "..services"])
 

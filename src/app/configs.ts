@@ -15,6 +15,6 @@ export const configs = {
     ? '127.0.0.1:50000'
     : '127.0.0.1:50000',
   backendServerBaseUrl: 'http://localhost:5011',
-  defaultNetwork: Network.REGTEST,
+  defaultNetwork: Network.TESTNET,
   defaultScriptType: ScriptTypes.P2WPKH,
 };

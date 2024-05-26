@@ -5,7 +5,6 @@ from bdkpython import bdk
 
 from src.services import WalletService
 from src.app import AppCreator
-from src.services.global_data_store.global_data_store import GlobalDataStore
 import json
 
 from src.types.script_types import ScriptType
@@ -18,29 +17,11 @@ class TestWalletController(TestCase):
         self.test_client = self.app.test_client()
 
     def test_wallet_controller_success(self):
-        self.mock_wallet_service = MagicMock(WalletService)
-
-        self.mock_wallet_service.wallet = MagicMock(bdk.Wallet)
-
-        with (
-            patch.object(
-                GlobalDataStore, "set_global_descriptor"
-            ) as set_global_descriptor_mock,
-            patch.object(
-                GlobalDataStore, "set_global_network"
-            ) as set_global_network_mock,
-            patch.object(
-                GlobalDataStore, "set_global_electrum_url"
-            ) as set_global_eletrum_url_mock,
-            patch.object(
-                GlobalDataStore, "set_global_wallet"
-            ) as set_global_wallet_mock,
-            patch("src.views.wallet.WalletService") as wallet_service_mock,
-        ):
-            wallet_service_mock.return_value = self.mock_wallet_service
+        with patch("src.views.wallet.WalletService") as wallet_service_mock:
+            wallet_service_mock.create_wallet = MagicMock()
 
             descriptor = "mock_descriptor"
-            network = "mock_network"
+            network = "TESTNET"
             electrum_url = "mock_electrum_url"
             wallet_response = self.test_client.post(
                 "/wallet/",
@@ -50,13 +31,11 @@ class TestWalletController(TestCase):
                     "electrumUrl": electrum_url,
                 },
             )
+            wallet_service_mock.create_wallet.assert_called_once_with(
+                descriptor, bdk.Network.TESTNET, electrum_url
+            )
 
-            set_global_descriptor_mock.assert_called_with(descriptor)
-            set_global_network_mock.assert_called_with(network)
-            set_global_eletrum_url_mock.assert_called_with(electrum_url)
-
-            set_global_wallet_mock.asset_called_with(
-                self.mock_wallet_service.wallet)
+            wallet_service_mock.assert_called_once()
 
             assert wallet_response.status == "200 OK"
             assert json.loads(wallet_response.data) == {
@@ -67,31 +46,16 @@ class TestWalletController(TestCase):
             }
 
     def test_wallet_controller_request_validation_error(self):
-        with (
-            patch.object(
-                GlobalDataStore, "set_global_descriptor"
-            ) as set_global_descriptor_mock,
-            patch.object(
-                GlobalDataStore, "set_global_network"
-            ) as set_global_network_mock,
-            patch.object(
-                GlobalDataStore, "set_global_electrum_url"
-            ) as set_global_eletrum_url_mock,
-        ):
-            wallet_response = self.test_client.post(
-                "/wallet/",
-                json={},
-            )
+        wallet_response = self.test_client.post(
+            "/wallet/",
+            json={},
+        )
 
-            set_global_descriptor_mock.assert_not_called()
-            set_global_network_mock.assert_not_called()
-            set_global_eletrum_url_mock.assert_not_called()
-
-            assert wallet_response.status == "400 BAD REQUEST"
-            response_data = json.loads(wallet_response.data)
-            assert response_data["message"] == "Error creating wallet"
-            # an error for each required field descriptor, network, and electrumUrl
-            assert len(response_data["errors"]) == 3
+        assert wallet_response.status == "400 BAD REQUEST"
+        response_data = json.loads(wallet_response.data)
+        assert response_data["message"] == "Error creating wallet"
+        # an error for each required field descriptor, network, and electrumUrl
+        assert len(response_data["errors"]) == 3
 
     def test_get_wallet_type_success(self):
         self.mock_wallet_service = MagicMock(WalletService)
@@ -135,24 +99,17 @@ class TestWalletController(TestCase):
             self.mock_wallet_service.get_script_type.assert_called_once()
 
     def test_remove_wallet_success(self):
-        self.mock_wallet_service = MagicMock(WalletService)
+        with patch("src.views.wallet.WalletService") as wallet_service_mock:
+            wallet_service_mock.remove_global_wallet_and_details = MagicMock()
 
-        self.mock_wallet_service.wallet = MagicMock(bdk.Wallet)
-
-        with (
-            patch.object(
-                GlobalDataStore, "remove_global_wallet_and_details"
-            ) as remove_global_wallet_mock,
-        ):
             wallet_response = self.test_client.delete(
                 "/wallet/remove",
             )
-
+            wallet_service_mock.remove_global_wallet_and_details.assert_called_once()
             assert wallet_response.status == "200 OK"
             assert json.loads(wallet_response.data) == {
                 "message": "wallet successfully deleted",
             }
-            remove_global_wallet_mock.assert_called_once()
 
     def test_spendable_success(self):
         self.mock_wallet_service = MagicMock(WalletService)

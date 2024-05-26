@@ -1,10 +1,9 @@
+from typing import Annotated, Optional
 from bdkpython import bdk
 from flask import Blueprint, request
 from time import sleep
 
-from src.services import GlobalDataStore
 from dependency_injector.wiring import inject, Provide
-from src.containers.global_data_store_container import GlobalStoreContainer
 import structlog
 
 from src.testbridge.ngiri import randomly_fund_mock_wallet
@@ -12,7 +11,7 @@ from src.types import ScriptType
 from src.services import WalletService
 from src.containers.service_container import ServiceContainer
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 
 from src.types.controller_types.generic_response_types import (
     ValidationErrorResponse,
@@ -26,8 +25,17 @@ LOGGER = structlog.get_logger()
 
 class CreateWalletRequestDto(BaseModel):
     descriptor: str
-    network: str
+    network: Annotated[bdk.Network, str]
     electrumUrl: str
+
+    @field_validator("network", mode="before")
+    def parse_enum(cls, value) -> Optional[bdk.Network]:
+        if value == "REGTEST":
+            return bdk.Network.REGTEST
+        elif value == "TESTNET":
+            return bdk.Network.TESTNET
+        elif value == "BITCOIN":
+            return bdk.Network.BITCOIN
 
 
 class CreateWalletResponseDto(BaseModel):
@@ -62,32 +70,29 @@ class CreateSpendableWalletResponseDto(BaseModel):
 
 @wallet_api.route("/", methods=["POST"])
 @inject
-def create_wallet(
-    global_data_store: GlobalDataStore = Provide[
-        GlobalStoreContainer.global_data_store
-    ],
-):
+def create_wallet():
     """
     Set the global level wallet descriptor.
     """
     try:
         data = CreateWalletRequestDto.model_validate_json(request.data)
+        print("WalletService", WalletService)
+        print("WalletService.create_wallet", WalletService.create_wallet)
 
-        global_data_store.set_global_descriptor(data.descriptor)
-        global_data_store.set_global_network(data.network)
-        global_data_store.set_global_electrum_url(data.electrumUrl)
+        WalletService.create_wallet(
+            data.descriptor, data.network, data.electrumUrl)
 
-        wallet_service = WalletService()
-        global_data_store.set_global_wallet(wallet_service.wallet)
+        WalletService()
 
         return CreateWalletResponseDto(
             message="wallet created successfully",
             descriptor=data.descriptor,
-            network=data.network,
+            network=data.network.name,
             electrumUrl=data.electrumUrl,
         ).model_dump()
 
     except ValidationError as e:
+        print("here bob with", e)
         return (
             ValidationErrorResponse(
                 message="Error creating wallet", errors=e.errors()
@@ -98,16 +103,12 @@ def create_wallet(
 
 @wallet_api.route("/remove", methods=["DELETE"])
 @inject
-def delete_wallet(
-    global_data_store: GlobalDataStore = Provide[
-        GlobalStoreContainer.global_data_store
-    ],
-):
+def delete_wallet():
     """
-    Remove the current wallet data from the global data store.
+    Remove the current wallet data from the db and bdk wallet connection.
     """
     try:
-        global_data_store.remove_global_wallet_and_details()
+        WalletService.remove_global_wallet_and_details()
 
         return DeleteWalletResponseDto(
             message="wallet successfully deleted",
@@ -153,7 +154,8 @@ def create_spendable_wallet():
     Create a new wallet with spendable UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(
+            request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
         wallet_descriptor = WalletService.create_spendable_descriptor(
@@ -162,11 +164,13 @@ def create_spendable_wallet():
 
         if wallet_descriptor is None:
             return (
-                SimpleErrorResponse(message="Error creating wallet").model_dump(),
+                SimpleErrorResponse(
+                    message="Error creating wallet").model_dump(),
                 400,
             )
 
-        wallet = WalletService.create_spendable_wallet(bdk_network, wallet_descriptor)
+        wallet = WalletService.create_spendable_wallet(
+            bdk_network, wallet_descriptor)
         # fund wallet
         try:
             wallet_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())

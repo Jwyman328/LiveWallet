@@ -1,7 +1,8 @@
 from unittest.case import TestCase
 import os
 from unittest.mock import MagicMock, patch, Mock
-from src.containers.global_data_store_container import GlobalStoreContainer
+
+from src.models.wallet import Wallet
 from src.services import WalletService
 from src.services.wallet.wallet import (
     GetFeeEstimateForUtxoResponseType,
@@ -40,6 +41,7 @@ class TestWalletService(TestCase):
         with patch.object(
             WalletService, "connect_wallet", return_value=self.bdk_wallet_mock
         ):
+            WalletService.wallet = None
             self.wallet_service = WalletService()
 
     def test_connect_wallet(self):
@@ -52,13 +54,10 @@ class TestWalletService(TestCase):
         wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
         wallet_sync_mock = MagicMock()
         wallet_mock.sync = wallet_sync_mock
-        global_data_store_mock = MagicMock()
         wallet_details_mock = MagicMock()
         wallet_details_mock.descriptor = "mock_descriptor"
-        wallet_details_mock.network = "mock_network"
+        wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
-        global_data_store_mock.wallet_details = wallet_details_mock
-        global_data_store_mock.wallet = None
 
         with (
             patch.object(
@@ -77,13 +76,18 @@ class TestWalletService(TestCase):
                 bdk, "Blockchain", return_value=block_chain_mock
             ) as blockchain_patch,
             patch.object(bdk, "Wallet", return_value=wallet_mock) as wallet_patch,
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
         ):
-            container = GlobalStoreContainer()
-            container.global_data_store.override(global_data_store_mock)
+            wallet_model_patch.return_value = wallet_details_mock
+            wallet_model_patch.get_current_wallet.return_value = None
+
             response = WalletService.connect_wallet()
 
+            wallet_model_patch.get_current_wallet.assert_called()
+            wallet_model_patch.assert_called()
+
             descriptor_patch.assert_called_with(
-                wallet_details_mock.descriptor, wallet_details_mock.network
+                wallet_details_mock.descriptor, bdk.Network.TESTNET
             )
 
             database_config_memory_patch.assert_called()
@@ -97,39 +101,143 @@ class TestWalletService(TestCase):
             wallet_patch.assert_called_with(
                 descriptor=descriptor_mock,
                 change_descriptor=None,
-                network=wallet_details_mock.network,
+                network=bdk.Network.TESTNET,
                 database_config=memory_mock,
             )
 
+            assert WalletService.wallet == wallet_mock
+
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
-            global_data_store_mock.set_global_wallet.assert_called_with(
-                wallet_mock)
 
-    def test_connect_wallet_with_existing_wallet_in_global_store_returns_existing_wallet(
+    def test_connect_wallet_with_existing_wallet(
         self,
     ):
         wallet_mock = MagicMock()
         wallet_sync_mock = MagicMock()
         wallet_mock.sync = wallet_sync_mock
-        global_data_store_mock = MagicMock()
         wallet_details_mock = MagicMock()
         wallet_details_mock.descriptor = "mock_descriptor"
-        wallet_details_mock.network = "mock_network"
+        wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
-        global_data_store_mock.wallet_details = wallet_details_mock
-        global_data_store_mock.wallet = wallet_mock
 
         with (
             patch.object(bdk, "Wallet", return_value=wallet_mock) as bdk_wallet_patch,
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
         ):
-            container = GlobalStoreContainer()
-            container.global_data_store.override(global_data_store_mock)
+            WalletService.wallet = wallet_mock
             response = WalletService.connect_wallet()
 
             assert response == wallet_mock
+            wallet_model_patch.get_current_wallet.assert_not_called()
             bdk_wallet_patch.assert_not_called()
             wallet_sync_mock.assert_not_called()
+
+    def test_connect_wallet_with_existing_wallet_details(
+        self,
+    ):
+        descriptor_mock = MagicMock(spec=bdk.Descriptor)
+
+        memory_mock = MagicMock()
+        block_chain_config_mock = MagicMock(spec=bdk.BlockchainConfig)
+        electrum_config_mock = MagicMock(spec=bdk.ElectrumConfig)
+        block_chain_mock = MagicMock(spec=bdk.Blockchain)
+        wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
+        wallet_sync_mock = MagicMock()
+        wallet_mock.sync = wallet_sync_mock
+        wallet_details_mock = MagicMock()
+        wallet_details_mock.descriptor = "mock_descriptor"
+        wallet_details_mock.network = bdk.Network.TESTNET.value
+        wallet_details_mock.electrum_url = "mock_url"
+
+        with (
+            patch.object(
+                bdk, "Descriptor", return_value=descriptor_mock
+            ) as descriptor_patch,
+            patch.object(
+                bdk.DatabaseConfig, "MEMORY", return_value=memory_mock
+            ) as database_config_memory_patch,
+            patch.object(
+                bdk.BlockchainConfig, "ELECTRUM", return_value=block_chain_config_mock
+            ) as block_chain_config_electrum_mock,
+            patch.object(
+                bdk, "ElectrumConfig", return_value=electrum_config_mock
+            ) as electrum_config_patch,
+            patch.object(
+                bdk, "Blockchain", return_value=block_chain_mock
+            ) as blockchain_patch,
+            patch.object(bdk, "Wallet", return_value=wallet_mock) as wallet_patch,
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+        ):
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+
+            response = WalletService.connect_wallet()
+
+            wallet_model_patch.get_current_wallet.assert_called()
+            wallet_model_patch.assert_not_called()
+
+            descriptor_patch.assert_called_with(
+                wallet_details_mock.descriptor, bdk.Network.TESTNET
+            )
+
+            database_config_memory_patch.assert_called()
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
+            electrum_config_patch.assert_called_with(
+                wallet_details_mock.electrum_url, None, 2, 30, 100, True
+            )
+
+            blockchain_patch.assert_called_with(block_chain_config_mock)
+            wallet_patch.assert_called_with(
+                descriptor=descriptor_mock,
+                change_descriptor=None,
+                network=bdk.Network.TESTNET,
+                database_config=memory_mock,
+            )
+
+            assert WalletService.wallet == wallet_mock
+
+            assert response == wallet_mock
+            wallet_sync_mock.assert_called_with(block_chain_mock, None)
+
+    def test_create_wallet(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch("src.services.wallet.wallet.DB") as db_patch,
+        ):
+            mock_wallet = MagicMock()
+            wallet_model_patch.return_value = mock_wallet
+
+            add_mock = MagicMock()
+            commit_mock = MagicMock()
+            db_patch.session.add = add_mock
+            db_patch.session.commit = commit_mock
+
+            descriptor = "mock descriptor"
+            network = bdk.Network.TESTNET
+            electrum_url = "mock electrum url"
+
+            WalletService.create_wallet(descriptor, network, electrum_url)
+
+            wallet_model_patch.assert_called_with(
+                descriptor=descriptor, network=network.value, electrum_url=electrum_url
+            )
+
+            db_patch.session.add.assert_called_with(mock_wallet)
+            db_patch.session.commit.assert_called()
+
+    def test_remove_global_wallet_and_details(self):
+        with patch("src.services.wallet.wallet.DB") as db_patch:
+            query_mock = MagicMock()
+            commit_mock = MagicMock()
+            db_patch.session.query = query_mock
+            db_patch.session.commit = commit_mock
+            WalletService.wallet = MagicMock()
+            WalletService.remove_global_wallet_and_details()
+
+            query_mock.assert_called_with(Wallet)
+            commit_mock.assert_called()
+            assert WalletService.wallet == None
 
     def test_create_spenable_wallet_creates_P2PKH_descriptor(self):
         network = bdk.Network.TESTNET

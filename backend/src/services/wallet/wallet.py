@@ -2,7 +2,9 @@ from dataclasses import dataclass
 import bdkpython as bdk
 from typing import Literal, Optional, cast, List
 
-from src.services import GlobalDataStore
+
+from src.database import DB
+from src.models.wallet import Wallet
 from src.types import (
     OutpointType,
     ScriptType,
@@ -18,8 +20,7 @@ from src.services.wallet.raw_output_script_examples import (
     p2wpkh_raw_output_script,
     p2wsh_raw_output_script,
 )
-from dependency_injector.wiring import inject, Provide
-from src.containers.global_data_store_container import GlobalStoreContainer
+from dependency_injector.wiring import inject
 
 import structlog
 
@@ -47,32 +48,52 @@ class WalletService:
 
     """
 
+    wallet: Optional[bdk.Wallet] = None
+
     def __init__(
         self,
     ):
         self.wallet = WalletService.connect_wallet()
 
     @classmethod
+    def create_wallet(cls, descriptor: str, network: bdk.Network, electrumUrl: str):
+        new_wallet = Wallet(
+            descriptor=descriptor, network=network.value, electrum_url=electrumUrl
+        )
+        DB.session.add(new_wallet)
+        DB.session.commit()
+
+    @classmethod
+    def remove_global_wallet_and_details(cls):
+        DB.session.query(Wallet).delete()
+        DB.session.commit()
+        cls.wallet = None
+
+    @classmethod
     @inject
     def connect_wallet(
         cls,
-        global_data_store: GlobalDataStore = Provide[
-            GlobalStoreContainer.global_data_store
-        ],
     ) -> bdk.Wallet:
         """Using a given descriptor, connect to an electrum server and return the bdk wallet"""
 
-        if global_data_store.wallet:
+        if cls.wallet is not None:
             LOGGER.info(
                 "A wallet is already connected, therefore use that instead of connecting another one."
             )
-            return global_data_store.wallet
+            return cls.wallet
 
-        descriptor = global_data_store.wallet_details.descriptor
-        network = global_data_store.wallet_details.network
-        electrum_url = global_data_store.wallet_details.electrum_url
+        wallet_details = Wallet.get_current_wallet()
 
-        wallet_descriptor = bdk.Descriptor(descriptor, network)
+        if wallet_details is None:
+            wallet_details = Wallet()
+
+        descriptor = wallet_details.descriptor
+        network = wallet_details.network
+        electrum_url = wallet_details.electrum_url
+
+        wallet_descriptor = bdk.Descriptor(
+            descriptor, bdk.Network._value2member_map_[network]
+        )
 
         db_config = bdk.DatabaseConfig.MEMORY()
 
@@ -85,14 +106,14 @@ class WalletService:
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
             change_descriptor=None,
-            network=network,
+            network=bdk.Network._value2member_map_[network],
             database_config=db_config,
         )
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
 
-        global_data_store.set_global_wallet(wallet)
+        cls.wallet = wallet
 
         return wallet
 
@@ -135,8 +156,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -234,8 +254,7 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(
-                self.wallet)
+            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

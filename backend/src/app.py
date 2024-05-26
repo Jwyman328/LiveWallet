@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
+from src.database import DB
 
 # initialize structlog
 from src.utils import logging  # noqa: F401, E261
@@ -22,14 +23,14 @@ class AppCreator:
             health_check_api,
         )
         from src.containers.service_container import ServiceContainer
-        from src.containers.global_data_store_container import GlobalStoreContainer
 
         if cls.app is not None:
             return cls.app
         else:
-            container = ServiceContainer()
-            data_container = GlobalStoreContainer()
             cls.app = Flask(__name__)
+
+            setup_database(cls.app)
+
             CORS(
                 cls.app,
                 resources={r"/*": {"origins": "*"}},
@@ -37,8 +38,10 @@ class AppCreator:
                 allow_headers=["Content-Type"],
             )
 
+            container = ServiceContainer()
+
             cls.app.container = container
-            cls.app.data_container = data_container
+            # cls.app.data_container = data_container
             cls.app.register_blueprint(balance_page)
             cls.app.register_blueprint(utxo_page)
             cls.app.register_blueprint(fees_api)
@@ -74,6 +77,15 @@ def create_app(*args, **kwargs) -> Flask:
         return response
 
     return app
+
+
+def setup_database(app):
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///global_data_store.db"
+    # Disable modification tracking
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    DB.init_app(app)
+    with app.app_context():
+        DB.create_all()
 
 
 if __name__ == "__main__":

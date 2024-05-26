@@ -208,6 +208,8 @@ export const WalletSignIn = () => {
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
+
+
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
       {!isProduction ? (
