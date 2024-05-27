@@ -58,14 +58,14 @@ class WalletService:
         self.wallet = WalletService.connect_wallet()
 
     @classmethod
-    def create_wallet(cls, descriptor: str, network: bdk.Network, electrumUrl: str):
+    def create_wallet(cls, descriptor: str, network: bdk.Network, electrum_url: str):
         """Store the wallet details in the database.
         There should ever only be one wallet in the db at a time. If a new wallet is created, the old one should be removed.
         """
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
         new_wallet = Wallet(
-            descriptor=descriptor, network=network.value, electrum_url=electrumUrl
+            descriptor=descriptor, network=network.value, electrum_url=electrum_url
         )
         DB.session.add(new_wallet)
         DB.session.commit()
