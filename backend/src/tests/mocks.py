@@ -1,16 +1,13 @@
-from src.types.bdk_types import (
-    LocalUtxoType,
-    TxOutType,
-    OutpointType,
-    TransactionDetailsType,
+from src.types import (
     FeeDetails,
 )
+import bdkpython as bdk
 
-tx_out_mock = TxOutType(value=1000, script_pubkey="mock_script_pubkey")
+tx_out_mock = bdk.TxOut(value=1000, script_pubkey="mock_script_pubkey")
 
-outpoint_mock = OutpointType(txid="txid", vout=0)
+outpoint_mock = bdk.OutPoint(txid="txid", vout=0)
 
-transaction_details_mock = TransactionDetailsType(
+transaction_details_mock = bdk.TransactionDetails(
     transaction="mock transaction",
     txid="mock_txid",
     received=1000,
@@ -19,7 +16,7 @@ transaction_details_mock = TransactionDetailsType(
     confirmation_time=None,
 )
 
-local_utxo_mock = LocalUtxoType(
+local_utxo_mock = bdk.LocalUtxo(
     outpoint=outpoint_mock, txout=tx_out_mock, keychain="mock_keychain", is_spent=False
 )
 

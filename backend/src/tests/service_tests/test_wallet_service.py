@@ -9,12 +9,8 @@ from src.services.wallet.wallet import (
     BuildTransactionResponseType,
 )
 import bdkpython as bdk
-from src.types.bdk_types import (
+from src.types import (
     FeeDetails,
-    LocalUtxoType,
-    OutpointType,
-    TxBuilderResultType,
-    TxOutType,
 )
 from src.types import GetUtxosRequestDto
 from src.types.script_types import ScriptType
@@ -28,11 +24,11 @@ wallet_descriptor = os.getenv("WALLET_DESCRIPTOR", "")
 class TestWalletService(TestCase):
     def setUp(self):
         self.bdk_wallet_mock = MagicMock()
-        self.unspent_utxos: list[LocalUtxoType] = [local_utxo_mock]
+        self.unspent_utxos: list[bdk.LocalUtxo] = [local_utxo_mock]
         self.bdk_wallet_mock.list_unspent.return_value = self.unspent_utxos
 
-        self.outpoint_mock = OutpointType(txid="txid", vout=0)
-        self.utxo_mock = TxOutType(
+        self.outpoint_mock = bdk.OutPoint(txid="txid", vout=0)
+        self.utxo_mock = bdk.TxOut(
             value=1000,
             script_pubkey="mock_script_pubkey",
         )
@@ -406,7 +402,7 @@ class TestWalletService(TestCase):
     def test_build_transaction(self):
         tx_builder_mock = MagicMock()
         with patch.object(bdk, "TxBuilder", return_value=tx_builder_mock):
-            built_transaction_mock = TxBuilderResultType(
+            built_transaction_mock = bdk.TxBuilderResult(
                 psbt="mock_psbt", transaction_details=transaction_details_mock
             )
             tx_builder_mock.add_utxos.return_value = tx_builder_mock
@@ -467,7 +463,7 @@ class TestWalletService(TestCase):
         with patch.object(
             bdk, "TxBuilder", return_value=tx_builder_mock
         ) as mock_tx_builder:
-            built_transaction_mock = TxBuilderResultType(
+            built_transaction_mock = bdk.TxBuilderResult(
                 psbt="mock_psbt", transaction_details=transaction_details_mock
             )
             tx_builder_mock.add_utxos.return_value = tx_builder_mock
@@ -554,7 +550,7 @@ class TestWalletService(TestCase):
             )
             mock_get_utxos_info.assert_called_with(
                 [
-                    OutpointType(
+                    bdk.OutPoint(
                         local_utxo_mock.outpoint.txid, local_utxo_mock.outpoint.vout
                     )
                 ]

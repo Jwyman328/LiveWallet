@@ -6,10 +6,7 @@ from typing import Literal, Optional, cast, List
 from src.database import DB
 from src.models.wallet import Wallet
 from src.types import (
-    OutpointType,
     ScriptType,
-    LocalUtxoType,
-    TxBuilderResultType,
     FeeDetails,
     GetUtxosRequestDto,
 )
@@ -31,7 +28,7 @@ LOGGER = structlog.get_logger()
 @dataclass(frozen=True)
 class BuildTransactionResponseType:
     status: Literal["success", "unspendable", "error"]
-    data: Optional[TxBuilderResultType]
+    data: Optional[bdk.TxBuilderResult]
 
 
 @dataclass(frozen=True)
@@ -229,14 +226,17 @@ class WalletService:
         else:
             return ScriptType.P2PKH
 
-    def get_all_utxos(self) -> List[LocalUtxoType]:
+    def get_all_utxos(self) -> List[bdk.LocalUtxo]:
         """Get all utxos for the current wallet."""
+        if self.wallet is None:
+            return []
+
         utxos = self.wallet.list_unspent()
         return utxos
 
-    def get_utxos_info(self, utxos_wanted: List[OutpointType]) -> List[LocalUtxoType]:
+    def get_utxos_info(self, utxos_wanted: List[bdk.OutPoint]) -> List[bdk.LocalUtxo]:
         """For a given set of  txids and the vout pointing to a utxo, return the utxos"""
-        existing_utxos = cast(List[LocalUtxoType], self.get_all_utxos())
+        existing_utxos = cast(List[bdk.LocalUtxo], self.get_all_utxos())
         utxo_dict = {
             f"{utxo.outpoint.txid}_{utxo.outpoint.vout}": utxo
             for utxo in existing_utxos
@@ -252,7 +252,7 @@ class WalletService:
 
     def build_transaction(
         self,
-        utxos: List[LocalUtxoType],
+        utxos: List[bdk.LocalUtxo],
         sats_per_vbyte: int,
         raw_output_script: str,
     ) -> BuildTransactionResponseType:
@@ -279,7 +279,7 @@ class WalletService:
             transaction_amount = total_utxos_amount / 2
 
             tx_builder = tx_builder.add_recipient(script, transaction_amount)
-            built_transaction: TxBuilderResultType = tx_builder.finish(self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -299,7 +299,7 @@ class WalletService:
 
     def get_fee_estimate_for_utxos(
         self,
-        local_utxos: List[LocalUtxoType],
+        local_utxos: List[bdk.LocalUtxo],
         script_type: ScriptType,
         sats_per_vbyte: int,
     ) -> GetFeeEstimateForUtxoResponseType:
@@ -337,7 +337,7 @@ class WalletService:
     ):
         utxos_wanted = []
         for tx in get_utxos_request_dto.transactions:
-            utxos_wanted.append(OutpointType(tx.id, int(tx.vout)))
+            utxos_wanted.append(bdk.OutPoint(tx.id, int(tx.vout)))
 
         utxos = self.get_utxos_info(utxos_wanted)
 
