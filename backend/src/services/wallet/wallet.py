@@ -42,13 +42,15 @@ class GetFeeEstimateForUtxoResponseType:
 
 class WalletService:
     """Initiate a wallet using the bdk library and offer various methods to interact with it.
-
     The wallet will use an electrum server to obtain data around it's transaction history and current utxos.
-    In order to initiate a wallet, a wallet descriptor is required.
-
+    In order to initiate a wallet, a valid wallet descriptor is required.
+    Use the wallet details in the database to initiate the wallet.
+    Store the wallet details uuid as the wallet_id, if the wallet_id is ever not the same
+    as the wallet details id in the database then initiate a new wallet and set it as the current wallet in the class.
     """
 
     wallet: Optional[bdk.Wallet] = None
+    wallet_id: Optional[str] = None
 
     def __init__(
         self,
@@ -57,6 +59,11 @@ class WalletService:
 
     @classmethod
     def create_wallet(cls, descriptor: str, network: bdk.Network, electrumUrl: str):
+        """Store the wallet details in the database.
+        There should ever only be one wallet in the db at a time. If a new wallet is created, the old one should be removed.
+        """
+        if Wallet.get_current_wallet():
+            cls.remove_global_wallet_and_details()
         new_wallet = Wallet(
             descriptor=descriptor, network=network.value, electrum_url=electrumUrl
         )
@@ -68,24 +75,39 @@ class WalletService:
         DB.session.query(Wallet).delete()
         DB.session.commit()
         cls.wallet = None
+        cls.wallet_id = None
 
     @classmethod
     @inject
     def connect_wallet(
         cls,
     ) -> bdk.Wallet:
-        """Using a given descriptor, connect to an electrum server and return the bdk wallet"""
+        """Connect to an electrum server and return the bdk wallet. If a wallet is already connected and it is the same one as the one in the database, return that instead."""
 
-        if cls.wallet is not None:
+        wallet_details = Wallet.get_current_wallet()
+        wallet_details_id = wallet_details.id if wallet_details else None
+
+        current_wallet_id = cls.wallet_id if cls.wallet is not None else None
+
+        if current_wallet_id == wallet_details_id and cls.wallet is not None:
             LOGGER.info(
                 "A wallet is already connected, therefore use that instead of connecting another one."
             )
             return cls.wallet
 
-        wallet_details = Wallet.get_current_wallet()
+        if current_wallet_id is not None and current_wallet_id != wallet_details_id:
+            LOGGER.info(
+                f"Wallet {current_wallet_id} is connected to the electrum server but the wallet in the database is {wallet_details_id}. There we shall remove the current wallet and connect to the new one."
+            )
 
         if wallet_details is None:
-            wallet_details = Wallet()
+            LOGGER.error(
+                """There are no wallet details in the database.
+                  And a user is trying to use the wallet details from the database
+                  to create a bdk wallet and connect to an electrum server,
+                  clearly something is wrong here."""
+            )
+            raise Exception("No wallet details in the database")
 
         descriptor = wallet_details.descriptor
         network = wallet_details.network
@@ -109,11 +131,14 @@ class WalletService:
             network=bdk.Network._value2member_map_[network],
             database_config=db_config,
         )
+
+        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
 
         cls.wallet = wallet
+        cls.wallet_id = wallet_details_id
 
         return wallet
 
