@@ -16,5 +16,4 @@ sleep 5 # sleep 5 give nigiri extra start up time before flask run can be run.
 # python3 src/app.py
 
 # run with gunicorn
-# todo fix this so it is debug mode, this isn't working for refresh
-gunicorn --workers=2 -b 127.0.0.1:5011 src.app:app DEBUG=TRUE
+gunicorn --workers=2 -b 127.0.0.1:5011 src.app:app --reload
