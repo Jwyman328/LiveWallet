@@ -174,7 +174,9 @@ export const WalletSignIn = () => {
       scriptTypeDescription === scriptTypeToDescriptorMap.P2WSH;
     const closingParam = isNestedSegWit ? '))' : ')';
     const pubType =
-      network.value === Network.TESTNET || Network.REGTEST ? 'tpub' : 'xpub';
+      network.value === Network.TESTNET || network.value === Network.REGTEST
+        ? 'tpub'
+        : 'xpub';
 
     const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationPath}]${pubType}${xpub}/0/*${closingParam}`;
     return computedDescriptor;
@@ -208,7 +210,6 @@ export const WalletSignIn = () => {
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
-
 
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
