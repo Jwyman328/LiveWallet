@@ -6,9 +6,26 @@ import {
   MenuItemConstructorOptions,
 } from 'electron';
 
+import * as fs from 'fs';
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string;
   submenu?: DarwinMenuItemConstructorOptions[] | Menu;
+}
+
+function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading JSON file:', err);
+      return;
+    }
+
+    // Parse the JSON data
+    const jsonWalletData = JSON.parse(data);
+    console.log('JSON wallet data inside menu.ts:', jsonWalletData);
+
+    // Do something with the JSON data, such as pass it to your renderer process
+    mainWindow.webContents.send('json-wallet', jsonWalletData);
+  });
 }
 
 export default class MenuBuilder {
@@ -104,6 +121,33 @@ export default class MenuBuilder {
         },
       ],
     };
+    const subMenuFile: MenuItemConstructorOptions = {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Import wallet',
+          click: () => {
+            // Open file dialog to select JSON file
+            const { dialog } = require('electron');
+            dialog
+              .showOpenDialog({
+                filters: [{ name: 'JSON Files', extensions: ['json'] }],
+                properties: ['openFile'],
+              })
+              .then((result: any) => {
+                if (!result.canceled && result.filePaths.length > 0) {
+                  const filePath = result.filePaths[0];
+                  const mainWindow = BrowserWindow.getAllWindows()[0];
+                  importJSONFile(filePath, mainWindow);
+                }
+              })
+              .catch((err: any) => {
+                console.error('Error opening file dialog:', err);
+              });
+          },
+        },
+      ],
+    };
     const subMenuViewProd: MenuItemConstructorOptions = {
       label: 'View',
       submenu: [
@@ -165,23 +209,52 @@ export default class MenuBuilder {
         ? subMenuViewDev
         : subMenuViewProd;
 
-    return [subMenuAbout, subMenuView, subMenuWindow, subMenuHelp];
+    return [subMenuAbout, subMenuFile, subMenuView, subMenuWindow, subMenuHelp];
   }
 
   buildDefaultTemplate() {
     const templateDefault = [
       {
-        label: '&File',
+        label: 'UTXO Fee Estimator',
         submenu: [
           {
-            label: '&Open',
-            accelerator: 'Ctrl+O',
+            label: 'Hide',
+            accelerator: 'Command+H',
+            selector: 'hide:',
           },
+          { type: 'separator' },
           {
-            label: '&Close',
-            accelerator: 'Ctrl+W',
+            label: 'Quit',
+            accelerator: 'Command+Q',
             click: () => {
-              this.mainWindow.close();
+              app.quit();
+            },
+          },
+        ],
+      },
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Import JSON',
+            click: () => {
+              // Open file dialog to select JSON file
+              const { dialog } = require('electron');
+              dialog
+                .showOpenDialog({
+                  filters: [{ name: 'JSON Files', extensions: ['json'] }],
+                  properties: ['openFile'],
+                })
+                .then((result: any) => {
+                  if (!result.canceled && result.filePaths.length > 0) {
+                    const filePath = result.filePaths[0];
+                    const mainWindow = BrowserWindow.getAllWindows()[0];
+                    importJSONFile(filePath, mainWindow);
+                  }
+                })
+                .catch((err: any) => {
+                  console.error('Error opening file dialog:', err);
+                });
             },
           },
         ],

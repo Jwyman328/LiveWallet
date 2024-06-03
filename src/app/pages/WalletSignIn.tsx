@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Network } from '../types/network';
 import { Loader, Notification, Tooltip } from '@mantine/core';
 
@@ -23,6 +23,7 @@ import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconInfoCircle } from '@tabler/icons-react';
+import { ipcRenderer } from 'electron';
 
 type PublicElectrumUrl = {
   name: string;
@@ -210,6 +211,53 @@ export const WalletSignIn = () => {
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
+
+  const handleImportedWallet = (walletData: Record<string, string>) => {
+    console.log('Received imported wallet data in signin page', walletData);
+    const {
+      defaultDescriptor: importedDefaultDescriptor,
+      defaultMasterFingerprint: importedDefaultMasterFingerprint,
+      defaultDerivationPath: importedDefaultDerivationPath,
+      defaultXpub: importedDefaultXpub,
+      defaultNetwork: importedDefaultNetwork,
+      defaultScriptType: importedDefaultScriptType,
+      publicElectrumUrl: importedPublicElectrumUrl,
+      privateElectrumUrl: importedPrivateElectrumUrl,
+      isUsingPublicServer: importedIsUsingPublicServer,
+    } = walletData;
+    setMasterFingerPrint(importedDefaultMasterFingerprint);
+    setDerivationPath(importedDefaultDerivationPath);
+    setXpub(importedDefaultXpub);
+    setIsUsingPublicServer(!!importedIsUsingPublicServer);
+    setPrivateElectrumUrl(importedPrivateElectrumUrl);
+
+    const importedNetwork = networkOptions.find(
+      (option) => option.value === importedDefaultNetwork,
+    );
+
+    if (importedNetwork) {
+      setNetwork(importedNetwork);
+    }
+    const importedScriptType = scriptTypeOptions.find(
+      (option) => option.value === importedDefaultScriptType,
+    );
+    if (importedScriptType) {
+      setScriptType(importedScriptType);
+    }
+    const importedPublicServer = publicElectrumOptions.find(
+      (option) => option.value === importedPublicElectrumUrl,
+    );
+
+    if (importedPublicServer) {
+      setSelectedPublicServer(importedPublicServer);
+    }
+  };
+
+  useEffect(() => {
+    // Listen for the 'wallet-data' event sent from the main process
+    window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
+    // Clean up the event listener when the component unmounts
+  }, []);
 
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">

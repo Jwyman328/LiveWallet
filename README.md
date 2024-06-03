@@ -29,7 +29,7 @@ $ sudo npm run package
 
 
 ## How to start app locally
-- To startup the elctron app run from (.)
+- To startup the electron app run from (.)
 ```bash
 $ npm start
 ```
