@@ -27,7 +27,11 @@ export function useCreateTxFeeEstimate(
 }
 
 export function useGetCurrentFees() {
-  return useQuery(uxtoQueryKeys.getCurrentFees, () =>
-    ApiClient.getCurrentFees(),
+  return useQuery(
+    uxtoQueryKeys.getCurrentFees,
+    () => ApiClient.getCurrentFees(),
+    {
+      refetchOnWindowFocus: false,
+    },
   );
 }

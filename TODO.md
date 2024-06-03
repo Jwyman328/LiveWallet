@@ -32,5 +32,3 @@
 # Open questions 
 - Different image / design on sign in page?
 - fix the app dropdown options
-- Do fees work in production app?
-  - no it doesn't

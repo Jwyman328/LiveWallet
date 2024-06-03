@@ -10,11 +10,19 @@ class TestFeeService(TestCase):
         self.fee_service = FeeService()
         # TODO update site with real site not local site
         # when I switch it over in the code
-        self.get_fees_from_external_url = "http://localhost:3000/fee-estimates"
+        self.get_fees_from_external_url = (
+            "https://mempool.space/api/v1/fees/recommended"
+        )
 
     def test_current_fees(self):
         # TODO mock get_fees or mock requests library
-        mempool_fee_rate_mock_response = {"1": 3, "12": 2, "144": 1}
+        mempool_fee_rate_mock_response = {
+            "fastestFee": 3,
+            "halfHourFee": 2,
+            "hourFee": 1,
+            "economyFee": 1,
+            "minimumFee": 1,
+        }
 
         get_fees_mock_response = Mock()
         get_fees_mock_response.status_code = 200

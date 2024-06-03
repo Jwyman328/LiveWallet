@@ -217,7 +217,7 @@ function Home() {
 
       <div className="ml-4 flex flex-col items-center">
         <h1 className="text-center font-bold text-xl">
-          Custom Fee environment{' '}
+          Custom Fee Environment
         </h1>
         <div className="mb-8">
           <div className="flex flex-row items-center">

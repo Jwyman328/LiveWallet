@@ -11,7 +11,9 @@ export const CurrentFeeRates = () => {
     return (
       <div className=" w-20 p-1  text-center">
         <p className="font-semibold">{title}</p>
-        <p>{rate} sat/vB </p>
+        <p>
+          {rate} <span className="text-gray-500 text-xs">sat/vB</span>{' '}
+        </p>
       </div>
     );
   };

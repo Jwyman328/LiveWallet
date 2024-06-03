@@ -14,9 +14,7 @@ class FeeEstimates:
 
 def get_fees() -> FeeEstimates:
     """Make an api request for the current fee rates."""
-    # Define the API endpoint URL
-    # TODO make this some type of env variable
-    url = "http://localhost:3000/fee-estimates"
+    url = "https://mempool.space/api/v1/fees/recommended"
 
     try:
         LOGGER.info("making request to get fees", url=url)
@@ -29,18 +27,11 @@ def get_fees() -> FeeEstimates:
         )
 
         if response.status_code == 200:
-            # TODO figure out how to fill the nigiri memool so that there is a fee market
-            # todo also add better logging everywhere
-            # todo add tests
             data = response.json()
-            # get in next block
-            high = data.get("1", 1)
-            # get in block in 2 hours
-            medium = data.get("12", 1)
-            # get in block in 24 hours
-            low = data.get("144", 1)
+            high = data.get("fastestFee", 1)
+            medium = data.get("halfHourFee", 1)
+            low = data.get("hourFee", 1)
             # Process the data as needed
-            # todo use real data not mock data
             return FeeEstimates(low=low, medium=medium, high=high)
         else:
             LOGGER.error("Error getting fees from", url=url)
