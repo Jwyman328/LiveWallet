@@ -54,26 +54,13 @@ export default class MenuBuilder {
 
   buildDarwinTemplate(): MenuItemConstructorOptions[] {
     const subMenuAbout: DarwinMenuItemConstructorOptions = {
-      label: 'Electron',
+      label: 'UTXO Fee Estimator',
       submenu: [
         {
-          label: 'About ElectronReact',
-          selector: 'orderFrontStandardAboutPanel:',
-        },
-        { type: 'separator' },
-        { label: 'Services', submenu: [] },
-        { type: 'separator' },
-        {
-          label: 'Hide ElectronReact',
+          label: 'Hide',
           accelerator: 'Command+H',
           selector: 'hide:',
         },
-        {
-          label: 'Hide Others',
-          accelerator: 'Command+Shift+H',
-          selector: 'hideOtherApplications:',
-        },
-        { label: 'Show All', selector: 'unhideAllApplications:' },
         { type: 'separator' },
         {
           label: 'Quit',
@@ -84,22 +71,13 @@ export default class MenuBuilder {
         },
       ],
     };
-    const subMenuEdit: DarwinMenuItemConstructorOptions = {
-      label: 'Edit',
-      submenu: [
-        { label: 'Undo', accelerator: 'Command+Z', selector: 'undo:' },
-        { label: 'Redo', accelerator: 'Shift+Command+Z', selector: 'redo:' },
-        { type: 'separator' },
-        { label: 'Cut', accelerator: 'Command+X', selector: 'cut:' },
-        { label: 'Copy', accelerator: 'Command+C', selector: 'copy:' },
-        { label: 'Paste', accelerator: 'Command+V', selector: 'paste:' },
-        {
-          label: 'Select All',
-          accelerator: 'Command+A',
-          selector: 'selectAll:',
-        },
-      ],
-    };
+    // const subMenuEdit: DarwinMenuItemConstructorOptions = {
+    //   label: 'Edit',
+    //   submenu: [
+    //     // { label: 'Import wallet', accelerator: 'Command+Z', selector: 'undo:' },
+    //     // { label: 'Save wallet', accelerator: 'Shift+Command+Z', selector: 'redo:' },
+    //   ],
+    // };
     const subMenuViewDev: MenuItemConstructorOptions = {
       label: 'View',
       submenu: [
@@ -155,29 +133,27 @@ export default class MenuBuilder {
       label: 'Help',
       submenu: [
         {
-          label: 'Learn More',
+          label: 'Open source code',
           click() {
-            shell.openExternal('https://electronjs.org');
+            shell.openExternal(
+              'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app',
+            );
           },
         },
         {
           label: 'Documentation',
           click() {
             shell.openExternal(
-              'https://github.com/electron/electron/tree/main/docs#readme',
+              'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app?tab=readme-ov-file',
             );
-          },
-        },
-        {
-          label: 'Community Discussions',
-          click() {
-            shell.openExternal('https://www.electronjs.org/community');
           },
         },
         {
           label: 'Search Issues',
           click() {
-            shell.openExternal('https://github.com/electron/electron/issues');
+            shell.openExternal(
+              'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app/issues',
+            );
           },
         },
       ],
@@ -189,7 +165,7 @@ export default class MenuBuilder {
         ? subMenuViewDev
         : subMenuViewProd;
 
-    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
+    return [subMenuAbout, subMenuView, subMenuWindow, subMenuHelp];
   }
 
   buildDefaultTemplate() {
@@ -256,29 +232,27 @@ export default class MenuBuilder {
         label: 'Help',
         submenu: [
           {
-            label: 'Learn More',
+            label: 'Open source code',
             click() {
-              shell.openExternal('https://electronjs.org');
+              shell.openExternal(
+                'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app',
+              );
             },
           },
           {
             label: 'Documentation',
             click() {
               shell.openExternal(
-                'https://github.com/electron/electron/tree/main/docs#readme',
+                'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app?tab=readme-ov-file',
               );
-            },
-          },
-          {
-            label: 'Community Discussions',
-            click() {
-              shell.openExternal('https://www.electronjs.org/community');
             },
           },
           {
             label: 'Search Issues',
             click() {
-              shell.openExternal('https://github.com/electron/electron/issues');
+              shell.openExternal(
+                'https://github.com/Jwyman328/utxo_fee_estimation_fe_electron_app/issues',
+              );
             },
           },
         ],
