@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useMemo, useState } from 'react';
 import { Network } from '../types/network';
-import { Loader, Notification } from '@mantine/core';
+import { Loader, Notification, Tooltip } from '@mantine/core';
 
 import { networkOptions, scriptTypeOptions } from '../components/formOptions';
 import vaultImage from '../images/vault.jpeg';
@@ -21,6 +21,8 @@ import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
+
+import { IconInfoCircle } from '@tabler/icons-react';
 
 type PublicElectrumUrl = {
   name: string;
@@ -157,7 +159,7 @@ export const WalletSignIn = () => {
   };
 
   const [masterFingerPrint, setMasterFingerPrint] = useState<string>(
-    configs.defaultMasterFingerprint,
+    configs.defaultMasterFingerprint || '00000000',
   );
   const handleMasterFingerPrint = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMasterFingerPrint(e.target.value);
@@ -173,12 +175,10 @@ export const WalletSignIn = () => {
     const isNestedSegWit =
       scriptTypeDescription === scriptTypeToDescriptorMap.P2WSH;
     const closingParam = isNestedSegWit ? '))' : ')';
-    const pubType =
-      network.value === Network.TESTNET || network.value === Network.REGTEST
-        ? 'tpub'
-        : 'xpub';
 
-    const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationPath}]${pubType}${xpub}/0/*${closingParam}`;
+    let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
+
+    const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationWithoutPrefix}]${xpub}/0/*${closingParam}`;
     return computedDescriptor;
   };
 
@@ -263,18 +263,33 @@ export const WalletSignIn = () => {
             }
           }}
         />
-        <InputLabel className={`mb-2 ${labelWidth}`}>
-          Master fingerprint
-        </InputLabel>
+
+        <div className={`flex flex-row ${labelWidth} mb-2 items-center`}>
+          <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
+          <Tooltip
+            withArrow
+            w={300}
+            multiline
+            label="The master fingerprint uniquely identifies this keystore using the first 4 bytes of the master public key hash. It is safe to use any valid value (00000000) for watch only wallets"
+          >
+            <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+          </Tooltip>
+        </div>
         <Input
           className={`${formItemWidth}`}
           placeholder="00000000"
           value={masterFingerPrint}
           onInput={handleMasterFingerPrint}
         />
-        <InputLabel className={`mb-2 mt-6 ${labelWidth}`}>
-          Derivation path
-        </InputLabel>
+        <div className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}>
+          <InputLabel className="mr-1">Derivation path</InputLabel>
+          <Tooltip
+            withArrow
+            label="The derivation path to the xpub from the master private key."
+          >
+            <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+          </Tooltip>
+        </div>
         <Input
           className={`${formItemWidth}`}
           placeholder="m/49'/0'/0'"
@@ -286,7 +301,7 @@ export const WalletSignIn = () => {
         <Textarea
           className={`${formItemWidth}`}
           styles={{ input: { minHeight: '6.3rem' } }}
-          placeholder="xpub"
+          placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
           onInput={handleXpubChange}
           value={xpub}
         />

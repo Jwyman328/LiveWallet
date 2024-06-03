@@ -97,8 +97,8 @@ export const GenerateWallet = () => {
     const { scriptType, fingerPrint, derivationPath, pubType, pubValue } =
       parseDescriptor(descriptor);
     configs.defaultMasterFingerprint = fingerPrint;
-    configs.defaultDerivationPath = derivationPath;
-    configs.defaultXpub = pubValue;
+    configs.defaultDerivationPath = `m/${derivationPath}`;
+    configs.defaultXpub = `${pubType}${pubValue}`;
     configs.defaultNetwork = network.value as Network;
     const defaultScriptType = descriptorTypeToScriptType[
       scriptType
