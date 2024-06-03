@@ -31,4 +31,3 @@
 
 # Open questions 
 - Different image / design on sign in page?
-- fix the app dropdown options
