@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CurrentFeeRates } from '../components/currentFeeRates';
 import { UtxosDisplay } from '../components/utxosDisplay';
 import { useGetBalance, useGetUtxos } from '../hooks/utxos';
@@ -32,7 +32,9 @@ function Home() {
   const [btcMetric, setBtcMetric] = useState(BtcMetric.SATS);
 
   const queryClient = useQueryClient();
-
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('current-route', '/home');
+  }, []);
   const logOut = async () => {
     try {
       await deleteCurrentWalletMutation.mutateAsync();

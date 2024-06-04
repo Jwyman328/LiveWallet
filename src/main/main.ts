@@ -30,6 +30,23 @@ ipcMain.on('ipc-example', async (event, arg) => {
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
 });
+ipcMain.on('current-route', (event, currentRoute) => {
+  console.log('Current route:', currentRoute);
+  const menuImportedWallet = MenuBuilder.menu.getMenuItemById('importWallet');
+
+  if (currentRoute === '/signin') {
+
+    if (menuImportedWallet) {
+      console.log("setting import wallet option to enabled")
+      menuImportedWallet.enabled = true;
+    }
+  } else {
+    if (menuImportedWallet) {
+      console.log("setting import wallet option to disabled")
+      menuImportedWallet.enabled = false;
+    }
+  }
+});
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -112,7 +129,6 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
-
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 

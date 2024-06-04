@@ -6,12 +6,12 @@ import {
   MenuItemConstructorOptions,
 } from 'electron';
 
-import * as fs from 'fs';
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string;
   submenu?: DarwinMenuItemConstructorOptions[] | Menu;
 }
 
+import * as fs from 'fs';
 function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
@@ -30,7 +30,7 @@ function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
-
+  static menu: Menu;
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
   }
@@ -50,6 +50,7 @@ export default class MenuBuilder {
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
+    MenuBuilder.menu = menu;
 
     return menu;
   }
@@ -126,6 +127,8 @@ export default class MenuBuilder {
       submenu: [
         {
           label: 'Import wallet',
+          id: 'importWallet',
+          enabled: false,
           click: () => {
             // Open file dialog to select JSON file
             const { dialog } = require('electron');

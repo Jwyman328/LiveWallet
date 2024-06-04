@@ -23,7 +23,7 @@ import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconInfoCircle } from '@tabler/icons-react';
-import { ipcRenderer } from 'electron';
+import MenuBuilder from '../../main/menu';
 
 type PublicElectrumUrl = {
   name: string;
@@ -256,7 +256,8 @@ export const WalletSignIn = () => {
   useEffect(() => {
     // Listen for the 'wallet-data' event sent from the main process
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
-    // Clean up the event listener when the component unmounts
+
+    window.electron.ipcRenderer.sendMessage('current-route', '/signin');
   }, []);
 
   return isServerAvailableAndHealthy ? (
