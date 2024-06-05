@@ -2,7 +2,11 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example' | 'json-wallet' | 'current-route';
+export type Channels =
+  | 'ipc-example'
+  | 'json-wallet'
+  | 'current-route'
+  | 'save-wallet';
 
 const electronHandler = {
   ipcRenderer: {

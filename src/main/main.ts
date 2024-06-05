@@ -33,19 +33,33 @@ ipcMain.on('ipc-example', async (event, arg) => {
 ipcMain.on('current-route', (event, currentRoute) => {
   console.log('Current route:', currentRoute);
   const menuImportedWallet = MenuBuilder.menu.getMenuItemById('importWallet');
+  const menuSaveWallet = MenuBuilder.menu.getMenuItemById('saveWallet');
 
   if (currentRoute === '/signin') {
-
     if (menuImportedWallet) {
-      console.log("setting import wallet option to enabled")
+      console.log('setting import wallet option to enabled');
       menuImportedWallet.enabled = true;
+    }
+    if (menuSaveWallet) {
+      console.log('setting save wallet option to disabled');
+      menuSaveWallet.enabled = false;
     }
   } else {
     if (menuImportedWallet) {
-      console.log("setting import wallet option to disabled")
+      console.log('setting import wallet option to disabled');
       menuImportedWallet.enabled = false;
     }
+
+    if (menuSaveWallet) {
+      console.log('setting save wallet option to enabled');
+      menuSaveWallet.enabled = true;
+    }
   }
+});
+
+ipcMain.on('save-wallet', async (event, walletDetails) => {
+  const menu = MenuBuilder.menu;
+  menu.walletDetails = walletDetails;
 });
 
 if (process.env.NODE_ENV === 'production') {

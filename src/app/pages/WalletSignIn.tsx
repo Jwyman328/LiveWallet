@@ -98,6 +98,21 @@ export const WalletSignIn = () => {
   const navigate = useNavigate();
 
   const handleWalletInitiated = () => {
+    // send wallet details to main process so that
+    // the main process has the wallet details if they want to save them.
+    saveWallet({
+      defaultDescriptor: generateDescriptor(),
+      defaultMasterFingerprint: masterFingerPrint,
+      defaultDerivationPath: derivationPath,
+      defaultXpub: xpub,
+      defaultElectrumServerUrl: electrumUrl,
+      backendServerBaseUrl: 'http://localhost:5011',
+      defaultNetwork: network.value,
+      defaultScriptType: scriptType.value,
+      isUsingPublicServer: isUsingPublicServer,
+      privateElectrumUrl: privateElectrumUrl,
+      publicElectrumUrl: selectedPublicServer.value,
+    });
     navigate('/home');
   };
 
@@ -212,7 +227,9 @@ export const WalletSignIn = () => {
     navigate('/generate-wallet');
   };
 
-  const handleImportedWallet = (walletData: Record<string, string>) => {
+  const handleImportedWallet = (
+    walletData: Record<string, string | boolean>,
+  ) => {
     console.log('Received imported wallet data in signin page', walletData);
     const {
       defaultDescriptor: importedDefaultDescriptor,
@@ -225,11 +242,13 @@ export const WalletSignIn = () => {
       privateElectrumUrl: importedPrivateElectrumUrl,
       isUsingPublicServer: importedIsUsingPublicServer,
     } = walletData;
-    setMasterFingerPrint(importedDefaultMasterFingerprint);
-    setDerivationPath(importedDefaultDerivationPath);
-    setXpub(importedDefaultXpub);
-    setIsUsingPublicServer(!!importedIsUsingPublicServer);
-    setPrivateElectrumUrl(importedPrivateElectrumUrl);
+    console.log('imported descriptor', importedDefaultDescriptor);
+
+    setMasterFingerPrint(importedDefaultMasterFingerprint as string);
+    setDerivationPath(importedDefaultDerivationPath as string);
+    setXpub(importedDefaultXpub as string);
+    setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
+    setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
 
     const importedNetwork = networkOptions.find(
       (option) => option.value === importedDefaultNetwork,
@@ -253,9 +272,15 @@ export const WalletSignIn = () => {
     }
   };
 
+  const saveWallet = (walletDetails: Record<string, string | boolean>) => {
+    window.electron.ipcRenderer.sendMessage('save-wallet', walletDetails);
+  };
+
   useEffect(() => {
     // Listen for the 'wallet-data' event sent from the main process
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
+
+    // window.electron.ipcRenderer.on('save-wallet', saveWallet);
 
     window.electron.ipcRenderer.sendMessage('current-route', '/signin');
   }, []);

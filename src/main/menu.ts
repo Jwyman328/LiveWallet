@@ -27,10 +27,10 @@ function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
     mainWindow.webContents.send('json-wallet', jsonWalletData);
   });
 }
-
+type WalletDetails = { walletDetails: Record<string, any> };
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
-  static menu: Menu;
+  static menu: Menu & WalletDetails;
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
   }
@@ -46,7 +46,7 @@ export default class MenuBuilder {
     const template =
       process.platform === 'darwin'
         ? this.buildDarwinTemplate()
-        : this.buildDefaultTemplate();
+        : this.buildDarwinTemplate();
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
@@ -89,13 +89,6 @@ export default class MenuBuilder {
         },
       ],
     };
-    // const subMenuEdit: DarwinMenuItemConstructorOptions = {
-    //   label: 'Edit',
-    //   submenu: [
-    //     // { label: 'Import wallet', accelerator: 'Command+Z', selector: 'undo:' },
-    //     // { label: 'Save wallet', accelerator: 'Shift+Command+Z', selector: 'redo:' },
-    //   ],
-    // };
     const subMenuViewDev: MenuItemConstructorOptions = {
       label: 'View',
       submenu: [
@@ -149,7 +142,46 @@ export default class MenuBuilder {
               });
           },
         },
+
+        {
+          label: 'Save wallet',
+          id: 'saveWallet',
+          enabled: false,
+          click: () => {
+            const { dialog } = require('electron');
+            dialog
+              .showSaveDialog({
+                title: 'Save JSON File',
+                defaultPath: './my_wallet.json', // Specify the default file name
+                filters: [{ name: 'JSON Files', extensions: ['json'] }],
+              })
+              .then((result) => {
+                if (!result.canceled && result.filePath) {
+                  const jsonFilePath = result.filePath;
+                  const walletDetails = MenuBuilder.menu.walletDetails;
+                  saveJsonToFile(walletDetails, jsonFilePath);
+                }
+              })
+              .catch((err) => {
+                console.error('Error saving JSON file:', err);
+              });
+          },
+        },
       ],
+    };
+    const saveJsonToFile = (jsonData, filePath) => {
+      fs.writeFile(
+        filePath,
+        JSON.stringify(jsonData, null, 2),
+        'utf8',
+        (err) => {
+          if (err) {
+            console.error('Error saving JSON file:', err);
+          } else {
+            console.log('JSON file saved successfully');
+          }
+        },
+      );
     };
     const subMenuViewProd: MenuItemConstructorOptions = {
       label: 'View',
@@ -241,23 +273,7 @@ export default class MenuBuilder {
           {
             label: 'Import JSON',
             click: () => {
-              // Open file dialog to select JSON file
-              const { dialog } = require('electron');
-              dialog
-                .showOpenDialog({
-                  filters: [{ name: 'JSON Files', extensions: ['json'] }],
-                  properties: ['openFile'],
-                })
-                .then((result: any) => {
-                  if (!result.canceled && result.filePaths.length > 0) {
-                    const filePath = result.filePaths[0];
-                    const mainWindow = BrowserWindow.getAllWindows()[0];
-                    importJSONFile(filePath, mainWindow);
-                  }
-                })
-                .catch((err: any) => {
-                  console.error('Error opening file dialog:', err);
-                });
+              console.log('import json');
             },
           },
         ],
