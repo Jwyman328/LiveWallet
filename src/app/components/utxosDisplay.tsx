@@ -35,6 +35,9 @@ type UtxosDisplayProps = {
   isError: boolean;
   btcMetric: BtcMetric;
   feeRateColorValues: [number, string][];
+
+  currentBatchedTxData: any; //TODO fix type
+  setCurrentBatchedTxData: React.Dispatch<React.SetStateAction<any>>; // TODO fix type
 };
 
 export const UtxosDisplay = ({
@@ -45,6 +48,8 @@ export const UtxosDisplay = ({
   isError,
   btcMetric,
   feeRateColorValues,
+  currentBatchedTxData,
+  setCurrentBatchedTxData,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
@@ -237,6 +242,10 @@ export const UtxosDisplay = ({
     enableRowSelection: true,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
+    enableFilters: false,
+    enableColumnFilters: false,
+    enableColumnActions: false,
+    enableHiding: false,
     enablePagination: false,
     enableTableFooter: false,
     enableBottomToolbar: false,
@@ -287,7 +296,6 @@ export const UtxosDisplay = ({
     return getSelectedUtxos(selectedTxs);
   }, [selectedTxs, getSelectedUtxos]);
 
-  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
   const {
     data: batchedTxData,
     mutateAsync,
@@ -335,7 +343,10 @@ export const UtxosDisplay = ({
 
     return isSpendable ? (
       <div className={borderClasses} style={{ backgroundColor: bgColor }}>
-        <p>Total fees: ~{fee.toLocaleString()} sats</p>
+        <p>
+          Total fees: ~{btcSatHandler(fee.toLocaleString(), btcMetric)}
+          {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
+        </p>
         <p>Fee pct: ~{percentOfTxFee}%</p>
       </div>
     ) : (

@@ -10,7 +10,6 @@ import {
   Slider,
   InputLabel,
   Select,
-  Tabs,
   SegmentedControl,
   ActionIcon,
   NumberInput,
@@ -29,12 +28,15 @@ function Home() {
   const getWalletTypeQueryRequest = useGetWalletType();
   const deleteCurrentWalletMutation = useDeleteCurrentWallet();
 
-  const [btcMetric, setBtcMetric] = useState(BtcMetric.SATS);
+  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
+  const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
 
   const queryClient = useQueryClient();
+
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('current-route', '/home');
   }, []);
+
   const logOut = async () => {
     try {
       await deleteCurrentWalletMutation.mutateAsync();
@@ -130,6 +132,11 @@ function Home() {
     }
   };
 
+  const handleFeeRateChange = (value: number) => {
+    setFeeRate(value);
+    setCurrentBatchedTxData(null);
+  };
+
   const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
   return (
     <div className="h-full">
@@ -190,6 +197,7 @@ function Home() {
           </Button>
         </div>
       </SettingsSlideout>
+
       <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-16">
         <Container size="xl" className="flex justify-between items-center h-16">
           <CurrentFeeRates />
@@ -230,7 +238,7 @@ function Home() {
                 max={parseInt(feeScale.value)}
                 step={10}
                 value={feeRate}
-                onChange={setFeeRate}
+                onChange={handleFeeRateChange}
               />
 
               <InputLabel className="text-center">
@@ -253,6 +261,8 @@ function Home() {
           isError={
             getUtxosQueryRequest.isError || getWalletTypeQueryRequest.isError
           }
+          currentBatchedTxData={currentBatchedTxData}
+          setCurrentBatchedTxData={setCurrentBatchedTxData}
         />
       </div>
     </div>
