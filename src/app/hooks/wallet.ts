@@ -2,6 +2,7 @@ import { useMutation, useQuery } from 'react-query';
 import { ApiClient } from '../api/api';
 import { Network } from '../types/network';
 import { WalletTypes } from '../types/scriptTypes';
+import { CreateMockWalletResponseType } from '../api/types';
 
 export const walletTypeQueryKeys = {
   getWalletType: 'getWalletType',
@@ -35,7 +36,7 @@ type CreateMockWalletParams = {
 };
 export function useCreateMockWallet(
   network: Network,
-  onSuccess: (data) => void,
+  onSuccess: (data: CreateMockWalletResponseType) => void,
   onError: () => void,
 ) {
   return useMutation(

@@ -4,7 +4,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Network } from '../types/network';
 import { Loader, Notification, Tooltip } from '@mantine/core';
 
-import { networkOptions, scriptTypeOptions } from '../components/formOptions';
+import {
+  NetworkTypeOption,
+  ScriptTypeOption,
+  networkOptions,
+  scriptTypeOptions,
+} from '../components/formOptions';
 import vaultImage from '../images/vault.jpeg';
 import {
   ComboboxItem,
@@ -19,11 +24,10 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import { ScriptTypes, scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconInfoCircle } from '@tabler/icons-react';
-import MenuBuilder from '../../main/menu';
 
 type PublicElectrumUrl = {
   name: string;
@@ -85,14 +89,14 @@ export const WalletSignIn = () => {
 
   const defaultNetwork = networkOptions.find(
     (option) => option.value === configs.defaultNetwork,
-  );
-  // @ts-ignore
+  ) as NetworkTypeOption;
+
   const [network, setNetwork] = useState<ComboboxItem>(defaultNetwork);
 
   const defaultScriptType = scriptTypeOptions.find(
     (option) => option.value === configs.defaultScriptType,
-  );
-  // @ts-ignore
+  ) as ScriptTypeOption;
+
   const [scriptType, setScriptType] = useState<ComboboxItem>(defaultScriptType);
 
   const navigate = useNavigate();
@@ -183,10 +187,7 @@ export const WalletSignIn = () => {
 
   const generateDescriptor = () => {
     // take the inputs from the various fields and create a descriptor
-    // @ts-ignore
-    let scriptTypeDescription: any = scriptTypeToDescriptorMap[
-      scriptType.value
-    ] as any;
+    let scriptTypeDescription = scriptTypeToDescriptorMap[scriptType.value];
 
     const isNestedSegWit =
       scriptTypeDescription === scriptTypeToDescriptorMap.P2WSH;

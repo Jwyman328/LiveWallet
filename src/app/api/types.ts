@@ -31,7 +31,28 @@ export type CurrentFeesResponseType = {
   high: number;
 };
 
+export type CreateTxFeeEstimationResponseType = {
+  spendable: boolean;
+  fee: number;
+};
+
+export type InitiateWalletResponseType = {
+  message: string;
+  descriptor: string;
+  network: string;
+  electrumUrl: string;
+};
+
+export type CreateMockWalletResponseType = {
+  message: string;
+  descriptor: string;
+  network: string;
+};
+
+export type DeleteCurrentWalletResponseType = {
+  message: string;
+};
+
 export type HealthStatusResponseType = {
   status: 'good' | 'bad';
 };
-

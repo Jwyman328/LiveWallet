@@ -4,6 +4,10 @@ import {
   CurrentFeesResponseType,
   UtxoRequestParam,
   HealthStatusResponseType,
+  CreateTxFeeEstimationResponseType,
+  InitiateWalletResponseType,
+  CreateMockWalletResponseType,
+  DeleteCurrentWalletResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -50,7 +54,7 @@ export class ApiClient {
     );
 
     const data = await response.json();
-    return data;
+    return data as CreateTxFeeEstimationResponseType;
   }
 
   static async getCurrentFees() {
@@ -73,7 +77,7 @@ export class ApiClient {
     );
 
     const data = await response.json();
-    return data;
+    return data as InitiateWalletResponseType;
   }
 
   static async createMockWallet(
@@ -89,7 +93,7 @@ export class ApiClient {
       { type, network, utxoCount, minUtxoAmount, maxUtxoAmount },
     );
 
-    const data = await response.json();
+    const data = (await response.json()) as CreateMockWalletResponseType;
     return data;
   }
   static async getWalletType() {
@@ -118,7 +122,7 @@ export class ApiClient {
       'DELETE',
     );
 
-    const data = await response.json();
+    const data = (await response.json()) as DeleteCurrentWalletResponseType;
     return data;
   }
 }

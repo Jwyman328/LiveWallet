@@ -12,14 +12,14 @@ import {
   Select,
   SegmentedControl,
   ActionIcon,
-  NumberInput,
-  ColorInput,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { SettingsSlideout } from '../components/SettingsSlideout';
 import { IconAdjustments } from '@tabler/icons-react';
+import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
+import { CreateTxFeeEstimationResponseType } from '../api/types';
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -28,7 +28,9 @@ function Home() {
   const getWalletTypeQueryRequest = useGetWalletType();
   const deleteCurrentWalletMutation = useDeleteCurrentWallet();
 
-  const [currentBatchedTxData, setCurrentBatchedTxData] = useState(null);
+  const [currentBatchedTxData, setCurrentBatchedTxData] = useState<
+    CreateTxFeeEstimationResponseType | undefined | null
+  >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
 
   const queryClient = useQueryClient();
@@ -270,42 +272,3 @@ function Home() {
 }
 
 export default Home;
-type FeeRateColorChangeInputsProps = {
-  numberOfInputs: number;
-  feeRateColorMapValues: [number, string][];
-  changeFeeRateColorPercent: (index: number, percent: number) => void;
-  changeFeeRateColor: (index: number, color: string) => void;
-};
-const FeeRateColorChangeInputs = ({
-  numberOfInputs,
-  feeRateColorMapValues,
-  changeFeeRateColorPercent,
-  changeFeeRateColor,
-}: FeeRateColorChangeInputsProps) => {
-  const components = [];
-  for (let i = 0; i < numberOfInputs; i++) {
-    const margin = i === 0 ? 'mt-4' : '';
-    components.push(
-      <div className={`flex flex-row items-end justify-between ${margin}`}>
-        <NumberInput
-          label={i === 0 ? 'Fee %' : undefined}
-          placeholder="Percents"
-          suffix="%"
-          value={feeRateColorMapValues[i][0]}
-          mt="md"
-          onChange={(value) => changeFeeRateColorPercent(i, Number(value))}
-        />
-        <ColorInput
-          withEyeDropper={false}
-          format="rgb"
-          value={feeRateColorMapValues[i][1]}
-          className="ml-4"
-          width={100}
-          label={i === 0 ? 'Color' : undefined}
-          onChange={(value) => changeFeeRateColor(i, value)}
-        />
-      </div>,
-    );
-  }
-  return <> {components} </>;
-};

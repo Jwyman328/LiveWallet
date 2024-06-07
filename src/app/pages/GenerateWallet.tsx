@@ -21,6 +21,7 @@ import { useCreateMockWallet } from '../hooks/wallet';
 import { configs } from '../configs';
 import { networkOptions, scriptTypeOptions } from '../components/formOptions';
 import { XIcon } from '../components/XIcon';
+import { CreateMockWalletResponseType } from '../api/types';
 
 export const GenerateWallet = () => {
   const navigate = useNavigate();
@@ -91,7 +92,9 @@ export const GenerateWallet = () => {
     }
   };
 
-  const handleMockWalletCreationSuccess = (data: any) => {
+  const handleMockWalletCreationSuccess = (
+    data: CreateMockWalletResponseType,
+  ) => {
     const descriptor = data.descriptor;
     configs.defaultDescriptor = descriptor;
     const { scriptType, fingerPrint, derivationPath, pubType, pubValue } =

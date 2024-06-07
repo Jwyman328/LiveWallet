@@ -1,5 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { UtxoRequestParamWithAmount } from '../api/types';
+import React, { useEffect, useMemo } from 'react';
+import {
+  CreateTxFeeEstimationResponseType,
+  UtxoRequestParamWithAmount,
+} from '../api/types';
 import {
   MaterialReactTable,
   MRT_RowSelectionState,
@@ -35,9 +38,10 @@ type UtxosDisplayProps = {
   isError: boolean;
   btcMetric: BtcMetric;
   feeRateColorValues: [number, string][];
-
-  currentBatchedTxData: any; //TODO fix type
-  setCurrentBatchedTxData: React.Dispatch<React.SetStateAction<any>>; // TODO fix type
+  currentBatchedTxData: CreateTxFeeEstimationResponseType | undefined | null;
+  setCurrentBatchedTxData: React.Dispatch<
+    React.SetStateAction<CreateTxFeeEstimationResponseType | undefined | null>
+  >;
 };
 
 export const UtxosDisplay = ({
@@ -338,7 +342,7 @@ export const UtxosDisplay = ({
     const fee = Number(batchedTxData?.fee) + inputSigFees;
     const percentOfTxFee = (Number(fee / utxoInputTotal) * 100).toFixed(4);
 
-    const isSpendable: boolean = batchedTxData?.spendable;
+    const isSpendable = batchedTxData?.spendable;
     const bgColor = getFeeRateColor(Number(percentOfTxFee));
 
     return isSpendable ? (
