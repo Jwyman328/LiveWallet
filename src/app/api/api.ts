@@ -14,7 +14,11 @@ import { Network } from '../types/network';
 import { WalletTypes } from '../types/scriptTypes';
 import { configs } from '../configs';
 
-async function fetchHandler(url: string, method = 'GET', body?: any) {
+async function fetchHandler(
+  url: string,
+  method = 'GET',
+  body?: Record<string, any>,
+) {
   const response = await fetch(url, {
     method: method,
     body: JSON.stringify(body),

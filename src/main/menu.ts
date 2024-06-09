@@ -12,6 +12,7 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 }
 
 import * as fs from 'fs';
+import { Wallet, WalletConfigs } from '../app/types/wallet';
 function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
@@ -28,8 +29,8 @@ function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
   });
 }
 type WalletDetails = {
-  walletDetails: Record<string, any>;
-  walletConfigs: Record<string, any>;
+  walletDetails: Wallet;
+  walletConfigs: WalletConfigs;
 };
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
@@ -38,7 +39,7 @@ export default class MenuBuilder {
     this.mainWindow = mainWindow;
   }
 
-  buildMenu(): Menu {
+  buildMenu(): Menu & WalletDetails {
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
@@ -174,7 +175,7 @@ export default class MenuBuilder {
         },
       ],
     };
-    const saveJsonToFile = (jsonData, filePath) => {
+    const saveJsonToFile = (jsonData: Wallet, filePath: string) => {
       fs.writeFile(
         filePath,
         JSON.stringify(jsonData, null, 2),

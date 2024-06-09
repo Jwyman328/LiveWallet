@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { WalletConfigs } from '../app/types/wallet';
 
 class AppUpdater {
   constructor() {
@@ -62,10 +63,13 @@ ipcMain.on('save-wallet', async (event, walletDetails) => {
   menu.walletDetails = walletDetails;
 });
 
-ipcMain.on('save-wallet-configs', async (event, walletConfigs) => {
-  const menu = MenuBuilder.menu;
-  menu.walletConfigs = walletConfigs;
-});
+ipcMain.on(
+  'save-wallet-configs',
+  async (event, walletConfigs: WalletConfigs) => {
+    const menu = MenuBuilder.menu;
+    menu.walletConfigs = walletConfigs;
+  },
+);
 
 ipcMain.on('get-wallet-data', async (event) => {
   const menu = MenuBuilder.menu;

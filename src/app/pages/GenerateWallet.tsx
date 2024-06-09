@@ -1,6 +1,5 @@
 import {
   Button,
-  ComboboxItem,
   NumberInput,
   Select,
   InputLabel,
@@ -19,7 +18,12 @@ import {
 import { useState } from 'react';
 import { useCreateMockWallet } from '../hooks/wallet';
 import { configs } from '../configs';
-import { networkOptions, scriptTypeOptions } from '../components/formOptions';
+import {
+  NetworkTypeOption,
+  ScriptTypeOption,
+  networkOptions,
+  scriptTypeOptions,
+} from '../components/formOptions';
 import { XIcon } from '../components/XIcon';
 import { CreateMockWalletResponseType } from '../api/types';
 
@@ -34,11 +38,11 @@ export const GenerateWallet = () => {
 
   const defaultNetwork = networkOptions.find(
     (option) => option.value === configs.defaultNetwork,
-  );
-  // @ts-ignore
-  const [network, setNetwork] = useState<ComboboxItem>(defaultNetwork);
+  ) as NetworkTypeOption;
 
-  const [scriptType, setScriptType] = useState<ComboboxItem>(
+  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
+
+  const [scriptType, setScriptType] = useState<ScriptTypeOption>(
     scriptTypeOptions[0],
   );
 
@@ -155,7 +159,7 @@ export const GenerateWallet = () => {
         className={formItemWidth}
         data={networkOptions}
         value={network ? network.value : null}
-        onChange={(_value, option) => setNetwork(option)}
+        onChange={(_value, option) => setNetwork(option as NetworkTypeOption)}
       />
 
       <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>Script type</InputLabel>
@@ -164,7 +168,7 @@ export const GenerateWallet = () => {
         className={`mb-4 ${formItemWidth}`}
         data={scriptTypeOptions}
         value={scriptType ? scriptType.value : null}
-        onChange={(_value, option) => setScriptType(option)}
+        onChange={(_value, option) => setScriptType(option as ScriptTypeOption)}
       />
 
       <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>Utxo count</InputLabel>

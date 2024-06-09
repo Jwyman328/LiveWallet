@@ -12,7 +12,6 @@ import {
 } from '../components/formOptions';
 import vaultImage from '../images/vault.jpeg';
 import {
-  ComboboxItem,
   Select,
   Input,
   InputLabel,
@@ -24,10 +23,11 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { ScriptTypes, scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconInfoCircle } from '@tabler/icons-react';
+import { Wallet } from '../types/wallet';
 
 type PublicElectrumUrl = {
   name: string;
@@ -91,13 +91,14 @@ export const WalletSignIn = () => {
     (option) => option.value === configs.defaultNetwork,
   ) as NetworkTypeOption;
 
-  const [network, setNetwork] = useState<ComboboxItem>(defaultNetwork);
+  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
 
   const defaultScriptType = scriptTypeOptions.find(
     (option) => option.value === configs.defaultScriptType,
   ) as ScriptTypeOption;
 
-  const [scriptType, setScriptType] = useState<ComboboxItem>(defaultScriptType);
+  const [scriptType, setScriptType] =
+    useState<ScriptTypeOption>(defaultScriptType);
 
   const navigate = useNavigate();
 
@@ -228,9 +229,7 @@ export const WalletSignIn = () => {
     navigate('/generate-wallet');
   };
 
-  const handleImportedWallet = (
-    walletData: Record<string, string | boolean>,
-  ) => {
+  const handleImportedWallet = (walletData: Wallet) => {
     console.log('Received imported wallet data in signin page', walletData);
     const {
       defaultDescriptor: importedDefaultDescriptor,
@@ -291,7 +290,7 @@ export const WalletSignIn = () => {
     );
   };
 
-  const saveWallet = (walletDetails: Record<string, string | boolean>) => {
+  const saveWallet = (walletDetails: Wallet) => {
     window.electron.ipcRenderer.sendMessage('save-wallet', walletDetails);
   };
 
@@ -335,7 +334,7 @@ export const WalletSignIn = () => {
           value={network.value}
           onChange={(_value, option) => {
             if (option) {
-              setNetwork(option);
+              setNetwork(option as NetworkTypeOption);
             }
           }}
         />
@@ -350,7 +349,7 @@ export const WalletSignIn = () => {
           value={scriptType ? scriptType.value : null}
           onChange={(_value, option) => {
             if (option) {
-              setScriptType(option);
+              setScriptType(option as ScriptTypeOption);
             }
           }}
         />
@@ -404,8 +403,7 @@ export const WalletSignIn = () => {
           <Radio
             checked={isUsingPublicServer}
             onClick={(e) => {
-              // @ts-ignore
-              const isSelected = e?.target.value === 'on';
+              const isSelected = e.currentTarget.value === 'on';
               setIsUsingPublicServer(isSelected);
             }}
             label="Public electrum server"
@@ -413,8 +411,7 @@ export const WalletSignIn = () => {
           <Radio
             checked={!isUsingPublicServer}
             onClick={(e) => {
-              // @ts-ignore
-              const isSelected = e?.target.value === 'on';
+              const isSelected = e.currentTarget.value === 'on';
               setIsUsingPublicServer(!isSelected);
             }}
             label="Private electrum server"

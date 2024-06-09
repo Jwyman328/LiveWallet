@@ -201,7 +201,7 @@ export const UtxosDisplay = ({
   const getSelectedUtxos = React.useCallback(
     (selectedTxRows: MRT_RowSelectionState) => {
       const selectedUtxosFromatted: UtxoRequestParamWithAmount[] = [];
-      utxos.forEach((utxo: any) => {
+      utxos.forEach((utxo) => {
         if (selectedTxRows[utxo.txid]) {
           selectedUtxosFromatted.push({
             id: utxo.txid,

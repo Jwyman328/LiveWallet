@@ -20,6 +20,14 @@ import { SettingsSlideout } from '../components/SettingsSlideout';
 import { IconAdjustments } from '@tabler/icons-react';
 import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
 import { CreateTxFeeEstimationResponseType } from '../api/types';
+import { Wallet, WalletConfigs } from '../types/wallet';
+
+export type ScaleOption = {
+  value: string;
+  label: string;
+};
+
+export type FeeRateColor = [number, string];
 
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -53,7 +61,7 @@ function Home() {
     navigate('/');
   };
 
-  const scaleOptions = [
+  const scaleOptions: ScaleOption[] = [
     { value: '100', label: '100' },
     { value: '1000', label: '1,000' },
     { value: '10000', label: '10,000' },
@@ -61,9 +69,8 @@ function Home() {
     { value: '1000000', label: '1,000,000' },
   ];
 
-  const minScaleOptions = [
+  const minScaleOptions: ScaleOption[] = [
     { value: '1', label: '1' },
-    { value: '10', label: '10' },
     { value: '100', label: '100' },
     { value: '1000', label: '1,000' },
     { value: '10000', label: '10,000' },
@@ -74,7 +81,7 @@ function Home() {
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
 
   const [feeRateColorMapValues, setFeeRateColorMapValues] = useState<
-    [number, string][]
+    FeeRateColor[]
   >([
     [0, 'rgb(220, 252, 231)'],
     [2, 'rgb(254, 240, 138)'],
@@ -97,7 +104,7 @@ function Home() {
     ],
   ]);
 
-  const saveWalletConfigs = (walletConfigs: Record<string, any>) => {
+  const saveWalletConfigs = (walletConfigs: WalletConfigs) => {
     window.electron.ipcRenderer.sendMessage(
       'save-wallet-configs',
       walletConfigs,
@@ -120,21 +127,21 @@ function Home() {
     }
   }, [btcMetric, feeRateColorMapValues, feeScale, minFeeScale, feeRate]);
 
-  const handleWalletData = (walletData: any) => {
+  const handleWalletData = (walletData?: Wallet) => {
     console.log('walletData loaded', walletData);
     const isConfigDataLoaded =
-      !!walletData.feeRate &&
-      !!walletData.btcMetric &&
-      !!walletData.feeRateColorMapValues &&
-      !!walletData.feeScale &&
-      !!walletData.minFeeScale;
+      !!walletData?.feeRate &&
+      !!walletData?.btcMetric &&
+      !!walletData?.feeRateColorMapValues &&
+      !!walletData?.feeScale &&
+      !!walletData?.minFeeScale;
 
     if (isConfigDataLoaded) {
-      setFeeRate(walletData.feeRate);
-      setFeeScale(walletData.feeScale);
-      setMinFeeScale(walletData.minFeeScale);
-      setBtcMetric(walletData.btcMetric);
-      setFeeRateColorMapValues(walletData.feeRateColorMapValues);
+      setFeeRate(walletData.feeRate!);
+      setFeeScale(walletData.feeScale!);
+      setMinFeeScale(walletData.minFeeScale!);
+      setBtcMetric(walletData.btcMetric!);
+      setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
     }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };
