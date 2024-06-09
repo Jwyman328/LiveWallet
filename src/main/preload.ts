@@ -6,7 +6,10 @@ export type Channels =
   | 'ipc-example'
   | 'json-wallet'
   | 'current-route'
-  | 'save-wallet';
+  | 'save-wallet'
+  | 'save-wallet-configs'
+  | 'get-wallet-data'
+  | 'wallet-data';
 
 const electronHandler = {
   ipcRenderer: {

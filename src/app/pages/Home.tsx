@@ -47,6 +47,9 @@ function Home() {
       // error handled via toast
     }
 
+    window.electron.ipcRenderer.sendMessage('save-wallet-configs', undefined);
+
+    window.electron.ipcRenderer.sendMessage('save-wallet', undefined);
     navigate('/');
   };
 
@@ -93,6 +96,53 @@ function Home() {
       'rgb(153, 27, 27)', // 'bg-red-800',
     ],
   ]);
+
+  const saveWalletConfigs = (walletConfigs: Record<string, any>) => {
+    window.electron.ipcRenderer.sendMessage(
+      'save-wallet-configs',
+      walletConfigs,
+    );
+  };
+  const [
+    hasInitialWalletConfigDataBeenLoaded,
+    setHasInitialWalletConfigDataBeenLoaded,
+  ] = useState(false);
+
+  useEffect(() => {
+    if (hasInitialWalletConfigDataBeenLoaded) {
+      saveWalletConfigs({
+        btcMetric,
+        feeRateColorMapValues,
+        feeScale,
+        minFeeScale,
+        feeRate,
+      });
+    }
+  }, [btcMetric, feeRateColorMapValues, feeScale, minFeeScale, feeRate]);
+
+  const handleWalletData = (walletData: any) => {
+    console.log('walletData loaded', walletData);
+    const isConfigDataLoaded =
+      !!walletData.feeRate &&
+      !!walletData.btcMetric &&
+      !!walletData.feeRateColorMapValues &&
+      !!walletData.feeScale &&
+      !!walletData.minFeeScale;
+
+    if (isConfigDataLoaded) {
+      setFeeRate(walletData.feeRate);
+      setFeeScale(walletData.feeScale);
+      setMinFeeScale(walletData.minFeeScale);
+      setBtcMetric(walletData.btcMetric);
+      setFeeRateColorMapValues(walletData.feeRateColorMapValues);
+    }
+    setHasInitialWalletConfigDataBeenLoaded(true);
+  };
+
+  useEffect(() => {
+    window.electron.ipcRenderer.on('wallet-data', handleWalletData);
+    window.electron.ipcRenderer.sendMessage('get-wallet-data');
+  }, []);
 
   const changeFeeRateColorPercent = (index: number, percent: number) => {
     const feeRateColorItem = feeRateColorMapValues[index];

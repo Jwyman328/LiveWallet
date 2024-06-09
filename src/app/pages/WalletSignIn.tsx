@@ -242,6 +242,12 @@ export const WalletSignIn = () => {
       publicElectrumUrl: importedPublicElectrumUrl,
       privateElectrumUrl: importedPrivateElectrumUrl,
       isUsingPublicServer: importedIsUsingPublicServer,
+
+      btcMetric: importedBtcMetric,
+      feeRateColorMapValues: importedFeeRateColorMapValues,
+      feeScale: importedFeeScale,
+      minFeeScale: importedMinFeeScale,
+      feeRate: importedFeeRate,
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
@@ -271,6 +277,18 @@ export const WalletSignIn = () => {
     if (importedPublicServer) {
       setSelectedPublicServer(importedPublicServer);
     }
+
+    const walletConfigs = {
+      btcMetric: importedBtcMetric,
+      feeRateColorMapValues: importedFeeRateColorMapValues,
+      feeScale: importedFeeScale,
+      minFeeScale: importedMinFeeScale,
+      feeRate: importedFeeRate,
+    };
+    window.electron.ipcRenderer.sendMessage(
+      'save-wallet-configs',
+      walletConfigs,
+    );
   };
 
   const saveWallet = (walletDetails: Record<string, string | boolean>) => {
@@ -280,8 +298,6 @@ export const WalletSignIn = () => {
   useEffect(() => {
     // Listen for the 'wallet-data' event sent from the main process
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
-
-    // window.electron.ipcRenderer.on('save-wallet', saveWallet);
 
     window.electron.ipcRenderer.sendMessage('current-route', '/signin');
   }, []);

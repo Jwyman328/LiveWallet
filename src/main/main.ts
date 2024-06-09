@@ -62,6 +62,25 @@ ipcMain.on('save-wallet', async (event, walletDetails) => {
   menu.walletDetails = walletDetails;
 });
 
+ipcMain.on('save-wallet-configs', async (event, walletConfigs) => {
+  const menu = MenuBuilder.menu;
+  menu.walletConfigs = walletConfigs;
+});
+
+ipcMain.on('get-wallet-data', async (event) => {
+  const menu = MenuBuilder.menu;
+  console.log('menu wallet configs', menu.walletConfigs);
+  console.log('menu wallet details', menu.walletDetails);
+  if (!menu.walletConfigs || !menu.walletDetails) {
+    event.reply('wallet-data', undefined);
+  } else {
+    event.reply('wallet-data', {
+      ...menu.walletConfigs,
+      ...menu.walletDetails,
+    });
+  }
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();

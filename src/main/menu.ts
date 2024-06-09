@@ -27,7 +27,10 @@ function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
     mainWindow.webContents.send('json-wallet', jsonWalletData);
   });
 }
-type WalletDetails = { walletDetails: Record<string, any> };
+type WalletDetails = {
+  walletDetails: Record<string, any>;
+  walletConfigs: Record<string, any>;
+};
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
   static menu: Menu & WalletDetails;
@@ -159,7 +162,9 @@ export default class MenuBuilder {
                 if (!result.canceled && result.filePath) {
                   const jsonFilePath = result.filePath;
                   const walletDetails = MenuBuilder.menu.walletDetails;
-                  saveJsonToFile(walletDetails, jsonFilePath);
+                  const walletConfigs = MenuBuilder.menu.walletConfigs;
+                  const walletData = { ...walletDetails, ...walletConfigs };
+                  saveJsonToFile(walletData, jsonFilePath);
                 }
               })
               .catch((err) => {

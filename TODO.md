@@ -6,6 +6,8 @@
 - write tests for frontend
 - add typing for all api responses
 - remove all any typing.
+- add a banner for showing that a specific wallet is loaded
+- clear the loaded wallet configs when any of the form values have changed
 
 
 
