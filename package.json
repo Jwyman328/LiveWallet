@@ -39,7 +39,7 @@
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest"
+    "test": "jest --watch"
   },
   "browserslist": [],
   "prettier": {
@@ -75,6 +75,9 @@
     },
     "setupFiles": [
       "./.erb/scripts/check-build-exists.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "./src/jest.setup.js"
     ],
     "testEnvironment": "jsdom",
     "testEnvironmentOptions": {
@@ -112,8 +115,9 @@
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@svgr/webpack": "^8.1.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
+    "@testing-library/dom": "^10.1.0",
     "@testing-library/jest-dom": "^6.1.3",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.5",
     "@types/node": "20.6.2",
     "@types/react": "^18.2.21",

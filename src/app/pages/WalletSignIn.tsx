@@ -10,7 +10,15 @@ import {
   networkOptions,
   scriptTypeOptions,
 } from '../components/formOptions';
-import vaultImage from '../images/vault.jpeg';
+
+let vaultImage: any;
+
+if (process.env.NODE_ENV === 'test') {
+  vaultImage = require('');
+} else {
+  vaultImage = require('../images/vault.jpeg');
+}
+
 import {
   Select,
   Input,
@@ -38,6 +46,7 @@ export const WalletSignIn = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
   const serverHealthStatusQuery = useGetServerHealthStatus();
+
   const isServerAvailableAndHealthy =
     serverHealthStatusQuery.isSuccess &&
     serverHealthStatusQuery.data.status === 'good' &&
@@ -296,6 +305,7 @@ export const WalletSignIn = () => {
 
   useEffect(() => {
     // Listen for the 'wallet-data' event sent from the main process
+    // @ts-ignore
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
 
     window.electron.ipcRenderer.sendMessage('current-route', '/signin');

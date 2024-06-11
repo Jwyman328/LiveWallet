@@ -137,6 +137,7 @@ function Home() {
       !!walletData?.minFeeScale;
 
     if (isConfigDataLoaded) {
+      // @ts-ignore
       setFeeRate(walletData.feeRate!);
       setFeeScale(walletData.feeScale!);
       setMinFeeScale(walletData.minFeeScale!);
@@ -147,6 +148,7 @@ function Home() {
   };
 
   useEffect(() => {
+    // @ts-ignore
     window.electron.ipcRenderer.on('wallet-data', handleWalletData);
     window.electron.ipcRenderer.sendMessage('get-wallet-data');
   }, []);
