@@ -444,6 +444,7 @@ export const WalletSignIn = () => {
 
           <Tabs.Panel value="public">
             <Select
+              placeholder="Enter public electrum url"
               allowDeselect={false}
               disabled={!isUsingPublicServer}
               data={publicElectrumOptions}

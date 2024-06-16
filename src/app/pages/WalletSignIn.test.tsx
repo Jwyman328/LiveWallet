@@ -1,8 +1,13 @@
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, act } from '@testing-library/react';
 import { WalletSignIn } from './WalletSignIn';
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
+import { Network } from '../types/network';
+import { ScriptTypes } from '../types/scriptTypes';
+import { Wallet } from '../types/wallet';
+import { BtcMetric } from '../types/btcSatHandler';
+import { ScaleOption } from './Home';
 
 const mockNavigate = jest.fn();
 let initiateWalletSpy: jest.SpyInstance;
@@ -30,6 +35,8 @@ describe('WalletSignIn', () => {
 
   afterEach(() => {
     mockElectron.ipcRenderer.sendMessage.mockRestore();
+    mockElectron.ipcRenderer.on.mockRestore();
+    initiateWalletSpy.mockRestore();
   });
 
   test('Default Wallet sign displays correctly', async () => {
@@ -60,8 +67,10 @@ describe('WalletSignIn', () => {
     ) as HTMLInputElement;
 
     const serverTypeLabel = screen.getByText('Server type');
-    const serverTypeSelected = screen.getByLabelText('Private electrum server');
-    const serverTypeNotSelected = screen.getByLabelText(
+    const privateElectrumServer = screen.getByLabelText(
+      'Private electrum server',
+    );
+    const publicElectrumServer = screen.getByLabelText(
       'Public electrum server',
     );
 
@@ -83,8 +92,8 @@ describe('WalletSignIn', () => {
     expect(xpubLabel).toBeInTheDocument();
     expect(xpubInput.value).toBe('');
     expect(serverTypeLabel).toBeInTheDocument();
-    expect(serverTypeSelected).toBeChecked();
-    expect(serverTypeNotSelected).not.toBeChecked();
+    expect(privateElectrumServer).toBeChecked();
+    expect(publicElectrumServer).not.toBeChecked();
     expect(privateElectrumUrl.value).toBe('127.0.0.1:50000');
     expect(setupButton).toBeDisabled();
   });
@@ -157,5 +166,145 @@ describe('WalletSignIn', () => {
         publicElectrumUrl: 'electrum.blockstream.info',
       },
     );
+  });
+  test('Test initial ipcRenderer messages', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Setup wallet');
+
+    expect(title).toBeInTheDocument();
+
+    expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+      'current-route',
+      '/signin',
+    );
+
+    expect(mockElectron.ipcRenderer.on).toHaveBeenCalledWith(
+      'json-wallet',
+      expect.any(Function),
+    );
+  });
+
+  test('Importing wallet via the json-wallet ipcRenderer on works successfully by setting the walletData', async () => {
+    const mockImportedWalletData: Wallet = {
+      defaultDescriptor: 'mockDefaultDescriptor',
+      defaultMasterFingerprint: '11111111',
+      defaultDerivationPath: "m/44'/0'/0'",
+      defaultXpub: 'mockXpub',
+      defaultElectrumServerUrl: 'mockElectrumServer',
+      backendServerBaseUrl: 'mockBackendServer',
+      defaultNetwork: Network.BITCOIN,
+      defaultScriptType: ScriptTypes.P2TR,
+      isUsingPublicServer: true,
+      privateElectrumUrl: 'mockPrivateElectrum',
+      publicElectrumUrl: 'bitcoin.aranguren.org',
+
+      btcMetric: BtcMetric.BTC,
+      feeRateColorMapValues: [
+        [1, 'green'],
+        [20, 'yellow'],
+      ],
+      feeScale: { value: '200', label: '200' } as ScaleOption,
+      minFeeScale: { value: '100', label: '100' } as ScaleOption,
+      feeRate: '20',
+    };
+    mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
+
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
+    act(() => {
+      mockElectron.ipcRenderer.on.mock.calls[0][1](mockImportedWalletData);
+    });
+
+    // tell main thread about wallet config data as well that is saved along with the wallet data
+    expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+      'save-wallet-configs',
+      {
+        btcMetric: mockImportedWalletData.btcMetric,
+        feeRateColorMapValues: mockImportedWalletData.feeRateColorMapValues,
+        feeScale: mockImportedWalletData.feeScale,
+        minFeeScale: mockImportedWalletData.minFeeScale,
+        feeRate: mockImportedWalletData.feeRate,
+      },
+    );
+
+    await waitFor(() => {
+      const setupButton = screen.getByRole('button', { name: 'Setup' });
+      expect(setupButton).toBeEnabled();
+    });
+
+    // Now confirm loaded wallet data is displayed
+
+    const networkSelected = screen.getByText(
+      mockImportedWalletData.defaultNetwork,
+    );
+    const scriptTypeSelected = screen.getByText('Taproot (P2TR)');
+    const masterFingerPrintSelected = (await screen.findByPlaceholderText(
+      '00000000',
+    )) as HTMLInputElement;
+
+    const derivationPathInput = screen.getByPlaceholderText(
+      "m/49'/0'/0'",
+    ) as HTMLInputElement;
+
+    const xpubInput = screen.getByPlaceholderText(
+      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+    ) as HTMLInputElement;
+
+    const privateElectrumServer = screen.getByLabelText(
+      'Private electrum server',
+    );
+    const publicElectrumServer = screen.getByLabelText(
+      'Public electrum server',
+    );
+
+    const privateElectrumUrl = screen.getByPlaceholderText(
+      'Enter electrum url',
+    ) as HTMLInputElement;
+
+    const publicElectrumUrl = screen.getByPlaceholderText(
+      'Enter public electrum url',
+    ) as HTMLInputElement;
+
+    expect(networkSelected).toBeInTheDocument();
+    expect(scriptTypeSelected).toBeInTheDocument();
+    expect(masterFingerPrintSelected.value).toBe(
+      mockImportedWalletData.defaultMasterFingerprint,
+    );
+    expect(derivationPathInput.value).toBe(
+      mockImportedWalletData.defaultDerivationPath,
+    );
+    expect(xpubInput.value).toBe(mockImportedWalletData.defaultXpub);
+    expect(publicElectrumServer).toBeChecked();
+    expect(privateElectrumServer).not.toBeChecked();
+    expect(privateElectrumUrl.value).toBe(
+      mockImportedWalletData.privateElectrumUrl,
+    );
+    expect(publicElectrumUrl.value).toBe(
+      mockImportedWalletData.publicElectrumUrl,
+    );
+
+    let setupButton = screen.getByRole('button', { name: 'Setup' });
+    expect(setupButton).toBeEnabled();
+
+    // Confirm loaded wallet data is sent to the backend
+    fireEvent.click(setupButton);
+    await waitFor(() => {
+      fireEvent.click(setupButton);
+      expect(initiateWalletSpy).toHaveBeenCalledWith(
+        "tr([11111111/44'/0'/0']mockXpub/0/*)",
+        mockImportedWalletData.defaultNetwork,
+        `${mockImportedWalletData.publicElectrumUrl}:50001`,
+      );
+    });
   });
 });

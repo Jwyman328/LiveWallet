@@ -1,4 +1,5 @@
 # TODO frontend
+- use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - use mantine notifications for when there are network failures
 - improve the readme.md
