@@ -12,7 +12,7 @@ export function useGetServerHealthStatus() {
     {
       refetchOnWindowFocus: true,
       retryDelay: 2500,
-      retry: 20,
+      retry: process.env.NODE_ENV === 'test' ? 0 : 20,
     },
   );
 }

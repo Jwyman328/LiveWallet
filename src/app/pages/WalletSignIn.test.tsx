@@ -13,7 +13,6 @@ const mockNavigate = jest.fn();
 let initiateWalletSpy: jest.SpyInstance;
 let getServerHealthStatusSpy: jest.SpyInstance;
 
-initiateWalletSpy = jest.spyOn(ApiClient, 'initiateWallet');
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
@@ -21,6 +20,7 @@ jest.mock('react-router-dom', () => ({
 
 fdescribe('WalletSignIn', () => {
   beforeEach(() => {
+    initiateWalletSpy = jest.spyOn(ApiClient, 'initiateWallet');
     getServerHealthStatusSpy = jest.spyOn(ApiClient, 'getServerHealthStatus');
     getServerHealthStatusSpy.mockResolvedValue({ status: 'good' });
 
@@ -308,6 +308,57 @@ fdescribe('WalletSignIn', () => {
     });
   });
 
+  it('Test error message displays when initating wallet request fails', async () => {
+    initiateWalletSpy.mockRejectedValue({
+      ok: false as any,
+      status: 404 as any,
+      json: () => Promise.resolve({ error: 'Error initiating wallet' }),
+    } as any) as any;
+
+    const mockImportedWalletData: Wallet = {
+      defaultDescriptor: 'mockDefaultDescriptor',
+      defaultMasterFingerprint: '11111111',
+      defaultDerivationPath: "m/44'/0'/0'",
+      defaultXpub: 'mockXpub',
+      defaultElectrumServerUrl: 'mockElectrumServer',
+      backendServerBaseUrl: 'mockBackendServer',
+      defaultNetwork: Network.BITCOIN,
+      defaultScriptType: ScriptTypes.P2TR,
+      isUsingPublicServer: true,
+      privateElectrumUrl: 'mockPrivateElectrum',
+      publicElectrumUrl: 'bitcoin.aranguren.org',
+    };
+    mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
+
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
+    act(() => {
+      mockElectron.ipcRenderer.on.mock.calls[0][1](mockImportedWalletData);
+    });
+
+    await waitFor(() => {
+      let setupButton = screen.getByRole('button', { name: 'Setup' });
+      expect(setupButton).toBeEnabled();
+
+      fireEvent.click(setupButton);
+      expect(initiateWalletSpy).toHaveBeenCalledWith(
+        "tr([11111111/44'/0'/0']mockXpub/0/*)",
+        mockImportedWalletData.defaultNetwork,
+        `${mockImportedWalletData.publicElectrumUrl}:50001`,
+      );
+    });
+    // get error toast
+    await waitFor(() => {
+      const errorToast = screen.getByText(/Error initiating wallet/i);
+      expect(errorToast).toBeInTheDocument();
+    });
+  });
+
   it('When server health check request returns bad status', async () => {
     getServerHealthStatusSpy.mockResolvedValue({ status: 'bad' });
     const screen = render(
@@ -325,7 +376,7 @@ fdescribe('WalletSignIn', () => {
   });
 
   it('When server health check request returns error', async () => {
-    getServerHealthStatusSpy.mockResolvedValue({
+    getServerHealthStatusSpy.mockRejectedValue({
       ok: false as any,
       status: 404 as any,
       json: () => Promise.resolve({ error: 'Not found' }),
@@ -336,6 +387,7 @@ fdescribe('WalletSignIn', () => {
         <WalletSignIn />
       </WrappedInAppWrappers>,
     );
+
     await waitFor(() => {
       const errorMsg = screen.getByText(
         'There is a problem connecting with the server, please restart the app and try again.',
