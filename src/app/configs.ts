@@ -1,12 +1,14 @@
 import { Network } from './types/network';
 import { ScriptTypes } from './types/scriptTypes';
 
-const isProduction = process.env.NODE_ENV === 'production';
+// treat test environment like production
+const isProduction =
+  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test';
 export const configs = {
   defaultDescriptor: isProduction
     ? ''
     : 'wpkh(tprv8ZgxMBicQKsPcx5nBGsR63Pe8KnRUqmbJNENAfGftF3yuXoMMoVJJcYeUw5eVkm9WBPjWYt6HMWYJNesB5HaNVBaFc1M6dRjWSYnmewUMYy/84h/0h/0h/0/*)',
-  defaultMasterFingerprint: isProduction ? '' : '34b00776',
+  defaultMasterFingerprint: isProduction ? '00000000' : '34b00776',
   defaultDerivationPath: isProduction ? '' : "m/84'/0'/0'",
   defaultXpub: isProduction
     ? ''

@@ -391,6 +391,7 @@ export const WalletSignIn = () => {
           </Tooltip>
         </div>
         <Input
+          data-testid="derivation-path"
           className={`${formItemWidth}`}
           placeholder="m/49'/0'/0'"
           value={derivationPath}
