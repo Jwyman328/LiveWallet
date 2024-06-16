@@ -43,7 +43,7 @@ type PublicElectrumUrl = {
 };
 
 export const WalletSignIn = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isDevelopment = process.env.NODE_ENV === 'development';
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
   const serverHealthStatusQuery = useGetServerHealthStatus();
 
@@ -313,7 +313,7 @@ export const WalletSignIn = () => {
 
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
-      {!isProduction ? (
+      {isDevelopment ? (
         <Button onClick={navigateToGenerateWallet}>Create dev mocks</Button>
       ) : null}
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">

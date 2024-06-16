@@ -11,32 +11,32 @@ import { ScaleOption } from './Home';
 
 const mockNavigate = jest.fn();
 let initiateWalletSpy: jest.SpyInstance;
+let getServerHealthStatusSpy: jest.SpyInstance;
 
+initiateWalletSpy = jest.spyOn(ApiClient, 'initiateWallet');
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
 
-describe('WalletSignIn', () => {
+fdescribe('WalletSignIn', () => {
   beforeEach(() => {
-    jest
-      .spyOn(ApiClient, 'getServerHealthStatus')
-      .mockResolvedValue({ status: 'good' });
+    getServerHealthStatusSpy = jest.spyOn(ApiClient, 'getServerHealthStatus');
+    getServerHealthStatusSpy.mockResolvedValue({ status: 'good' });
 
-    initiateWalletSpy = jest
-      .spyOn(ApiClient, 'initiateWallet')
-      .mockResolvedValue({
-        message: 'Wallet created successfully',
-        descriptor: 'mockDescriptor',
-        network: 'REGTEST',
-        electrumUrl: 'mockElectrumUrl',
-      });
+    initiateWalletSpy.mockResolvedValue({
+      message: 'Wallet created successfully',
+      descriptor: 'mockDescriptor',
+      network: 'REGTEST',
+      electrumUrl: 'mockElectrumUrl',
+    });
   });
 
   afterEach(() => {
-    mockElectron.ipcRenderer.sendMessage.mockRestore();
-    mockElectron.ipcRenderer.on.mockRestore();
-    initiateWalletSpy.mockRestore();
+    mockElectron.ipcRenderer.sendMessage.mockClear();
+    mockElectron.ipcRenderer.on.mockClear();
+    initiateWalletSpy.mockClear();
+    getServerHealthStatusSpy.mockClear();
   });
 
   test('Default Wallet sign displays correctly', async () => {
@@ -305,6 +305,60 @@ describe('WalletSignIn', () => {
         mockImportedWalletData.defaultNetwork,
         `${mockImportedWalletData.publicElectrumUrl}:50001`,
       );
+    });
+  });
+
+  it('When server health check request returns bad status', async () => {
+    getServerHealthStatusSpy.mockResolvedValue({ status: 'bad' });
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => {
+      const errorMsg = screen.getByText(
+        'There is a problem connecting with the server, please restart the app and try again.',
+      );
+      expect(errorMsg).toBeInTheDocument();
+    });
+  });
+
+  it('When server health check request returns error', async () => {
+    getServerHealthStatusSpy.mockResolvedValue({
+      ok: false as any,
+      status: 404 as any,
+      json: () => Promise.resolve({ error: 'Not found' }),
+    } as any) as any;
+
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+    await waitFor(() => {
+      const errorMsg = screen.getByText(
+        'There is a problem connecting with the server, please restart the app and try again.',
+      );
+      expect(errorMsg).toBeInTheDocument();
+    });
+  });
+  it('Make sure Create dev mocks button does not show in production', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => {
+      const title = screen.getByText('Setup wallet');
+      expect(title).toBeInTheDocument();
+
+      const createMockButton = screen.queryByRole('button', {
+        name: 'Create dev mocks',
+      });
+
+      expect(createMockButton).not.toBeInTheDocument();
     });
   });
 });
