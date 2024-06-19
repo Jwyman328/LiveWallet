@@ -304,7 +304,7 @@ export const WalletSignIn = () => {
   };
 
   useEffect(() => {
-    // Listen for the 'wallet-data' event sent from the main process
+    // Listen for the 'json-wallet' event sent from the main process
     // @ts-ignore
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
 

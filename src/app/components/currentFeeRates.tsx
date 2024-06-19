@@ -27,7 +27,10 @@ export const CurrentFeeRates = () => {
               Current fees
             </h2>
             {feeRates.map((feeRate) => (
-              <Fee title={feeRate.title} rate={feeRate.value} />
+              <Fee
+                title={feeRate.title}
+                rate={feeRate?.value?.toString() || ''}
+              />
             ))}
           </div>
         </div>

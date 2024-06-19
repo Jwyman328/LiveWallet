@@ -3,11 +3,10 @@ import { WalletSignIn } from './WalletSignIn';
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
-import { Network } from '../types/network';
-import { ScriptTypes } from '../types/scriptTypes';
-import { Wallet } from '../types/wallet';
-import { BtcMetric } from '../types/btcSatHandler';
-import { ScaleOption } from './Home';
+import {
+  mockImportedWalletData,
+  mockImportedWalletDataWithoutConfigs,
+} from '../../__tests__/mocks';
 
 const mockNavigate = jest.fn();
 let initiateWalletSpy: jest.SpyInstance;
@@ -18,7 +17,7 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-fdescribe('WalletSignIn', () => {
+describe('WalletSignIn', () => {
   beforeEach(() => {
     initiateWalletSpy = jest.spyOn(ApiClient, 'initiateWallet');
     getServerHealthStatusSpy = jest.spyOn(ApiClient, 'getServerHealthStatus');
@@ -190,28 +189,6 @@ fdescribe('WalletSignIn', () => {
   });
 
   test('Importing wallet via the json-wallet ipcRenderer on works successfully by setting the walletData', async () => {
-    const mockImportedWalletData: Wallet = {
-      defaultDescriptor: 'mockDefaultDescriptor',
-      defaultMasterFingerprint: '11111111',
-      defaultDerivationPath: "m/44'/0'/0'",
-      defaultXpub: 'mockXpub',
-      defaultElectrumServerUrl: 'mockElectrumServer',
-      backendServerBaseUrl: 'mockBackendServer',
-      defaultNetwork: Network.BITCOIN,
-      defaultScriptType: ScriptTypes.P2TR,
-      isUsingPublicServer: true,
-      privateElectrumUrl: 'mockPrivateElectrum',
-      publicElectrumUrl: 'bitcoin.aranguren.org',
-
-      btcMetric: BtcMetric.BTC,
-      feeRateColorMapValues: [
-        [1, 'green'],
-        [20, 'yellow'],
-      ],
-      feeScale: { value: '200', label: '200' } as ScaleOption,
-      minFeeScale: { value: '100', label: '100' } as ScaleOption,
-      feeRate: '20',
-    };
     mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
 
     const screen = render(
@@ -315,20 +292,9 @@ fdescribe('WalletSignIn', () => {
       json: () => Promise.resolve({ error: 'Error initiating wallet' }),
     } as any) as any;
 
-    const mockImportedWalletData: Wallet = {
-      defaultDescriptor: 'mockDefaultDescriptor',
-      defaultMasterFingerprint: '11111111',
-      defaultDerivationPath: "m/44'/0'/0'",
-      defaultXpub: 'mockXpub',
-      defaultElectrumServerUrl: 'mockElectrumServer',
-      backendServerBaseUrl: 'mockBackendServer',
-      defaultNetwork: Network.BITCOIN,
-      defaultScriptType: ScriptTypes.P2TR,
-      isUsingPublicServer: true,
-      privateElectrumUrl: 'mockPrivateElectrum',
-      publicElectrumUrl: 'bitcoin.aranguren.org',
-    };
-    mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
+    mockElectron.ipcRenderer.on.mockResolvedValue(
+      mockImportedWalletDataWithoutConfigs,
+    );
 
     const screen = render(
       <WrappedInAppWrappers>
@@ -338,7 +304,9 @@ fdescribe('WalletSignIn', () => {
 
     // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
     act(() => {
-      mockElectron.ipcRenderer.on.mock.calls[0][1](mockImportedWalletData);
+      mockElectron.ipcRenderer.on.mock.calls[0][1](
+        mockImportedWalletDataWithoutConfigs,
+      );
     });
 
     await waitFor(() => {
@@ -348,8 +316,8 @@ fdescribe('WalletSignIn', () => {
       fireEvent.click(setupButton);
       expect(initiateWalletSpy).toHaveBeenCalledWith(
         "tr([11111111/44'/0'/0']mockXpub/0/*)",
-        mockImportedWalletData.defaultNetwork,
-        `${mockImportedWalletData.publicElectrumUrl}:50001`,
+        mockImportedWalletDataWithoutConfigs.defaultNetwork,
+        `${mockImportedWalletDataWithoutConfigs.publicElectrumUrl}:50001`,
       );
     });
     // get error toast

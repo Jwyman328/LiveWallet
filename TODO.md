@@ -9,7 +9,6 @@
 - clear the loaded wallet configs when any of the form values have changed
 
 
-
 # TODOs backend
 - add mypy
 - add a pyproject.toml to manage ruff line length stuff so that ruff formatting is inline with the lsp?

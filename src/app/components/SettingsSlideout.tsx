@@ -24,7 +24,7 @@ export const SettingsSlideout = ({
       withCloseButton
       position="right"
     >
-      <div className="h-full">
+      <div data-testid="settings-slideout" className="h-full">
         {children}
       </div>
     </Drawer>

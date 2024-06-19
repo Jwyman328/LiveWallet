@@ -276,6 +276,7 @@ function Home() {
               onClick={() => setIsShowSettingsSlideout(true)}
               variant="filled"
               aria-label="Settings"
+              data-testid="settings-button"
             >
               <IconAdjustments
                 style={{ width: '70%', height: '70%' }}

@@ -84,15 +84,13 @@ export const UtxosDisplay = ({
   };
 
   const getFeeRateColor = (amount: number) => {
-    const feeRateColorMap = {
-      [feeRateColorValues[0][0]]: feeRateColorValues[0][1],
-      [feeRateColorValues[1][0]]: feeRateColorValues[1][1],
-      [feeRateColorValues[2][0]]: feeRateColorValues[2][1],
-      [feeRateColorValues[3][0]]: feeRateColorValues[3][1],
-      [feeRateColorValues[4][0]]: feeRateColorValues[4][1],
-      [feeRateColorValues[5][0]]: feeRateColorValues[5][1],
-      [feeRateColorValues[6][0]]: feeRateColorValues[6][1],
-    };
+    const feeRateColorMap: Record<number, string> = {};
+
+    for (let i = 0; i < feeRateColorValues.length; i++) {
+      if (feeRateColorValues[i] && feeRateColorValues[i].length >= 2) {
+        feeRateColorMap[feeRateColorValues[i][0]] = feeRateColorValues[i][1];
+      }
+    }
     let selectedColor = feeRateColorMap[0];
 
     for (const key in feeRateColorMap) {
@@ -169,9 +167,9 @@ export const UtxosDisplay = ({
           return (
             <div className="flex items-center justify-center">
               {isSpendable ? (
-                <IconCircleCheck color="green" />
+                <IconCircleCheck data-testid="spendable-icon" color="green" />
               ) : (
-                <IconCircleX color="red" />
+                <IconCircleX data-testid="not-spendable-icon" color="red" />
               )}
             </div>
           );
@@ -277,6 +275,7 @@ export const UtxosDisplay = ({
         },
       ],
     },
+    // @ts-ignore
     muiTableBodyRowProps: { classes: { root: { after: 'bg-green-100' } } },
     muiTableBodyCellProps: ({ row }) => {
       const feeRatePct = row.original.amount
