@@ -17,6 +17,7 @@ let getUtxosSpy: jest.SpyInstance;
 let getWalletType: jest.SpyInstance;
 let deleteCurrentWalletSpy: jest.SpyInstance;
 let getCurrentFeesSpy: jest.SpyInstance;
+let createTxFeeEstimateSpy: jest.SpyInstance;
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -62,6 +63,12 @@ describe('Home', () => {
 
     getCurrentFeesSpy = jest.spyOn(ApiClient, 'getCurrentFees');
     getCurrentFeesSpy.mockResolvedValue({ low: 5, medium: 10, high: 15 });
+
+    createTxFeeEstimateSpy = jest.spyOn(ApiClient, 'createTxFeeEstimation');
+    createTxFeeEstimateSpy.mockResolvedValue({
+      spendable: true,
+      fee: '15000000',
+    });
   });
 
   afterEach(() => {
@@ -72,6 +79,7 @@ describe('Home', () => {
     getBalanceSpy.mockClear();
     deleteCurrentWalletSpy.mockClear();
     getCurrentFeesSpy.mockClear();
+    createTxFeeEstimateSpy.mockClear();
   });
 
   it('Home screen shows correct data by default', async () => {
@@ -328,7 +336,58 @@ describe('Home', () => {
       '/home',
     );
   });
-  // TODO test batching txs
+
+  it('Creating batch tx', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment');
+    expect(title).toBeInTheDocument();
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    const txCheckBoxes = await screen.findAllByRole('checkbox');
+
+    // three txs so should be three tx checkboxes to be able to include
+    // in our batched tx, as well as a 4th button to include all txs.
+    expect(txCheckBoxes.length).toBe(4);
+
+    const includeAllUtxosButton = txCheckBoxes[0];
+    fireEvent.click(includeAllUtxosButton);
+
+    const estimateBatchTxButton = screen.getByRole('button', {
+      name: 'Estimate batch tx',
+    });
+
+    expect(estimateBatchTxButton).toBeEnabled();
+
+    const selectedTotal = screen.getByText('Selected: 3');
+    expect(selectedTotal).toBeInTheDocument();
+
+    const amountSelectedTotal = screen.getByText('amount: 3.00000001 BTC');
+    expect(amountSelectedTotal).toBeInTheDocument();
+
+    fireEvent.click(estimateBatchTxButton);
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 1);
+    });
+
+    const totalFees = await screen.findByText('Total fees: ~0.15000081 BTC');
+    const totalFeePct = await screen.findByText('Fee pct: ~5.0000%');
+    expect(totalFees).toBeInTheDocument();
+    expect(totalFeePct).toBeInTheDocument();
+  });
+
   // Test importing in a wallet
   // test changing config sends update? / other / all main thread calls
 });
