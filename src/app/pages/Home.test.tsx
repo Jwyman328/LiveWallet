@@ -9,7 +9,10 @@ import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
 import Home from './Home';
-import { mockImportedWalletDataWithoutConfigs } from '../../__tests__/mocks';
+import {
+  mockImportedWalletData,
+  mockImportedWalletDataWithoutConfigs,
+} from '../../__tests__/mocks';
 
 const mockNavigate = jest.fn();
 let getBalanceSpy: jest.SpyInstance;
@@ -271,6 +274,19 @@ describe('Home', () => {
 
     await waitFor(() => {
       expect(deleteCurrentWalletSpy).toHaveBeenCalled();
+
+      // clear wallet and wallet config data
+      expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+        'save-wallet-configs',
+        undefined,
+      );
+
+      expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+        'save-wallet',
+        undefined,
+      );
+
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 
@@ -337,6 +353,21 @@ describe('Home', () => {
     );
   });
 
+  test('Tells main thread to get the wallet data on first render', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment');
+    expect(title).toBeInTheDocument();
+
+    expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+      'get-wallet-data',
+    );
+  });
+
   it('Creating batch tx', async () => {
     const screen = render(
       <WrappedInAppWrappers>
@@ -388,6 +419,81 @@ describe('Home', () => {
     expect(totalFeePct).toBeInTheDocument();
   });
 
-  // Test importing in a wallet
+  it('Importing in wallet data with configs', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment');
+    expect(title).toBeInTheDocument();
+
+    expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+      'get-wallet-data',
+    );
+
+    mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
+    act(() => {
+      // make sure the wallet-data callback runs
+      const handleWalletDataFunction =
+        mockElectron.ipcRenderer.on.mock.calls[0][1];
+      handleWalletDataFunction(mockImportedWalletData);
+    });
+
+    expect(mockElectron.ipcRenderer.on.mock.calls[0][0]).toBe('wallet-data');
+
+    // test imported configs are automatically set
+    const customFeeRate = await screen.findByText(
+      `Fee rate: ${mockImportedWalletData.feeRate} sat/vB`,
+    );
+    expect(customFeeRate).toBeInTheDocument();
+
+    const slideoutButton = screen.getByTestId('settings-button');
+    fireEvent.click(slideoutButton);
+
+    const settingsTitle = await screen.findByText('Settings');
+    expect(settingsTitle).toBeInTheDocument();
+
+    const slideout = screen.getByTestId('settings-slideout');
+
+    const minFeeRateLabel = within(slideout).getByText('Min fee rate');
+    const minFeeRate = minFeeRateLabel.parentNode?.nextSibling
+      ?.firstChild as HTMLInputElement;
+    expect(minFeeRate?.value).toBe(mockImportedWalletData.minFeeScale?.value);
+
+    const maxFeeRateLabel = within(slideout).getByText('Max fee rate');
+
+    const maxFeeRate = maxFeeRateLabel.parentNode?.nextSibling
+      ?.firstChild as HTMLInputElement;
+
+    expect(maxFeeRate?.value).toBe(mockImportedWalletData.feeScale?.label);
+
+    const firstPercentColor = within(slideout).getByDisplayValue(
+      // @ts-ignore
+      mockImportedWalletData.feeRateColorMapValues[0][1],
+    );
+
+    const firstPercent = within(slideout).getByDisplayValue(
+      // @ts-ignore
+      `${mockImportedWalletData?.feeRateColorMapValues[0][0]}%`,
+    );
+
+    const secondPercentColor = within(slideout).getByDisplayValue(
+      // @ts-ignore
+      mockImportedWalletData.feeRateColorMapValues[1][1],
+    );
+
+    const secondPercent = within(slideout).getByDisplayValue(
+      // @ts-ignore
+      `${mockImportedWalletData?.feeRateColorMapValues[1][0]}%`,
+    );
+
+    expect(firstPercent).toBeInTheDocument();
+    expect(firstPercentColor).toBeInTheDocument();
+    expect(secondPercent).toBeInTheDocument();
+    expect(secondPercentColor).toBeInTheDocument();
+  });
+
   // test changing config sends update? / other / all main thread calls
 });

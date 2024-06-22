@@ -19,10 +19,10 @@ export const mockImportedWalletData: Wallet = {
 
   btcMetric: BtcMetric.BTC,
   feeRateColorMapValues: [
-    [1, 'green'],
-    [20, 'yellow'],
+    [1, 'rgb(299, 200, 200)'],
+    [20, 'rgb(199, 100, 100)'],
   ],
-  feeScale: { value: '200', label: '200' } as ScaleOption,
+  feeScale: { value: '10000', label: '10,000' } as ScaleOption,
   minFeeScale: { value: '100', label: '100' } as ScaleOption,
   feeRate: '20',
 };
