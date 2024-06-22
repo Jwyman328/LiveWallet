@@ -169,6 +169,41 @@ describe('Home', () => {
     expect(estimateBatchTxButton).toBeDisabled();
   });
 
+  it('Changing current fee rate environment changes the fee rate estimation for each utxo', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+    act(() => {
+      // make sure the wallet-data callback runs
+      //
+      const higherFeeConfig = {
+        ...mockImportedWalletData,
+        feeRate: '100',
+      };
+      mockElectron.ipcRenderer.on.mockResolvedValue(higherFeeConfig);
+      const handleWalletDataFunction =
+        mockElectron.ipcRenderer.on.mock.calls[0][1];
+      handleWalletDataFunction(higherFeeConfig);
+    });
+    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
+    const utxoOneAmount = await screen.findByText('1.00000000');
+
+    const customFeeRate = await screen.findByText('Fee rate: 100 sat/vB');
+
+    // now a higher estimated rate to spend this utxo should now be showing
+    const utxoOneFeeEstimate = await screen.findByText('0.0200%');
+    expect(utxoTableTitle).toBeInTheDocument();
+    expect(utxoTableTitle).toBeInTheDocument();
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    expect(utxoTxIdOne).toBeInTheDocument();
+    expect(customFeeRate).toBeInTheDocument();
+
+    expect(utxoOneAmount).toBeInTheDocument();
+  });
+
   // test default settings slideout
   it('Test default settings slideout', async () => {
     const screen = render(
