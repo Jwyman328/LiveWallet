@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Network } from '../types/network';
-import { Loader, Notification, Tooltip } from '@mantine/core';
+import { Affix, Loader, Notification, Tooltip } from '@mantine/core';
 
 import {
   NetworkTypeOption,
@@ -16,7 +16,7 @@ let vaultImage: any;
 if (process.env.NODE_ENV === 'test') {
   vaultImage = require('');
 } else {
-  vaultImage = require('../images/vault.jpeg');
+  vaultImage = require('../images/vault.png');
 }
 
 import {
@@ -34,7 +34,7 @@ import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
 import { Wallet } from '../types/wallet';
 
 type PublicElectrumUrl = {
@@ -46,7 +46,7 @@ export const WalletSignIn = () => {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const mockElectrumUrl = configs.defaultElectrumServerUrl;
   const serverHealthStatusQuery = useGetServerHealthStatus();
-
+  const location = useLocation();
   const isServerAvailableAndHealthy =
     serverHealthStatusQuery.isSuccess &&
     serverHealthStatusQuery.data.status === 'good' &&
@@ -55,6 +55,12 @@ export const WalletSignIn = () => {
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [activeTab, setActiveTab] = useState<string | null>('private');
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(false);
+
+  useEffect(() => {
+    if (location?.state?.walletData) {
+      handleImportedWallet(location.state.walletData);
+    }
+  }, [location?.state?.walletData]);
 
   // Testnet electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers_testnet.json
   // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
@@ -314,8 +320,18 @@ export const WalletSignIn = () => {
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
       {isDevelopment ? (
-        <Button onClick={navigateToGenerateWallet}>Create dev mocks</Button>
+        <Affix position={{ top: 20, right: 20 }}>
+          <Button onClick={navigateToGenerateWallet}>Create dev mocks</Button>
+        </Affix>
       ) : null}
+      <Affix position={{ top: 20, left: 20 }}>
+        <Button
+          leftSection={<IconArrowLeft />}
+          variant="transparent"
+          onClick={() => navigate('/')}
+        ></Button>
+      </Affix>
+
       <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">
         {displayInitiateWalletError && (
           <Notification
@@ -333,7 +349,7 @@ export const WalletSignIn = () => {
         <h1
           className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
         >
-          Setup wallet
+          Wallet
         </h1>
 
         <InputLabel className={`mt-0 mb-2 ${labelWidth}`}>Network</InputLabel>

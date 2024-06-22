@@ -30,7 +30,7 @@ import { CreateMockWalletResponseType } from '../api/types';
 export const GenerateWallet = () => {
   const navigate = useNavigate();
   const backToSignIn = () => {
-    navigate('/');
+    navigate('/sign-in');
   };
 
   const formItemWidth = 'w-80';

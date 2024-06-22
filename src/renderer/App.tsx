@@ -9,6 +9,7 @@ import { WalletSignIn } from '../app/pages/WalletSignIn';
 import Home from '../app/pages/Home';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { GenerateWallet } from '../app/pages/GenerateWallet';
+import { ChoosePath } from '../app/pages/ChoosePath';
 
 const queryClient = new QueryClient();
 
@@ -22,7 +23,8 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <Router>
           <Routes>
-            <Route path="/" element={<WalletSignIn />} />
+            <Route path="/sign-in" element={<WalletSignIn />} />
+            <Route path="/" element={<ChoosePath />} />
             <Route path="/home" element={<Home />} />
             <Route path="/generate-wallet" element={<GenerateWallet />} />
           </Routes>

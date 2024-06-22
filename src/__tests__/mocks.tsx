@@ -4,6 +4,11 @@ import { Network } from '../app/types/network';
 import { ScriptTypes } from '../app/types/scriptTypes';
 import { Wallet } from '../app/types/wallet';
 
+describe('Mocks', () => {
+  it('mock true', () => {
+    expect(true).toBeTruthy();
+  });
+});
 export const mockImportedWalletData: Wallet = {
   defaultDescriptor: 'mockDefaultDescriptor',
   defaultMasterFingerprint: '11111111',

@@ -13,21 +13,8 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 
 import * as fs from 'fs';
 import { Wallet, WalletConfigs } from '../app/types/wallet';
-function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      console.error('Error reading JSON file:', err);
-      return;
-    }
+import { importJSONFile } from './util';
 
-    // Parse the JSON data
-    const jsonWalletData = JSON.parse(data);
-    console.log('JSON wallet data inside menu.ts:', jsonWalletData);
-
-    // Do something with the JSON data, such as pass it to your renderer process
-    mainWindow.webContents.send('json-wallet', jsonWalletData);
-  });
-}
 type WalletDetails = {
   walletDetails: Wallet;
   walletConfigs: WalletConfigs;
@@ -54,7 +41,10 @@ export default class MenuBuilder {
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
+    //@ts-ignore
     MenuBuilder.menu = menu;
+
+    //@ts-ignore
 
     return menu;
   }

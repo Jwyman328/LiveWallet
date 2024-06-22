@@ -13,7 +13,7 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { importJSONFile, resolveHtmlPath } from './util';
 import { WalletConfigs } from '../app/types/wallet';
 
 class AppUpdater {
@@ -36,7 +36,7 @@ ipcMain.on('current-route', (event, currentRoute) => {
   const menuImportedWallet = MenuBuilder.menu.getMenuItemById('importWallet');
   const menuSaveWallet = MenuBuilder.menu.getMenuItemById('saveWallet');
 
-  if (currentRoute === '/signin') {
+  if (currentRoute === '/signin' || currentRoute === '/') {
     if (menuImportedWallet) {
       console.log('setting import wallet option to enabled');
       menuImportedWallet.enabled = true;
@@ -61,6 +61,25 @@ ipcMain.on('current-route', (event, currentRoute) => {
 ipcMain.on('save-wallet', async (event, walletDetails) => {
   const menu = MenuBuilder.menu;
   menu.walletDetails = walletDetails;
+});
+ipcMain.on('import-wallet-from-dialog', async (event, walletDetails) => {
+  // Open file dialog to select JSON file
+  const { dialog } = require('electron');
+  dialog
+    .showOpenDialog({
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile'],
+    })
+    .then((result: any) => {
+      if (!result.canceled && result.filePaths.length > 0) {
+        const filePath = result.filePaths[0];
+        const mainWindow = BrowserWindow.getAllWindows()[0];
+        importJSONFile(filePath, mainWindow as BrowserWindow);
+      }
+    })
+    .catch((err: any) => {
+      console.error('Error opening file dialog:', err);
+    });
 });
 
 ipcMain.on(

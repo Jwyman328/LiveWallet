@@ -9,6 +9,7 @@ export type Channels =
   | 'save-wallet'
   | 'save-wallet-configs'
   | 'get-wallet-data'
+  | 'import-wallet-from-dialog'
   | 'wallet-data';
 
 const electronHandler = {
