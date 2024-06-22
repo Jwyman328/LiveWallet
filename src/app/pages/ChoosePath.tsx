@@ -32,7 +32,7 @@ export const ChoosePath = () => {
       </Button>
       <Button
         variant="filled"
-        className="ml-8"
+        className="ml-14"
         size="xl"
         style={{ width: '16rem', height: '16rem' }}
         onClick={() => {
