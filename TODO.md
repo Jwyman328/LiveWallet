@@ -5,6 +5,8 @@
 - improve the readme.md
 - Componentize a bit more 
 - write tests for frontend
+  - write tests for initial landing page
+- create new build and publish to github
 - add a banner for showing that a specific wallet is loaded
 - clear the loaded wallet configs when any of the form values have changed
 

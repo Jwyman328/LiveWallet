@@ -32,6 +32,7 @@ export function useGetCurrentFees() {
     () => ApiClient.getCurrentFees(),
     {
       refetchOnWindowFocus: false,
+      refetchInterval: 120000,
     },
   );
 }

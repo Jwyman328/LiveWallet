@@ -120,7 +120,7 @@ describe('Home', () => {
     const highFeeAmount = await screen.findByText('15');
 
     const balance = await screen.findByText('Balance: 3.00000001 BTC');
-    const customFeeRate = await screen.findByText('Fee rate: 1 sat/vB');
+    const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
 
     const utxoTableTitle = await screen.findByText('UTXOS');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
@@ -128,9 +128,9 @@ describe('Home', () => {
     const utxoOneAmount = await screen.findByText('1.00000000');
     const utxoTwoAmount = await screen.findByText('2.00000000');
 
-    const utxoOneFeeEstimate = await screen.findByText('0.0002%');
-    const utxoTwoFeeEstimate = await screen.findByText('0.0001%');
-    const utxoThreeFeeEstimate = await screen.findByText('20000.00%');
+    const utxoOneFeeEstimate = await screen.findByText('0.0020%');
+    const utxoTwoFeeEstimate = await screen.findByText('0.0010%');
+    const utxoThreeFeeEstimate = await screen.findByText('200000.00%');
     const utxoThreeAmount = await screen.findByText('0.00000001');
     const spendableIcons = await screen.findAllByTestId('spendable-icon');
     const notSpendableIcons =
@@ -243,7 +243,7 @@ describe('Home', () => {
     const maxFeeRate = maxFeeRateLabel.parentNode?.nextSibling
       ?.firstChild as HTMLInputElement;
 
-    expect(maxFeeRate?.value).toBe('100');
+    expect(maxFeeRate?.value).toBe('1,000');
     // test default Colors
     const zeroPercentColor =
       within(slideout).getByDisplayValue('rgb(220, 252, 231)');
@@ -445,11 +445,11 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10);
     });
 
-    const totalFees = await screen.findByText('Total fees: ~0.15000081 BTC');
-    const totalFeePct = await screen.findByText('Fee pct: ~5.0000%');
+    const totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
+    const totalFeePct = await screen.findByText('Fee pct: ~5.0003%');
     expect(totalFees).toBeInTheDocument();
     expect(totalFeePct).toBeInTheDocument();
   });

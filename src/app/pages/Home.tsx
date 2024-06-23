@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CurrentFeeRates } from '../components/currentFeeRates';
 import { UtxosDisplay } from '../components/utxosDisplay';
-import { useGetBalance, useGetUtxos } from '../hooks/utxos';
+import { useGetBalance, useGetCurrentFees, useGetUtxos } from '../hooks/utxos';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -35,6 +35,8 @@ function Home() {
   const getUtxosQueryRequest = useGetUtxos();
   const getWalletTypeQueryRequest = useGetWalletType();
   const deleteCurrentWalletMutation = useDeleteCurrentWallet();
+
+  const getCurrentFeesQueryRequest = useGetCurrentFees();
 
   const [currentBatchedTxData, setCurrentBatchedTxData] = useState<
     CreateTxFeeEstimationResponseType | undefined | null
@@ -76,9 +78,16 @@ function Home() {
     { value: '10000', label: '10,000' },
     { value: '100000', label: '100,000' },
   ];
-  const [feeScale, setFeeScale] = useState(scaleOptions[0]);
+  const [feeScale, setFeeScale] = useState(scaleOptions[1]);
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
+
+  // Initially set the current custom fee rate to the current medium fee rate
+  useEffect(() => {
+    if (getCurrentFeesQueryRequest.isSuccess) {
+      setFeeRate(parseInt(`${getCurrentFeesQueryRequest.data?.medium}`));
+    }
+  }, [getCurrentFeesQueryRequest.isSuccess]);
 
   const [feeRateColorMapValues, setFeeRateColorMapValues] = useState<
     FeeRateColor[]
@@ -293,7 +302,10 @@ function Home() {
         </h1>
         <div className="mb-8">
           <div className="flex flex-row items-center">
-            <div className="w-80 ml-8 mr-8 relative top-4">
+            <div
+              style={{ width: '30rem' }}
+              className="ml-8 mr-8 relative top-4"
+            >
               <Slider
                 defaultValue={parseInt(minFeeScale.value)}
                 min={parseInt(minFeeScale.value)}
