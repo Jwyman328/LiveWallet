@@ -13,7 +13,7 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { importJSONFile, resolveHtmlPath } from './util';
+import { importJSONFile, resolveHtmlPath, saveJsonToFile } from './util';
 import { WalletConfigs } from '../app/types/wallet';
 
 class AppUpdater {
@@ -79,6 +79,29 @@ ipcMain.on('import-wallet-from-dialog', async (event, walletDetails) => {
     })
     .catch((err: any) => {
       console.error('Error opening file dialog:', err);
+    });
+});
+
+ipcMain.on('save-wallet-data-from-dialog', async (event, walletDetails) => {
+  // Open file dialog to select JSON file
+  const { dialog } = require('electron');
+  dialog
+    .showSaveDialog({
+      title: 'Save JSON File',
+      defaultPath: './my_wallet.json', // Specify the default file name
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+    })
+    .then((result) => {
+      if (!result.canceled && result.filePath) {
+        const jsonFilePath = result.filePath;
+        const walletDetails = MenuBuilder.menu.walletDetails;
+        const walletConfigs = MenuBuilder.menu.walletConfigs;
+        const walletData = { ...walletDetails, ...walletConfigs };
+        saveJsonToFile(walletData, jsonFilePath);
+      }
+    })
+    .catch((err) => {
+      console.error('Error saving JSON file:', err);
     });
 });
 

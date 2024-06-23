@@ -22,25 +22,33 @@ export const ChoosePath = () => {
   }, []);
   return (
     <div className="w-screen h-screen flex justify-center items-center bg-gray-100 ">
-      <Button
-        variant="outline"
-        size="xl"
-        style={{ width: '16rem', height: '16rem' }}
-        onClick={handleImport}
-      >
-        Import wallet
-      </Button>
-      <Button
-        variant="filled"
-        className="ml-14"
-        size="xl"
-        style={{ width: '16rem', height: '16rem' }}
-        onClick={() => {
-          navigate('/sign-in');
-        }}
-      >
-        Enter wallet
-      </Button>
+      <div className="relative bottom-16 font-medium">
+        <div className="mb-8">
+          <h1 style={{ color: '#228BE6' }} className="text-5xl text-center">
+            Live Wallet
+          </h1>
+        </div>
+        <Button
+          variant="outline"
+          size="xl"
+          style={{ width: '16rem', height: '16rem' }}
+          className="mt-12"
+          onClick={handleImport}
+        >
+          Import wallet
+        </Button>
+        <Button
+          variant="filled"
+          className="ml-14 mt-12"
+          size="xl"
+          style={{ width: '16rem', height: '16rem' }}
+          onClick={() => {
+            navigate('/sign-in');
+          }}
+        >
+          Enter wallet
+        </Button>
+      </div>
     </div>
   );
 };

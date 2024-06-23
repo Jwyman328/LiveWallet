@@ -184,7 +184,7 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "UTXO Fee Estimator",
+    "productName": "Live Wallet",
     "appId": "donthaveone",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",

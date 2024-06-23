@@ -495,7 +495,7 @@ export const WalletSignIn = () => {
             {initiateWalletRequest.isLoading ? (
               <Loader size={20} color="white" />
             ) : (
-              'Setup'
+              'Connect'
             )}
           </Button>
         </div>

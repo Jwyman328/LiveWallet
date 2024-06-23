@@ -13,7 +13,7 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 
 import * as fs from 'fs';
 import { Wallet, WalletConfigs } from '../app/types/wallet';
-import { importJSONFile } from './util';
+import { importJSONFile, saveJsonToFile } from './util';
 
 type WalletDetails = {
   walletDetails: Wallet;
@@ -45,7 +45,6 @@ export default class MenuBuilder {
     MenuBuilder.menu = menu;
 
     //@ts-ignore
-
     return menu;
   }
 
@@ -109,6 +108,22 @@ export default class MenuBuilder {
         },
       ],
     };
+    const editMenuFile: MenuItemConstructorOptions = {
+      label: 'Edit',
+      submenu: [
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
+        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
+        { type: 'separator' },
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
+        {
+          label: 'Select All',
+          accelerator: 'CmdOrCtrl+A',
+          selector: 'selectAll:',
+        },
+      ],
+    };
     const subMenuFile: MenuItemConstructorOptions = {
       label: 'File',
       submenu: [
@@ -164,20 +179,6 @@ export default class MenuBuilder {
           },
         },
       ],
-    };
-    const saveJsonToFile = (jsonData: Wallet, filePath: string) => {
-      fs.writeFile(
-        filePath,
-        JSON.stringify(jsonData, null, 2),
-        'utf8',
-        (err) => {
-          if (err) {
-            console.error('Error saving JSON file:', err);
-          } else {
-            console.log('JSON file saved successfully');
-          }
-        },
-      );
     };
     const subMenuViewProd: MenuItemConstructorOptions = {
       label: 'View',
@@ -240,7 +241,14 @@ export default class MenuBuilder {
         ? subMenuViewDev
         : subMenuViewProd;
 
-    return [subMenuAbout, subMenuFile, subMenuView, subMenuWindow, subMenuHelp];
+    return [
+      subMenuAbout,
+      subMenuFile,
+      subMenuView,
+      editMenuFile,
+      subMenuWindow,
+      subMenuHelp,
+    ];
   }
 
   buildDefaultTemplate() {

@@ -2,6 +2,7 @@
 import { URL } from 'url';
 import path from 'path';
 import { BrowserWindow } from 'electron';
+import { Wallet } from '../app/types/wallet';
 
 export function resolveHtmlPath(htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
@@ -29,3 +30,14 @@ export function importJSONFile(filePath: string, mainWindow: BrowserWindow) {
     mainWindow.webContents.send('json-wallet', jsonWalletData);
   });
 }
+
+export const saveJsonToFile = (jsonData: Wallet, filePath: string) => {
+  const fs = require('fs');
+  fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), 'utf8', (err) => {
+    if (err) {
+      console.error('Error saving JSON file:', err);
+    } else {
+      console.log('JSON file saved successfully');
+    }
+  });
+};

@@ -77,7 +77,7 @@ describe('WalletSignIn', () => {
       'Enter electrum url',
     ) as HTMLInputElement;
 
-    const setupButton = screen.getByRole('button', { name: 'Setup' });
+    const setupButton = screen.getByRole('button', { name: 'Connect' });
 
     expect(title).toBeInTheDocument();
     expect(networkLabel).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('WalletSignIn', () => {
     const title = await screen.findByText('Wallet');
 
     expect(title).toBeInTheDocument();
-    let setupButton = screen.getByRole('button', { name: 'Setup' });
+    let setupButton = screen.getByRole('button', { name: 'Connect' });
 
     expect(setupButton).toBeDisabled();
 
@@ -131,12 +131,12 @@ describe('WalletSignIn', () => {
     });
 
     await waitFor(() => {
-      setupButton = screen.getByRole('button', { name: 'Setup' });
+      setupButton = screen.getByRole('button', { name: 'Connect' });
 
       expect(setupButton).toBeEnabled();
     });
 
-    setupButton = screen.getByRole('button', { name: 'Setup' });
+    setupButton = screen.getByRole('button', { name: 'Connect' });
     const createdDescriptor = `wpkh([00000000/84'/0'/0']${mockXpub}/0/*)`;
     const defaultElectrumUrl = '127.0.0.1:50000';
     await waitFor(() => {
@@ -215,7 +215,7 @@ describe('WalletSignIn', () => {
     );
 
     await waitFor(() => {
-      const setupButton = screen.getByRole('button', { name: 'Setup' });
+      const setupButton = screen.getByRole('button', { name: 'Connect' });
       expect(setupButton).toBeEnabled();
     });
 
@@ -270,7 +270,7 @@ describe('WalletSignIn', () => {
       mockImportedWalletData.publicElectrumUrl,
     );
 
-    let setupButton = screen.getByRole('button', { name: 'Setup' });
+    let setupButton = screen.getByRole('button', { name: 'Connect' });
     expect(setupButton).toBeEnabled();
 
     // Confirm loaded wallet data is sent to the backend
@@ -310,7 +310,7 @@ describe('WalletSignIn', () => {
     });
 
     await waitFor(() => {
-      let setupButton = screen.getByRole('button', { name: 'Setup' });
+      let setupButton = screen.getByRole('button', { name: 'Connect' });
       expect(setupButton).toBeEnabled();
 
       fireEvent.click(setupButton);

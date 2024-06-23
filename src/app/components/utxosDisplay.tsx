@@ -414,7 +414,7 @@ export const UtxosDisplay = ({
           size="xl"
           style={{ height: '100%' }}
         >
-          Estimate batch tx
+          Estimate batch
         </Button>
 
         <DisplayBatchTxData />

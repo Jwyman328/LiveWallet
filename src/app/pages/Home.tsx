@@ -83,8 +83,12 @@ function Home() {
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
 
   // Initially set the current custom fee rate to the current medium fee rate
+  // if it was not set by an imported wallet
   useEffect(() => {
-    if (getCurrentFeesQueryRequest.isSuccess) {
+    if (
+      getCurrentFeesQueryRequest.isSuccess &&
+      feeRate.toString() === minFeeScale.value
+    ) {
       setFeeRate(parseInt(`${getCurrentFeesQueryRequest.data?.medium}`));
     }
   }, [getCurrentFeesQueryRequest.isSuccess]);
@@ -206,6 +210,9 @@ function Home() {
     setFeeRate(value);
     setCurrentBatchedTxData(null);
   };
+  const saveWallet = () => {
+    window.electron.ipcRenderer.sendMessage('save-wallet-data-from-dialog');
+  };
 
   const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
   return (
@@ -253,18 +260,27 @@ function Home() {
             />
           </div>
 
-          <Button
+          <div
             style={{
               position: 'fixed',
               marginBottom: '1rem',
               bottom: '0',
               width: '93%',
             }}
-            className="bg-blue-200 "
-            onClick={logOut}
+            className="flex flex-col items-center"
           >
-            Log out
-          </Button>
+            <Button
+              fullWidth
+              onClick={saveWallet}
+              className="mb-3"
+              variant="light"
+            >
+              Save wallet
+            </Button>
+            <Button fullWidth className="bg-blue-200 " onClick={logOut}>
+              Log out
+            </Button>
+          </div>
         </div>
       </SettingsSlideout>
 
@@ -297,7 +313,7 @@ function Home() {
       </header>
 
       <div className="ml-4 flex flex-col items-center">
-        <h1 className="text-center font-bold text-xl">
+        <h1 className="text-center font-bold text-xl mt-4">
           Custom Fee Environment
         </h1>
         <div className="mb-8">

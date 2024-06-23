@@ -137,7 +137,7 @@ describe('Home', () => {
       await screen.findAllByTestId('not-spendable-icon');
 
     const estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch tx',
+      name: 'Estimate batch',
     });
 
     const batchTotalFees = screen.getByText('Total fees: ...');
@@ -425,7 +425,7 @@ describe('Home', () => {
     fireEvent.click(includeAllUtxosButton);
 
     const estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch tx',
+      name: 'Estimate batch',
     });
 
     expect(estimateBatchTxButton).toBeEnabled();
