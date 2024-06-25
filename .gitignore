@@ -52,6 +52,7 @@ backend/.pytest_cache/
 backend/.idea/
 backend/docs/_build/
 backend/.vscode
+backend/libbdkffi.dylib/
 venv
 
 # Coverage reports

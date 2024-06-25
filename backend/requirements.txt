@@ -11,7 +11,7 @@ structlog
 pydantic==2.7.1
 click===8.1.7
 aiohttp===3.9.5
-pyinstaller===6.6.0
+pyinstaller===6.8.0
 chardet
 charset-normalizer==2.1.0
 gunicorn

@@ -17,6 +17,7 @@ build/
 .idea/
 docs/_build/
 .vscode
+libbdkffi.dylib
 
 # Coverage reports
 htmlcov/

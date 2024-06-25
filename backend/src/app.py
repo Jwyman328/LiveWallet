@@ -88,9 +88,17 @@ def setup_database(app):
         DB.create_all()
 
 
+# if __name__ == "__main__":
+#     app = create_app()
+#     app.run(host="127.0.0.1", port=5011, debug=True)
+# else:
+#     # running from gunicorn
+#     app = create_app()
+
+
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="127.0.0.1", port=5011, debug=True)
+    app.run(host="127.0.0.1", port=5011)
 else:
-    # running from gunicorn
     app = create_app()
+    app.run(host="127.0.0.1", port=5011)
