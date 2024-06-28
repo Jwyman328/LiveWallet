@@ -19,3 +19,10 @@
     - $which python3
         - It should point to your virtual environment path
             - /Users/jwyman/Documents/programming/python/family_wallet_fe/utxo_fee_estimation_fe_electron_app/utxo_fee_estimation_fe_electron_app/backend/venv/bin/python3
+
+
+# auto-py-to-exe helped get the build reliably 
+- - Install it $ pip3 install auto-py-to-exe
+    - https://pypi.org/project/auto-py-to-exe/
+- Then run it
+    - $auto-py-to-exe

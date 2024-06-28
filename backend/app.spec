@@ -1,12 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_submodules
+
+binaries = [('/Users/jwyman/Documents/programming/python/family_wallet_fe/utxo_fee_estimation_fe_electron_app/utxo_fee_estimation_fe_electron_app/backend/libbdkffi.dylib', '.')]
+hiddenimports = ['configparser', 'six', 'dependency_injector.errors']
+binaries += collect_dynamic_libs('bdkpython')
+hiddenimports += collect_submodules('bdkpython')
 
 
 a = Analysis(
-    ['src/app.py'],
+    ['/Users/jwyman/Documents/programming/python/family_wallet_fe/utxo_fee_estimation_fe_electron_app/utxo_fee_estimation_fe_electron_app/backend/src/app.py'],
     pathex=[],
-    binaries=[('libbdkffi.dylib', '.')],
-    datas=[],
-    hiddenimports=['configparser', 'dependency_injector.errors', 'six'],
+    binaries=binaries,
+    datas=[('/Users/jwyman/Documents/programming/python/family_wallet_fe/utxo_fee_estimation_fe_electron_app/utxo_fee_estimation_fe_electron_app/backend/libbdkffi.dylib', '.')],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
