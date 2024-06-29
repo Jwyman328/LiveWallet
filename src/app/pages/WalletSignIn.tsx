@@ -53,8 +53,10 @@ export const WalletSignIn = () => {
     !serverHealthStatusQuery.isLoading;
 
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
-  const [activeTab, setActiveTab] = useState<string | null>('private');
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(
+    isUsingPublicServer ? 'public' : 'private',
+  );
 
   useEffect(() => {
     if (location?.state?.walletData) {
@@ -292,6 +294,9 @@ export const WalletSignIn = () => {
       setSelectedPublicServer(importedPublicServer);
     }
 
+    const activeUrlTab = importedIsUsingPublicServer ? 'public' : 'private';
+    setActiveTab(activeUrlTab);
+
     const walletConfigs = {
       btcMetric: importedBtcMetric,
       feeRateColorMapValues: importedFeeRateColorMapValues,
@@ -349,7 +354,7 @@ export const WalletSignIn = () => {
         <h1
           className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
         >
-          Wallet
+          Watch Only Wallet
         </h1>
 
         <InputLabel className={`mt-0 mb-2 ${labelWidth}`}>Network</InputLabel>

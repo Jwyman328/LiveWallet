@@ -45,7 +45,7 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Wallet');
+    const title = await screen.findByText('Watch Only Wallet');
     const networkLabel = screen.getByText('Network');
     const networkSelected = screen.getByText('REGTEST');
     const scriptTypeLabel = screen.getByText('Script type');
@@ -104,7 +104,7 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Wallet');
+    const title = await screen.findByText('Watch Only Wallet');
 
     expect(title).toBeInTheDocument();
     let setupButton = screen.getByRole('button', { name: 'Connect' });
@@ -173,7 +173,7 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Wallet');
+    const title = await screen.findByText('Watch Only Wallet');
 
     expect(title).toBeInTheDocument();
 
@@ -371,7 +371,7 @@ describe('WalletSignIn', () => {
     );
 
     await waitFor(() => {
-      const title = screen.getByText('Wallet');
+      const title = screen.getByText('Watch Only Wallet');
       expect(title).toBeInTheDocument();
 
       const createMockButton = screen.queryByRole('button', {

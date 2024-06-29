@@ -92,13 +92,13 @@ def setup_database(app):
 #     app = create_app()
 #     app.run(host="127.0.0.1", port=5011, debug=True)
 # else:
-#     # running from gunicorn
 #     app = create_app()
 
 
+# TODO make debug=True when we are developing
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="127.0.0.1", port=5011)
+    app.run(host="127.0.0.1", port=5011, debug=False)
 else:
     app = create_app()
-    app.run(host="127.0.0.1", port=5011)
+    app.run(host="127.0.0.1", port=5011, debug=False)
