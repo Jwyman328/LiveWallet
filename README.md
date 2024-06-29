@@ -1,6 +1,7 @@
-# App 
+# Live Wallet (Keep your utxos alive) 
 ## description
 - An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos.
+
 
 
 # Development
