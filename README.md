@@ -13,7 +13,7 @@ $ bash package_app.sh
 
 - To build just the backend python server run (from ./backend/)
 ```bash
-$ pyinstaller -w -F --add-binary=libbdkffi.dylib:. --hidden-import=configparser --hidden-import="dependency_injector.errors" --hidden-import="six"  src/app.py   
+bash build_executable.sh
 ```
 
 - to copy the new backend builds to where the frontend is expecting it run (./backend/) 
