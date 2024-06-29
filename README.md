@@ -45,6 +45,12 @@ $ backend/start_app.sh
   - Docker must be running in order to run the related backend services. (chopsticks, espolora, electrs, bitcoin)
   - These are needed for the backend to be able to communicate with an electrum server which talks with a bitcoind container, this is all handled via [nigiri](https://github.com/vulpemventures/nigiri)
 
+- To tear down containers from start_app.sh run
+```bash
+$ backend/clean_up.sh
+```
+
+
 
 # Development fixtures
 - when backend/start_app.sh is run the script randomly_fund_mock_wallet.py will be run to randomly generate 10 bitcoin transactions to the default dev wallet's address. 
