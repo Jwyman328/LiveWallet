@@ -1,5 +1,7 @@
-# Live Wallet 
-<p style="font-size: smaller;">keep your utxos alive</p>
+<div style="display: flex; align-items: center;">
+    <h1 style="margin-right: 10px;">Live Wallet</h1>
+    <p style="font-size: smaller;">Keep your utxos alive</p>
+</div>
 
 ## description
 - An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos.
