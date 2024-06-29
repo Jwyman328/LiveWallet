@@ -108,7 +108,7 @@ describe('Home', () => {
     expect(getUtxosSpy).toHaveBeenCalled();
     expect(getCurrentFeesSpy).toHaveBeenCalled();
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     const feeTitle = await screen.findByText('Current fees');
 
     const lowFeeTitle = await screen.findByText('Low');
@@ -212,7 +212,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -237,7 +237,7 @@ describe('Home', () => {
     const minFeeRate = minFeeRateLabel.parentNode?.nextSibling
       ?.firstChild as HTMLInputElement;
 
-    expect(minFeeRate?.value).toBe('1');
+    expect(minFeeRate?.value).toBe('0');
     const maxFeeRateLabel = within(slideout).getByText('Max fee rate');
 
     const maxFeeRate = maxFeeRateLabel.parentNode?.nextSibling
@@ -294,7 +294,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -332,7 +332,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -379,7 +379,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -395,7 +395,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -410,7 +410,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
@@ -461,7 +461,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment');
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(

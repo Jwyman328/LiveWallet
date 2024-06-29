@@ -72,7 +72,7 @@ function Home() {
   ];
 
   const minScaleOptions: ScaleOption[] = [
-    { value: '1', label: '1' },
+    { value: '0', label: '0' },
     { value: '100', label: '100' },
     { value: '1000', label: '1,000' },
     { value: '10000', label: '10,000' },
@@ -214,6 +214,22 @@ function Home() {
     window.electron.ipcRenderer.sendMessage('save-wallet-data-from-dialog');
   };
 
+  const diffBetweenMaxAndMinFeeRate =
+    parseInt(feeScale.value) + parseInt(minFeeScale.value);
+  const twentyFivePercent = Math.ceil(diffBetweenMaxAndMinFeeRate * 0.25);
+  const fiftyPercent = Math.ceil(diffBetweenMaxAndMinFeeRate * 0.5);
+  const seventyFivePercent = Math.ceil(diffBetweenMaxAndMinFeeRate * 0.75);
+  const feeRateMarks =
+    minFeeScale.value !== feeScale.value
+      ? [
+          { value: parseInt(minFeeScale.value), label: minFeeScale.value },
+          { value: twentyFivePercent, label: twentyFivePercent.toString() },
+          { value: fiftyPercent, label: fiftyPercent.toString() },
+          { value: seventyFivePercent, label: seventyFivePercent.toString() },
+          { value: parseInt(feeScale.value), label: feeScale.value },
+        ]
+      : [];
+
   const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
   return (
     <div className="h-full">
@@ -314,24 +330,32 @@ function Home() {
 
       <div className="ml-4 flex flex-col items-center">
         <h1 className="text-center font-bold text-xl mt-4">
-          Custom Fee Environment
+          Custom Fee Environment (sat/vB)
         </h1>
-        <div className="mb-8">
+        <div className="mb-10">
           <div className="flex flex-row items-center">
             <div
               style={{ width: '30rem' }}
               className="ml-8 mr-8 relative top-4"
             >
               <Slider
+                marks={feeRateMarks}
                 defaultValue={parseInt(minFeeScale.value)}
                 min={parseInt(minFeeScale.value)}
                 max={parseInt(feeScale.value)}
                 step={10}
                 value={feeRate}
                 onChange={handleFeeRateChange}
+                label={`${feeRate.toLocaleString()} sat/vB`}
+                thumbSize={26}
+                styles={{
+                  track: { height: '16px' },
+                  markLabel: { marginTop: '16px' },
+                  mark: { height: '0px', display: 'none' },
+                }}
               />
 
-              <InputLabel className="text-center">
+              <InputLabel className="text-center mt-6">
                 Fee rate: {feeRate.toLocaleString()} sat/vB
               </InputLabel>
             </div>

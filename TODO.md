@@ -12,6 +12,7 @@
 
 
 # TODOs backend
+- fix issue where gunicorn isn't working ffor builds and I had to revert it.
 - add mypy
 - add a pyproject.toml to manage ruff line length stuff so that ruff formatting is inline with the lsp?
 - Also set the default custom fee rate to the current rate 
