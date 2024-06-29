@@ -7,7 +7,8 @@
 - An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos.
 
 ## Demo
-![](LiveWalletDemo.mov)
+https://github.com/Jwyman328/LiveWallet/assets/32882426/aa218a2e-bc5b-4795-98bd-6ae839ee091f
+
 
 
 
