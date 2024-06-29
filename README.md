@@ -3,8 +3,11 @@
     <p style="font-size: smaller;">Keep your utxos alive</p>
 </div>
 
-## description
+## Description
 - An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos.
+
+## Demo
+![](LiveWalletDemo.mov)
 
 
 
