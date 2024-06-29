@@ -34,11 +34,11 @@ $ sudo npm run package
 
 
 ## How to start app locally
-- To startup the electron app run from (.)
+- To startup the electron app run
 ```bash
 $ sudo npm start
 ```
-- To start up the backend server and related services run (from ./backend/)
+- To start up the backend server and related services run
 ```bash
 $ backend/start_app.sh
 ```
