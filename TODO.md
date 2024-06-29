@@ -35,6 +35,7 @@
 # Feature Ideas
 - ability to just put in a utxo and test that instead of an entire wallet.
 - click on a utxo and get told when it is unspendable.
+- add how many outputs a tx would have and have it change the fee estimation.
 
 
 # Open questions 

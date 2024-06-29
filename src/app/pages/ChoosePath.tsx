@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
-import { Button } from '@mantine/core';
+import { Button, Loader, Notification } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { Wallet } from '../types/wallet';
+
+import { useGetServerHealthStatus } from '../hooks/healthStatus';
+import { XIcon } from '../components/XIcon';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -14,13 +17,19 @@ export const ChoosePath = () => {
     navigate('/sign-in', { state: { walletData } });
   };
 
+  const serverHealthStatusQuery = useGetServerHealthStatus();
+  const isServerAvailableAndHealthy =
+    serverHealthStatusQuery.isSuccess &&
+    serverHealthStatusQuery.data.status === 'good' &&
+    !serverHealthStatusQuery.isLoading;
+
   useEffect(() => {
     // Listen for the 'json-wallet' event sent from the main process
     // @ts-ignore
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
     window.electron.ipcRenderer.sendMessage('current-route', '/');
   }, []);
-  return (
+  return isServerAvailableAndHealthy ? (
     <div className="w-screen h-screen flex justify-center items-center bg-gray-100 ">
       <div className="relative bottom-16 font-medium">
         <div className="mb-8">
@@ -49,6 +58,23 @@ export const ChoosePath = () => {
           Enter wallet
         </Button>
       </div>
+    </div>
+  ) : serverHealthStatusQuery.isLoading ? (
+    <div className="flex flex-row justify-center items-center h-screen w-screen">
+      <Loader size={50} />
+    </div>
+  ) : (
+    <div className="p-8">
+      <Notification
+        withCloseButton={false}
+        className="border-red-500 border-2"
+        icon={XIcon}
+        color="red"
+        title="Error!"
+      >
+        There is a problem connecting with the server, please restart the app
+        and try again.
+      </Notification>
     </div>
   );
 };
