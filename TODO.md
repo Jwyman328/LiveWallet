@@ -1,14 +1,11 @@
 # TODO frontend
 - use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
-- use mantine notifications for when there are network failures
 - improve the readme.md
 - Componentize a bit more 
 - write tests for frontend
   - write tests for initial landing page
-- create new build and publish to github
 - add a banner for showing that a specific wallet is loaded
-- clear the loaded wallet configs when any of the form values have changed
 
 
 # TODOs backend
@@ -29,14 +26,8 @@
 - make website to host bundle and allow download
 
 
-
-
-
 # Feature Ideas
 - ability to just put in a utxo and test that instead of an entire wallet.
 - click on a utxo and get told when it is unspendable.
 - add how many outputs a tx would have and have it change the fee estimation.
 
-
-# Open questions 
-- Different image / design on sign in page?

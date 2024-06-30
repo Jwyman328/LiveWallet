@@ -26,3 +26,17 @@
     - https://pypi.org/project/auto-py-to-exe/
 - Then run it
     - $auto-py-to-exe
+
+
+# notarizing macOs app
+- Creating keychain profile (only needs to be done one time)
+  - $ xcrun notarytool store-credentials PROFILE --apple-id ${APPLE_ID} --team-id ${APPLE_TEAM_ID} 
+- Submitting both app builds (use whatever version build has been created)
+  - $ xcrun notarytool submit "Live Wallet-0.1.0-mac.zip"  --keychain-profile "PROFILE"   
+  - $ xcrun notarytool submit "Live Wallet-0.1.0-arm64-mac.zip"  --keychain-profile "PROFILE"
+- Check if app was successfully notarized 
+  - $ spctl --assess -vv --type install "Live Wallet.app"
+
+- additional details
+  - https://developer.apple.com/documentation/technotes/tn3147-migrating-to-the-latest-notarization-tool
+  - https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow?language=objc

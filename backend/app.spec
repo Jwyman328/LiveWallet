@@ -40,7 +40,7 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
+    codesign_identity='Joseph Wyman',
     entitlements_file=None,
 )
 app = BUNDLE(

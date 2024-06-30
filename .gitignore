@@ -24,6 +24,8 @@ assets/app.app
 release/app/dist
 release/build
 .erb/dll
+.env
+.erb/scripts/
 
 .idea
 npm-debug.log.*

@@ -99,6 +99,7 @@
     "@mui/material": "^5.15.12",
     "@tabler/icons-react": "^3.1.0",
     "child_process": "^1.0.2",
+    "dotenv": "^16.4.5",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^6.1.4",
@@ -110,7 +111,7 @@
     "react-router-dom": "^6.16.0"
   },
   "devDependencies": {
-    "@electron/notarize": "^2.1.0",
+    "@electron/notarize": "^2.3.1",
     "@electron/rebuild": "^3.3.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@svgr/webpack": "^8.1.0",
@@ -137,7 +138,7 @@
     "css-minimizer-webpack-plugin": "^5.0.1",
     "detect-port": "^1.5.1",
     "electron": "^26.2.1",
-    "electron-builder": "^24.6.4",
+    "electron-builder": "^24.13.0",
     "electron-devtools-installer": "^3.2.0",
     "electronmon": "^2.0.2",
     "eslint": "^8.49.0",
@@ -194,7 +195,6 @@
       "package.json",
       "assets/"
     ],
-    "afterSign": ".erb/scripts/notarize.js",
     "mac": {
       "target": {
         "target": "default",
@@ -207,7 +207,8 @@
       "hardenedRuntime": true,
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
-      "gatekeeperAssess": false
+      "gatekeeperAssess": true,
+      "notarize": true
     },
     "dmg": {
       "contents": [
@@ -245,7 +246,7 @@
     "publish": {
       "provider": "github",
       "owner": "jwyman328",
-      "repo": "utxo_fee_estimation_fe_electron_app"
+      "repo": "LiveWallet"
     }
   },
   "devEngines": {
