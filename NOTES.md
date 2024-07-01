@@ -40,3 +40,7 @@
 - additional details
   - https://developer.apple.com/documentation/technotes/tn3147-migrating-to-the-latest-notarization-tool
   - https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow?language=objc
+
+
+- how to handle pyinstaller code signing (or lack there of)
+  - https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
