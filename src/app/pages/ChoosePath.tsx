@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { Button, Loader, Notification } from '@mantine/core';
+import { Button, Loader, Modal, Notification } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { Wallet } from '../types/wallet';
 
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
+import { IconUsb } from '@tabler/icons-react';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -15,6 +16,14 @@ export const ChoosePath = () => {
 
   const handleImportedWallet = (walletData: Wallet) => {
     navigate('/sign-in', { state: { walletData } });
+  };
+
+  const [isHWWModalOpen, setIsHWWModalOpen] = React.useState(false);
+  const closeModal = () => {
+    setIsHWWModalOpen(false);
+  };
+  const openModal = () => {
+    setIsHWWModalOpen(true);
   };
 
   const serverHealthStatusQuery = useGetServerHealthStatus();
@@ -37,27 +46,64 @@ export const ChoosePath = () => {
             Live Wallet
           </h1>
         </div>
-        <Button
-          variant="outline"
-          size="xl"
-          style={{ width: '16rem', height: '16rem' }}
-          className="mt-12"
-          onClick={handleImport}
-        >
-          Import wallet
-        </Button>
-        <Button
-          variant="filled"
-          className="ml-14 mt-12"
-          size="xl"
-          style={{ width: '16rem', height: '16rem' }}
-          onClick={() => {
-            navigate('/sign-in');
-          }}
-        >
-          Enter wallet
-        </Button>
+        <div className="flex flex-row">
+          <Button
+            variant="outline"
+            size="xl"
+            style={{ width: '16rem', height: '16rem' }}
+            className="mt-12"
+            onClick={handleImport}
+          >
+            Import wallet
+          </Button>
+          <Button
+            variant="light"
+            className="ml-14 mt-12"
+            size="xl"
+            style={{ width: '16rem', height: '16rem' }}
+            onClick={() => {
+              navigate('/sign-in');
+            }}
+          >
+            Enter wallet
+          </Button>
+        </div>
+        <div className="w-full flex items-center justify-center">
+          <Button
+            variant="filled"
+            className="mt-6"
+            size="xl"
+            style={{ width: '16rem', height: '16rem' }}
+            onClick={() => {
+              openModal();
+            }}
+          >
+            Hardware wallet
+          </Button>
+        </div>
       </div>
+      <Modal opened={isHWWModalOpen} onClose={closeModal} centered size="md">
+        <div className="relative">
+          <div
+            className="flex justify-between flex-col items-center"
+            style={{ height: '450px' }}
+          >
+            <h1> Connect a Hardware Wallet</h1>
+            <IconUsb style={{ width: '10rem', height: '10rem' }} />
+            <Button
+              variant="filled"
+              className="mb-4"
+              size="md"
+              style={{ width: '10rem' }}
+              onClick={() => {
+                console.log('call backend to scan for devices');
+              }}
+            >
+              scan
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
     <div className="flex flex-row justify-center items-center h-screen w-screen">
