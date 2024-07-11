@@ -21,6 +21,7 @@ class AppCreator:
             fees_api,
             wallet_api,
             health_check_api,
+            hardware_wallet_api,
         )
         from src.containers.service_container import ServiceContainer
 
@@ -47,6 +48,7 @@ class AppCreator:
             cls.app.register_blueprint(fees_api)
             cls.app.register_blueprint(wallet_api)
             cls.app.register_blueprint(health_check_api)
+            cls.app.register_blueprint(hardware_wallet_api)
 
             return cls.app
 

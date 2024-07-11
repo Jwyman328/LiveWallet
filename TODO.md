@@ -1,4 +1,5 @@
 # TODO frontend
+- changing the address type should change the derivation path placeholder values
 - use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - improve the readme.md
@@ -14,6 +15,7 @@
 - Also set the default custom fee rate to the current rate 
 
 # TODOs build
+- add ci
 - use a random port to run the backend on 
 - build for not just macOS? 
   - https://github.com/pyinstaller/pyinstaller/wiki/FAQ#features
@@ -27,7 +29,17 @@
 
 
 # Feature Ideas
+- integrate signing devices to export wallet details
+  - does bdk have any way to do this?
+    - https://bitcoindevkit.org/blog/getting-started-with-rust-hwi/
+  - Python bitcoin hardware wallet interface pip package.
+   - Written by Andrew chow.
+   - https://hwi.readthedocs.io/en/latest/devices/index.html
+   - https://pypi.org/project/hwi/
+   - https://github.com/bitcoin-core/HWI
+   - https://bitcoinops.org/en/topics/hwi/
 - A suggestion: Add gap limit option
+- breakdown where the cost comes form for each part of the transaction
 - ability to just put in a utxo and test that instead of an entire wallet.
 - click on a utxo and get told when it is unspendable.
 - add how many outputs a tx would have and have it change the fee estimation.

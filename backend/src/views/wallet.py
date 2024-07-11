@@ -89,7 +89,6 @@ def create_wallet():
         ).model_dump()
 
     except ValidationError as e:
-        print("here bob with", e)
         return (
             ValidationErrorResponse(
                 message="Error creating wallet", errors=e.errors()
