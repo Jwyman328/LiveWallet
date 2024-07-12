@@ -7,6 +7,6 @@ class HardwareWallet(DB.Model):
     path = DB.Column(DB.String, nullable=True, default=None)
     label = DB.Column(DB.String, nullable=True, default=None)
     model = DB.Column(DB.String, nullable=True, default=None)
-    needs_pin_send = DB.Column(DB.Boolean, nullable=False, default=False)
+    needs_pin_sent = DB.Column(DB.Boolean, nullable=False, default=False)
     needs_passphrase_sent = DB.Column(DB.Boolean, nullable=False, default=False)
     fingerprint = DB.Column(DB.String, nullable=True, default=None)

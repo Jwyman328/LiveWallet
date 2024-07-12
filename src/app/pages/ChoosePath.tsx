@@ -6,6 +6,7 @@ import { Wallet } from '../types/wallet';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
 import { IconUsb } from '@tabler/icons-react';
+import { useGetConnectedHardwareWallets } from '../hooks/hardwareWallets';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -27,10 +28,15 @@ export const ChoosePath = () => {
   };
 
   const serverHealthStatusQuery = useGetServerHealthStatus();
+  const getConnectedHardwareWalletsQuery = useGetConnectedHardwareWallets();
   const isServerAvailableAndHealthy =
     serverHealthStatusQuery.isSuccess &&
     serverHealthStatusQuery.data.status === 'good' &&
     !serverHealthStatusQuery.isLoading;
+
+  const scanForConnectedHardwareWallets = () => {
+    getConnectedHardwareWalletsQuery.mutate();
+  };
 
   useEffect(() => {
     // Listen for the 'json-wallet' event sent from the main process
@@ -95,9 +101,7 @@ export const ChoosePath = () => {
               className="mb-4"
               size="md"
               style={{ width: '10rem' }}
-              onClick={() => {
-                console.log('call backend to scan for devices');
-              }}
+              onClick={scanForConnectedHardwareWallets}
             >
               scan
             </Button>

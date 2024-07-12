@@ -13,31 +13,51 @@ LOGGER = structlog.get_logger()
 
 
 class HardwareWalletDetails(BaseModel):
+    id: Optional[str] = None
     type: str
-    path: Optional[str]
+    path: Optional[str] = None
     label: str
     model: str
     needs_pin_sent: bool
     needs_passphrase_sent: bool
-    fingerprint: str
+    fingerprint: Optional[str] = None
 
 
 class HardwareWalletService:
     @staticmethod
-    def scan_for_hardware_wallets() -> Optional[List[HardwareWalletDetails]]:
+    def get_connected_hardware_wallets() -> List[HardwareWalletDetails]:
+        "Get the hardware wallets that are connected to the computer, add them to the database and return them as a pydantic model with the id attached"
+        hwws_found = HardwareWalletService.scan_for_hardware_wallets()
+
+        # put the hw in the db to generate a persistent id
+        hwws_in_db = [
+            HardwareWalletService.save_hardware_wallet(hww) for hww in hwws_found
+        ]
+
+        # add id generated from adding the hw to the db
+        # to the pydantic hww object
+        for index, hww_with_id in enumerate(hwws_in_db):
+            hwws_found[index].id = hww_with_id.id
+        return hwws_found
+
+    @staticmethod
+    def scan_for_hardware_wallets() -> List[HardwareWalletDetails]:
         "Scan the computer for connected hardware wallets"
         try:
             hws_found = commands.enumerate()
-            LOGGER.info("Hardware wallets found", wallets=hws_found)
+            # LOGGER.info("Hardware wallets found", wallets=hws_found)
+            # single = HardwareWalletDetails.model_validate(hws_found[0])
+            #
+            # LOGGER.info("single", single=single)
             # Create an adapter for the model
             hw_details_adapter = TypeAdapter(List[HardwareWalletDetails])
 
             # Convert and validate the data
             hws_found = hw_details_adapter.validate_python(hws_found)
-            return hws_found
+            return hws_found if hws_found else []
         except Exception as e:
             LOGGER.error("Error scanning for hardware wallets", error=e)
-            return None
+            return []
 
     @staticmethod
     def save_hardware_wallet(

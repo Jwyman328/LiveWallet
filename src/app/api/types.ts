@@ -56,3 +56,17 @@ export type DeleteCurrentWalletResponseType = {
 export type HealthStatusResponseType = {
   status: 'good' | 'bad';
 };
+
+export type HardwareWalletDetails = {
+  id: string;
+  path: string;
+  label: string;
+  model: string;
+  needs_pin_send: string;
+  needs_passphrase_sent: string;
+  fingerprint: string;
+};
+
+export type HardwareWalletsResponseType = {
+  wallets: [HardwareWalletDetails];
+};

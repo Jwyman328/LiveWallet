@@ -8,6 +8,7 @@ import {
   InitiateWalletResponseType,
   CreateMockWalletResponseType,
   DeleteCurrentWalletResponseType,
+  HardwareWalletsResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -127,6 +128,16 @@ export class ApiClient {
     );
 
     const data = (await response.json()) as DeleteCurrentWalletResponseType;
+    return data;
+  }
+
+  static async getConnectedHardwareWallets() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets`,
+      'GET',
+    );
+
+    const data = (await response.json()) as HardwareWalletsResponseType;
     return data;
   }
 }

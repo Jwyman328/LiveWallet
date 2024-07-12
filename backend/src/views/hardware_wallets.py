@@ -3,31 +3,32 @@ from pydantic import BaseModel, ValidationError
 import structlog
 from flask import Blueprint
 
-from src.services.hardware_wallet.hardware_wallet import HardwareWalletService
+from src.services.hardware_wallet.hardware_wallet import (
+    HardwareWalletDetails,
+    HardwareWalletService,
+)
 from src.types.controller_types.generic_response_types import ValidationErrorResponse
 
 hardware_wallet_api = Blueprint(
-    "hardware_wallet", __name__, url_prefix="/hardware-wallet"
+    "hardware_wallet", __name__, url_prefix="/hardware-wallets"
 )
 
 LOGGER = structlog.get_logger()
 
 
 class ScanForWalletsResponseDto(BaseModel):
-    wallets: List[str]  # TODO finalize this return type
+    wallets: List[HardwareWalletDetails]
 
 
-hardware_wallet_api.route("/", methods=["GET"])
-
-
+@hardware_wallet_api.route("/", methods=["GET"])
 def scan_for_wallets():
     """
     Scan the system for connected hardware wallets
     """
     try:
-        HardwareWalletService.scan_for_hardware_wallets()
-        # TODO don't return a mock value
-        return ScanForWalletsResponseDto(wallets=["trezor", "ledger"]).model_dump()
+        connected_hwws = HardwareWalletService.get_connected_hardware_wallets()
+
+        return ScanForWalletsResponseDto(wallets=connected_hwws).model_dump()
 
     except ValidationError as e:
         return (
