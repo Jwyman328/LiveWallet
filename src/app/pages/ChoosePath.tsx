@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
-import { Button, Loader, Modal, Notification } from '@mantine/core';
+import { Button, Loader, Notification } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { Wallet } from '../types/wallet';
 
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
-import { IconUsb } from '@tabler/icons-react';
-import { useGetConnectedHardwareWallets } from '../hooks/hardwareWallets';
+import { ConnectHardwareModal } from '../components/ConnectHardwareModal';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -28,15 +27,10 @@ export const ChoosePath = () => {
   };
 
   const serverHealthStatusQuery = useGetServerHealthStatus();
-  const getConnectedHardwareWalletsQuery = useGetConnectedHardwareWallets();
   const isServerAvailableAndHealthy =
     serverHealthStatusQuery.isSuccess &&
     serverHealthStatusQuery.data.status === 'good' &&
     !serverHealthStatusQuery.isLoading;
-
-  const scanForConnectedHardwareWallets = () => {
-    getConnectedHardwareWalletsQuery.mutate();
-  };
 
   useEffect(() => {
     // Listen for the 'json-wallet' event sent from the main process
@@ -88,26 +82,10 @@ export const ChoosePath = () => {
           </Button>
         </div>
       </div>
-      <Modal opened={isHWWModalOpen} onClose={closeModal} centered size="md">
-        <div className="relative">
-          <div
-            className="flex justify-between flex-col items-center"
-            style={{ height: '450px' }}
-          >
-            <h1> Connect a Hardware Wallet</h1>
-            <IconUsb style={{ width: '10rem', height: '10rem' }} />
-            <Button
-              variant="filled"
-              className="mb-4"
-              size="md"
-              style={{ width: '10rem' }}
-              onClick={scanForConnectedHardwareWallets}
-            >
-              scan
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* The isHWWModalOpen check is needed in order to demount and remount the component, without it the modal state persists, which is not what we want, we want to have to scan for wallets each time the modal is opened  */}
+      {isHWWModalOpen && (
+        <ConnectHardwareModal isOpen={isHWWModalOpen} closeModal={closeModal} />
+      )}
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
     <div className="flex flex-row justify-center items-center h-screen w-screen">

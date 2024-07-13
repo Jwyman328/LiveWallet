@@ -59,12 +59,13 @@ export type HealthStatusResponseType = {
 
 export type HardwareWalletDetails = {
   id: string;
-  path: string;
+  path?: string;
   label: string;
+  type?: string;
   model: string;
-  needs_pin_send: string;
-  needs_passphrase_sent: string;
-  fingerprint: string;
+  needs_pin_send: boolean;
+  needs_passphrase_sent: boolean;
+  fingerprint?: string;
 };
 
 export type HardwareWalletsResponseType = {

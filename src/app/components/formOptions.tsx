@@ -21,3 +21,9 @@ export const scriptTypeOptions: ScriptTypeOption[] = [
   { value: ScriptTypes.P2WSH, label: 'Nested Segwit (P2SH-P2WPKH)' },
   { value: ScriptTypes.P2TR, label: 'Taproot (P2TR)' },
 ];
+
+
+export type AccountTypeOption = {
+ label: string;
+  value: string;
+}
