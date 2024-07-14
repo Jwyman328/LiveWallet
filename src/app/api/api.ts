@@ -9,6 +9,9 @@ import {
   CreateMockWalletResponseType,
   DeleteCurrentWalletResponseType,
   HardwareWalletsResponseType,
+  HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletUnlockResponseType,
+  HardwareWalletXpubResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -140,5 +143,36 @@ export class ApiClient {
     const data = (await response.json()) as HardwareWalletsResponseType;
     return data;
   }
-}
 
+  static async promptToUnlockWallet(walletUuid: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/prompt`,
+      'POST',
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletPromptToUnlockResponseType;
+    return data;
+  }
+
+  static async unlockWallet(walletUuid: string, pin: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/pin`,
+      'POST',
+      { pin },
+    );
+
+    const data = (await response.json()) as HardwareWalletUnlockResponseType;
+    return data;
+  }
+
+  static async getXpubFromDevice(walletUuid: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/xpub`,
+      'GET',
+    );
+
+    const data = (await response.json()) as HardwareWalletXpubResponseType;
+    return data;
+  }
+}

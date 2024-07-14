@@ -1,4 +1,6 @@
 from typing import List, Optional
+
+from hwilib import common
 from src.database import DB
 
 from hwilib import commands
@@ -45,11 +47,8 @@ class HardwareWalletService:
         "Scan the computer for connected hardware wallets"
         try:
             hws_found = commands.enumerate()
-            # LOGGER.info("Hardware wallets found", wallets=hws_found)
-            # single = HardwareWalletDetails.model_validate(hws_found[0])
-            #
-            # LOGGER.info("single", single=single)
-            # Create an adapter for the model
+            LOGGER.info("Hardware wallets found", wallets=hws_found)
+
             hw_details_adapter = TypeAdapter(List[HardwareWalletDetails])
 
             # Convert and validate the data
@@ -71,6 +70,7 @@ class HardwareWalletService:
             needs_pin_sent=hardware_wallet_details.needs_pin_sent,
             needs_passphrase_sent=hardware_wallet_details.needs_passphrase_sent,
             fingerprint=hardware_wallet_details.fingerprint,
+            type=hardware_wallet_details.type,
         )
 
         DB.session.add(hardware_wallet)
@@ -78,12 +78,87 @@ class HardwareWalletService:
         return hardware_wallet
 
     @staticmethod
+    def prompt_to_unlock_wallet(wallet_uuid: str) -> bool:
+        """Unlock it"""
+        wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+        if wallet is None:
+            LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
+            return False
+
+        connected_wallet = HardwareWalletService.connect_to_hardware_wallet(wallet)
+
+        if connected_wallet is None:
+            LOGGER.info(
+                "Wallet unable to connect to hardware device", wallet_uuid=wallet_uuid
+            )
+            return False
+
+        was_prompt_successful = HardwareWalletService.prompt_device_to_prepare_for_pin(
+            connected_wallet
+        )
+        return was_prompt_successful
+
+    @staticmethod
+    def send_pin_to_unlock_wallet(wallet_uuid: str, pin: str) -> bool:
+        """Unlock wallet: TODO more info"""
+        wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+        if wallet is None:
+            LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
+            return False
+
+        connected_wallet = HardwareWalletService.connect_to_hardware_wallet(wallet)
+
+        if connected_wallet is None:
+            LOGGER.info(
+                "Wallet unable to connect to hardware device", wallet_uuid=wallet_uuid
+            )
+            return False
+
+        was_unlock_successful = False
+        try:
+            was_unlock_successful = HardwareWalletService.send_pin_to_device(
+                connected_wallet, pin
+            )
+
+        except Exception as e:
+            LOGGER.info("caught it error", error=e)
+        return was_unlock_successful
+
+    @staticmethod
+    def get_xpub_from_device(wallet_uuid: str) -> Optional[str]:
+        """TODO more info"""
+        wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+        if wallet is None:
+            LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
+            return None
+
+        connected_wallet = HardwareWalletService.connect_to_hardware_wallet(wallet)
+
+        if connected_wallet is None:
+            LOGGER.info(
+                "Wallet unable to connect to hardware device", wallet_uuid=wallet_uuid
+            )
+            return None
+
+        xpub = None
+        try:
+            xpub = HardwareWalletService.get_xpub(
+                connected_wallet,
+            )
+
+        except Exception as e:
+            LOGGER.info("caught it error", error=e)
+
+        return xpub
+
+    @staticmethod
     def connect_to_hardware_wallet(
-        hardware_wallet_details: HardwareWalletDetails,
+        hardware_wallet_details: HardwareWallet,
         chain: Chain = Chain.MAIN,
         password=None,
     ) -> Optional[HardwareWalletClient]:
         "Connect to the hardware wallet on the local system"
+        LOGGER.info("what is hw details", hw=hardware_wallet_details.type)
         if hardware_wallet_details.path:
             hardware_wallet_connection = commands.get_client(
                 hardware_wallet_details.type,
@@ -118,3 +193,20 @@ class HardwareWalletService:
     ) -> bool:
         "Send the pin to the hardware wallet, and return if pin was valid."
         return hardware_wallet_connection.send_pin(pin)
+
+    @staticmethod
+    def get_xpub(
+        hardware_wallet_connection: HardwareWalletClient,
+    ):
+        # just mock hardcode data for now
+        # TODO get data from backend
+        address_type = common.AddressType.WIT
+        account_number = 0
+        master_xpub = hardware_wallet_connection.get_master_xpub(
+            address_type, account_number
+        )
+        readable_master_xpub = master_xpub.to_string()
+
+        # prob dont need to get this I prob already have it ?
+        master_finger_print = hardware_wallet_connection.get_master_fingerprint().hex()
+        return readable_master_xpub

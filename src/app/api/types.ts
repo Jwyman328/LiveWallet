@@ -71,3 +71,17 @@ export type HardwareWalletDetails = {
 export type HardwareWalletsResponseType = {
   wallets: [HardwareWalletDetails];
 };
+
+export type HardwareWalletPromptToUnlockResponseType = {
+  // TODO change FE and BE to use camelCase
+  was_prompt_successful: boolean;
+};
+
+export type HardwareWalletUnlockResponseType = {
+  // TODO change FE and BE to use camelCase
+  was_unlock_successful: boolean;
+};
+
+export type HardwareWalletXpubResponseType = {
+  xpub: string;
+};

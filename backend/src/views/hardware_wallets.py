@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, ValidationError
 import structlog
-from flask import Blueprint
+from flask import Blueprint, request
 
 from src.services.hardware_wallet.hardware_wallet import (
     HardwareWalletDetails,
@@ -18,6 +18,22 @@ LOGGER = structlog.get_logger()
 
 class ScanForWalletsResponseDto(BaseModel):
     wallets: List[HardwareWalletDetails]
+
+
+class UnlockWalletPromptResponseDto(BaseModel):
+    was_prompt_successful: bool
+
+
+class UnlockWalletWithPinRequestDto(BaseModel):
+    pin: str
+
+
+class UnlockWalletWithPinResponseDto(BaseModel):
+    was_unlock_successful: bool
+
+
+class GetXpubResponseDto(BaseModel):
+    xpub: Optional[str]
 
 
 @hardware_wallet_api.route("/", methods=["GET"])
@@ -39,14 +55,67 @@ def scan_for_wallets():
         )
 
 
-# todo write this endpoint
-# @inject
-# def prompt_wallet_for_pin(
-#     hardware_wallet_service: HardwareWalletService = Provide[
-#         ServiceContainer.hardware_wallet_service
-#     ],
-# ):
-#     """
-#     Prompt the hardware wallet for a pin
-#     #     """
-# pass
+@hardware_wallet_api.route("/unlock/<uuid>/prompt", methods=["POST"])
+def prompt_unlock_wallet(uuid: str):
+    """
+    Prompt a hardware wallet to unlock
+    """
+    try:
+        was_prompt_successful = HardwareWalletService.prompt_to_unlock_wallet(uuid)
+
+        return UnlockWalletPromptResponseDto(
+            was_prompt_successful=was_prompt_successful
+        ).model_dump()
+
+    except ValidationError as e:
+        return (
+            ValidationErrorResponse(
+                message="Error prompting to unlock hardware wallet", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
+
+
+@hardware_wallet_api.route("/unlock/<uuid>/pin", methods=["POST"])
+def unlock_wallet(uuid: str):
+    """
+    Unlock a locked hardware wallet
+    """
+    try:
+        data = UnlockWalletWithPinRequestDto.model_validate_json(request.data)
+        was_prompt_successful = HardwareWalletService.send_pin_to_unlock_wallet(
+            uuid, data.pin
+        )
+
+        return UnlockWalletWithPinResponseDto(
+            was_unlock_successful=was_prompt_successful
+        ).model_dump()
+
+    except ValidationError as e:
+        return (
+            ValidationErrorResponse(
+                message="Error unlocking hardware wallet with pin", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
+
+
+@hardware_wallet_api.route("/unlock/<uuid>/xpub", methods=["GET"])
+def get_xpub(uuid: str):
+    """
+    Get the xpub from a hardware wallet
+    """
+    try:
+        xpub = HardwareWalletService.get_xpub_from_device(
+            uuid,
+        )
+
+        return GetXpubResponseDto(xpub=xpub).model_dump()
+
+    except ValidationError as e:
+        return (
+            ValidationErrorResponse(
+                message="Error unlocking hardware wallet with pin", errors=e.errors()
+            ).model_dump(),
+            400,
+        )

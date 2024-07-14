@@ -7,6 +7,8 @@ import {
   WalletIdDerivationPaths,
 } from './ConnectHardwareModal';
 import { useState } from 'react';
+import { ApiClient } from '../api/api';
+import { TrezorKeypad } from './TrezorKeypad';
 
 type HardwareWalletSelectProps = {
   wallet: HardwareWalletDetails;
@@ -34,11 +36,40 @@ export const HardwareWalletSelect = ({
   selectedDerivationPaths,
 }: HardwareWalletSelectProps) => {
   const model = wallet.model.replace('_', ' ');
+  const isTrezor = wallet.type === 'trezor';
 
+  const [isReadyForPin, setIsReadyForPin] = useState(false);
+  const [wasUnlockSuccessful, setWasUnlockSuccessful] = useState(false);
   const isLockedOrNeedsPassphrase =
-    wallet.needs_pin_send || wallet.needs_passphrase_sent;
-  const [isShowDerivation, setIsShowDerivation] = useState(false);
+    !wasUnlockSuccessful &&
+    (wallet.needs_pin_send || wallet.needs_passphrase_sent);
 
+  const [isShowDerivation, setIsShowDerivation] = useState(false);
+  const promptToUnlock = async () => {
+    try {
+      // TODO use hook and use loading states
+      const response = await ApiClient.promptToUnlockWallet(wallet.id);
+      if (response.was_prompt_successful) {
+        setIsReadyForPin(true);
+      }
+    } catch (e) {
+      console.log('error', e);
+    }
+  };
+  const [pin, setPin] = useState('');
+
+  const sendPin = async () => {
+    try {
+      // TODO use hook and use loading states
+      const response = await ApiClient.unlockWallet(wallet.id, pin);
+      if (response.was_unlock_successful) {
+        setWasUnlockSuccessful(true);
+      }
+    } catch (e) {
+      // TODO throw some type of toast to let the user know the request failed and they should try again
+      console.log('error', e);
+    }
+  };
   return (
     <div>
       <div className="flex flex-row w-full items-center">
@@ -52,7 +83,8 @@ export const HardwareWalletSelect = ({
             }
           }}
           checked={selectedHWId === wallet.id}
-          disabled={isLockedOrNeedsPassphrase}
+          //disabled={isLockedOrNeedsPassphrase}
+          disabled={false}
         />
         <div className="items-center border rounded border-gray-600 p-2 bg-gray-100  mb-4 w-full">
           <div className="flex flex-row justify-between">
@@ -68,8 +100,8 @@ export const HardwareWalletSelect = ({
                 </Button>
               )}
             </div>
-            {isLockedOrNeedsPassphrase ? (
-              <Button size="sm" color="green">
+            {isLockedOrNeedsPassphrase && !isReadyForPin ? (
+              <Button onClick={promptToUnlock} size="sm" color="green">
                 Unlock
               </Button>
             ) : (
@@ -92,6 +124,42 @@ export const HardwareWalletSelect = ({
               />
             )}
           </div>
+          <Collapse
+            in={
+              isReadyForPin && isLockedOrNeedsPassphrase && !wasUnlockSuccessful
+            }
+          >
+            {isTrezor ? (
+              <div className="flex flex-row mt-4">
+                <TrezorKeypad currentPin={pin} onPadClick={setPin} />
+                <div className="w-full ml-3 flex flex-col justify-between">
+                  <Input
+                    data-testid="send pin"
+                    value={pin}
+                    onInput={(event) => {
+                      setPin(event.target.value);
+                    }}
+                    type="password"
+                    styles={{ input: { fontSize: '2.5rem' } }}
+                  />
+                  <Button onClick={sendPin}>Enter Pin</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Input
+                  data-testid="send pin"
+                  className="w-full"
+                  value={pin}
+                  onInput={(event) => {
+                    setPin(event.target.value);
+                  }}
+                />
+
+                <Button onClick={sendPin}>Enter Pin</Button>
+              </>
+            )}
+          </Collapse>
           <Collapse in={isShowDerivation}>
             <Input
               data-testid="derivation-path"

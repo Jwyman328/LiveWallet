@@ -100,7 +100,9 @@ def setup_database(app):
 # TODO make debug=True when we are developing
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="127.0.0.1", port=5011, debug=False)
+    # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
+    app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)
 else:
     app = create_app()
-    app.run(host="127.0.0.1", port=5011, debug=False)
+    # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
+    app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)

@@ -1,4 +1,11 @@
-import { Button, InputLabel, Loader, Modal, Select } from '@mantine/core';
+import {
+  Button,
+  InputLabel,
+  Loader,
+  Modal,
+  ScrollArea,
+  Select,
+} from '@mantine/core';
 import { useGetConnectedHardwareWallets } from '../hooks/hardwareWallets';
 import { IconUsb } from '@tabler/icons-react';
 import { HardwareWalletDetails } from '../api/types';
@@ -6,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { NetworkTypeOption, networkOptions } from './formOptions';
 import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
+import { ApiClient } from '../api/api';
 
 export type WalletIdAccountNumbers = {
   // the key is the walletId and the value is the account number
@@ -86,6 +94,18 @@ export const ConnectHardwareModal = ({
   const isShowFoundDevices =
     getConnectedHardwareWalletsQuery.isSuccess && hwwData.length > 0;
 
+  const getXpub = async () => {
+    try {
+      // TODO use hook and use loading states
+      const response = await ApiClient.getXpubFromDevice(
+        selectedHWId as string,
+      );
+      console.log('xpub response', response);
+    } catch (e) {
+      console.log('error from getting xpub', e);
+    }
+  };
+
   return (
     <Modal
       styles={{
@@ -97,12 +117,14 @@ export const ConnectHardwareModal = ({
       centered
       size="md"
       title={isShowFoundDevices ? 'Complete wallet setup' : ''}
+      scrollAreaComponent={ScrollArea.Autosize}
     >
       <div className="relative">
         {isShowScan && (
           <div
             className="flex justify-between flex-col items-center"
-            style={{ height: '450px' }}
+            // TODO fix height of modal to be dynamic
+            style={{ minHeight: '450px' }}
           >
             <h1> Connect a Hardware Wallet</h1>
             <IconUsb style={{ width: '10rem', height: '10rem' }} />
@@ -148,7 +170,7 @@ export const ConnectHardwareModal = ({
               />
             </div>
 
-            <Button disabled={!canInitiateHWWallet} onClick={() => {}}>
+            <Button disabled={!canInitiateHWWallet} onClick={getXpub}>
               Advance
             </Button>
           </div>
