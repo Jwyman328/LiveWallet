@@ -109,16 +109,11 @@ export const HardwareWalletSelect = ({
                 data={accountOptions}
                 placeholder="Pick value"
                 defaultValue={'0'}
-                onSelect={(event) => {
-                  const labelToValue = accountOptions.find(
-                    (accountOption) =>
-                      // @ts-ignore
-                      accountOption.label === event.target?.value,
-                  );
+                onChange={(value) => {
                   setSelectedAccounts({
                     ...selectedAccounts,
                     //@ts-ignore
-                    [wallet.id]: labelToValue.value,
+                    [wallet.id]: value as string,
                   });
                 }}
               />

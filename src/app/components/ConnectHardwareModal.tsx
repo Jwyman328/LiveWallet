@@ -99,8 +99,9 @@ export const ConnectHardwareModal = ({
       // TODO use hook and use loading states
       const response = await ApiClient.getXpubFromDevice(
         selectedHWId as string,
+        selectedAccounts[selectedHWId as string] || '0',
+        selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'",
       );
-      console.log('xpub response', response);
     } catch (e) {
       console.log('error from getting xpub', e);
     }

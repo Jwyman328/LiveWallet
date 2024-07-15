@@ -166,10 +166,15 @@ export class ApiClient {
     return data;
   }
 
-  static async getXpubFromDevice(walletUuid: string) {
+  static async getXpubFromDevice(
+    walletUuid: string,
+    accountNumber: string,
+    derivationPath: string,
+  ) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/xpub`,
-      'GET',
+      'POST',
+      { account_number: accountNumber, derivation_path: derivationPath },
     );
 
     const data = (await response.json()) as HardwareWalletXpubResponseType;

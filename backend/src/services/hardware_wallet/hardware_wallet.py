@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 
 from hwilib import common
@@ -125,7 +126,9 @@ class HardwareWalletService:
         return was_unlock_successful
 
     @staticmethod
-    def get_xpub_from_device(wallet_uuid: str) -> Optional[str]:
+    def get_xpub_from_device(
+        wallet_uuid: str, account_number: int, address_type: common.AddressType
+    ) -> Optional[str]:
         """TODO more info"""
         wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
         if wallet is None:
@@ -143,7 +146,7 @@ class HardwareWalletService:
         xpub = None
         try:
             xpub = HardwareWalletService.get_xpub(
-                connected_wallet,
+                connected_wallet, account_number, address_type
             )
 
         except Exception as e:
@@ -197,16 +200,36 @@ class HardwareWalletService:
     @staticmethod
     def get_xpub(
         hardware_wallet_connection: HardwareWalletClient,
-    ):
-        # just mock hardcode data for now
-        # TODO get data from backend
-        address_type = common.AddressType.WIT
-        account_number = 0
+        account_number: int,
+        address_type: common.AddressType = common.AddressType.WIT,
+    ) -> Optional[str]:
+        """TODO add docstring"""
         master_xpub = hardware_wallet_connection.get_master_xpub(
             address_type, account_number
         )
         readable_master_xpub = master_xpub.to_string()
 
         # prob dont need to get this I prob already have it ?
-        master_finger_print = hardware_wallet_connection.get_master_fingerprint().hex()
+        # master_finger_print = hardware_wallet_connection.get_master_fingerprint().hex()
         return readable_master_xpub
+
+    @staticmethod
+    def get_script_type_from_derivation_path(
+        derivation_path: str,
+    ) -> Optional[common.AddressType]:
+        """TODO add docstring"""
+        pattern = r"m/(?P<number>\d+)'/"
+        match = re.match(pattern, derivation_path)
+        if match:
+            script_type_number = match.group("number")
+
+            if script_type_number == "44":
+                return common.AddressType.LEGACY
+            elif script_type_number == "49":
+                return common.AddressType.SH_WIT
+            elif script_type_number == "84":
+                return common.AddressType.WIT
+            elif script_type_number == "86":
+                return common.AddressType.TAP
+        else:
+            return None
