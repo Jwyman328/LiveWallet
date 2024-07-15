@@ -6,9 +6,15 @@ import {
   ScrollArea,
   Select,
 } from '@mantine/core';
-import { useGetConnectedHardwareWallets } from '../hooks/hardwareWallets';
+import {
+  useGetConnectedHardwareWallets,
+  useGetXpubFromHardwareWallet,
+} from '../hooks/hardwareWallets';
 import { IconUsb } from '@tabler/icons-react';
-import { HardwareWalletDetails } from '../api/types';
+import {
+  HardwareWalletDetails,
+  HardwareWalletXpubResponseType,
+} from '../api/types';
 import { useMemo, useState } from 'react';
 import { NetworkTypeOption, networkOptions } from './formOptions';
 import { configs } from '../configs';
@@ -94,14 +100,28 @@ export const ConnectHardwareModal = ({
   const isShowFoundDevices =
     getConnectedHardwareWalletsQuery.isSuccess && hwwData.length > 0;
 
+  const handleGetXpubFromHardwareWalletSuccess = (
+    data: HardwareWalletXpubResponseType,
+  ) => {
+    console.log('TODO: do something with this', data);
+  };
+  const handleGetXpubFromHardwareWalletError = () => {
+    console.log('TODO: do something with this error');
+  };
+
+  const getXpubFromHardwareWalletMutation = useGetXpubFromHardwareWallet(
+    handleGetXpubFromHardwareWalletSuccess,
+    handleGetXpubFromHardwareWalletError,
+  );
+
   const getXpub = async () => {
     try {
-      // TODO use hook and use loading states
-      const response = await ApiClient.getXpubFromDevice(
-        selectedHWId as string,
-        selectedAccounts[selectedHWId as string] || '0',
-        selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'",
-      );
+      await getXpubFromHardwareWalletMutation.mutateAsync({
+        walletUuid: selectedHWId as string,
+        accountNumber: selectedAccounts[selectedHWId as string] || '0',
+        derivationPath:
+          selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'",
+      });
     } catch (e) {
       console.log('error from getting xpub', e);
     }
@@ -171,7 +191,11 @@ export const ConnectHardwareModal = ({
               />
             </div>
 
-            <Button disabled={!canInitiateHWWallet} onClick={getXpub}>
+            <Button
+              loading={getXpubFromHardwareWalletMutation.isLoading}
+              disabled={!canInitiateHWWallet}
+              onClick={getXpub}
+            >
               Advance
             </Button>
           </div>

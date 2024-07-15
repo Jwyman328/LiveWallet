@@ -1,6 +1,17 @@
-import { HardwareWalletDetails } from '../api/types';
+import {
+  HardwareWalletDetails,
+  HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletUnlockResponseType,
+} from '../api/types';
 
-import { Button, Checkbox, Collapse, Input, Select } from '@mantine/core';
+import {
+  Button,
+  Checkbox,
+  Collapse,
+  Input,
+  Loader,
+  Select,
+} from '@mantine/core';
 import { AccountTypeOption } from './formOptions';
 import {
   WalletIdAccountNumbers,
@@ -9,6 +20,10 @@ import {
 import { useState } from 'react';
 import { ApiClient } from '../api/api';
 import { TrezorKeypad } from './TrezorKeypad';
+import {
+  usePromptToUnlockWallet,
+  useUnlockWalletMutation,
+} from '../hooks/hardwareWallets';
 
 type HardwareWalletSelectProps = {
   wallet: HardwareWalletDetails;
@@ -40,31 +55,71 @@ export const HardwareWalletSelect = ({
 
   const [isReadyForPin, setIsReadyForPin] = useState(false);
   const [wasUnlockSuccessful, setWasUnlockSuccessful] = useState(false);
+  const [hasPromptedSuccessfullyOnce, setHasPromptedSuccessfullyOnce] =
+    useState(false);
   const isLockedOrNeedsPassphrase =
     !wasUnlockSuccessful &&
     (wallet.needs_pin_send || wallet.needs_passphrase_sent);
 
   const [isShowDerivation, setIsShowDerivation] = useState(false);
+  const onPromptToUnlockSuccess = (
+    response: HardwareWalletPromptToUnlockResponseType,
+  ) => {
+    if (response.was_prompt_successful) {
+      setIsReadyForPin(true);
+      setHasPromptedSuccessfullyOnce(true);
+    } else {
+      setIsReadyForPin(false);
+    }
+  };
+  const onPromptToUnlockError = () => {
+    console.log('TODO handle error');
+  };
+  const promptToUnlockMutation = usePromptToUnlockWallet(
+    onPromptToUnlockSuccess,
+    onPromptToUnlockError,
+  );
   const promptToUnlock = async () => {
     try {
       // TODO use hook and use loading states
-      const response = await ApiClient.promptToUnlockWallet(wallet.id);
-      if (response.was_prompt_successful) {
-        setIsReadyForPin(true);
-      }
+      await promptToUnlockMutation.mutateAsync({
+        walletUuid: wallet.id,
+      });
     } catch (e) {
       console.log('error', e);
     }
   };
   const [pin, setPin] = useState('');
 
+  const handleUnlockSuccess = (response: HardwareWalletUnlockResponseType) => {
+    if (response.was_unlock_successful) {
+      setWasUnlockSuccessful(true);
+    } else {
+      setWasUnlockSuccessful(false);
+      // After a failed unlock, we need to prompt the wallet again
+      // before we can send a pin again, therefore the wallet is not ready for pin
+      setIsReadyForPin(false);
+
+      setPin('');
+    }
+  };
+  const handleUnlockError = () => {
+    console.log('TODO handle error');
+
+    setWasUnlockSuccessful(false);
+    setPin('');
+  };
+  const unlockWalletMutation = useUnlockWalletMutation(
+    handleUnlockSuccess,
+    handleUnlockError,
+  );
+
   const sendPin = async () => {
     try {
-      // TODO use hook and use loading states
-      const response = await ApiClient.unlockWallet(wallet.id, pin);
-      if (response.was_unlock_successful) {
-        setWasUnlockSuccessful(true);
-      }
+      await unlockWalletMutation.mutateAsync({
+        walletUuid: wallet.id,
+        pin: pin,
+      });
     } catch (e) {
       // TODO throw some type of toast to let the user know the request failed and they should try again
       console.log('error', e);
@@ -83,8 +138,7 @@ export const HardwareWalletSelect = ({
             }
           }}
           checked={selectedHWId === wallet.id}
-          //disabled={isLockedOrNeedsPassphrase}
-          disabled={false}
+          disabled={isLockedOrNeedsPassphrase}
         />
         <div className="items-center border rounded border-gray-600 p-2 bg-gray-100  mb-4 w-full">
           <div className="flex flex-row justify-between">
@@ -100,8 +154,14 @@ export const HardwareWalletSelect = ({
                 </Button>
               )}
             </div>
-            {isLockedOrNeedsPassphrase && !isReadyForPin ? (
-              <Button onClick={promptToUnlock} size="sm" color="green">
+            {isLockedOrNeedsPassphrase ? (
+              <Button
+                loading={promptToUnlockMutation.isLoading}
+                onClick={promptToUnlock}
+                size="sm"
+                color="green"
+                disabled={isReadyForPin}
+              >
                 Unlock
               </Button>
             ) : (
@@ -121,7 +181,9 @@ export const HardwareWalletSelect = ({
           </div>
           <Collapse
             in={
-              isReadyForPin && isLockedOrNeedsPassphrase && !wasUnlockSuccessful
+              (isReadyForPin || hasPromptedSuccessfullyOnce) &&
+              isLockedOrNeedsPassphrase &&
+              !wasUnlockSuccessful
             }
           >
             {isTrezor ? (
@@ -136,8 +198,17 @@ export const HardwareWalletSelect = ({
                     }}
                     type="password"
                     styles={{ input: { fontSize: '2.5rem' } }}
+                    disabled={unlockWalletMutation.isLoading || !isReadyForPin}
                   />
-                  <Button onClick={sendPin}>Enter Pin</Button>
+                  <Button
+                    loading={unlockWalletMutation.isLoading}
+                    className="mb-2"
+                    color={'green'}
+                    onClick={sendPin}
+                    disabled={!isReadyForPin}
+                  >
+                    Enter Pin
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -149,9 +220,17 @@ export const HardwareWalletSelect = ({
                   onInput={(event) => {
                     setPin(event.target.value);
                   }}
+                  disabled={unlockWalletMutation.isLoading || !isReadyForPin}
                 />
 
-                <Button onClick={sendPin}>Enter Pin</Button>
+                <Button
+                  loading={unlockWalletMutation.isLoading}
+                  onClick={sendPin}
+                  color={'green'}
+                  disabled={!isReadyForPin}
+                >
+                  Enter Pin
+                </Button>
               </>
             )}
           </Collapse>
