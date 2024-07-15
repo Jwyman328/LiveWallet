@@ -19,7 +19,7 @@ class HardwareWalletDetails(BaseModel):
     id: Optional[str] = None
     type: str
     path: Optional[str] = None
-    label: str
+    label: Optional[str] = None
     model: str
     needs_pin_sent: bool
     needs_passphrase_sent: bool
