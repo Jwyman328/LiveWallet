@@ -63,7 +63,7 @@ export type HardwareWalletDetails = {
   label: string;
   type?: string;
   model: string;
-  needs_pin_send: boolean;
+  needs_pin_sent: boolean;
   needs_passphrase_sent: boolean;
   fingerprint?: string;
 };
@@ -84,4 +84,8 @@ export type HardwareWalletUnlockResponseType = {
 
 export type HardwareWalletXpubResponseType = {
   xpub: string;
+};
+
+export type HardwareWalletSetPassphraseResponseType = {
+  was_passphrase_set: boolean;
 };

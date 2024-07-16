@@ -30,14 +30,14 @@
 
 # Feature Ideas
 - integrate signing devices to export wallet details
-  - does bdk have any way to do this?
-    - https://bitcoindevkit.org/blog/getting-started-with-rust-hwi/
   - Python bitcoin hardware wallet interface pip package.
    - Written by Andrew chow.
    - https://hwi.readthedocs.io/en/latest/devices/index.html
    - https://pypi.org/project/hwi/
    - https://github.com/bitcoin-core/HWI
    - https://bitcoinops.org/en/topics/hwi/
+    
+  - add close request to all hardware wallets when the hardware wallet modal closes
 - A suggestion: Add gap limit option
 - breakdown where the cost comes form for each part of the transaction
 - ability to just put in a utxo and test that instead of an entire wallet.

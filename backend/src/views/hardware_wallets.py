@@ -41,6 +41,14 @@ class GetXpubResponseDto(BaseModel):
     xpub: Optional[str]
 
 
+class SetWalletPassphraseRequestDto(BaseModel):
+    passphrase: str
+
+
+class SetWalletPassphraseResponseDto(BaseModel):
+    was_passphrase_set: bool
+
+
 @hardware_wallet_api.route("/", methods=["GET"])
 def scan_for_wallets():
     """
@@ -100,6 +108,28 @@ def unlock_wallet(uuid: str):
         return (
             ValidationErrorResponse(
                 message="Error unlocking hardware wallet with pin", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
+
+
+@hardware_wallet_api.route("/unlock/<uuid>/passphrase", methods=["POST"])
+def set_wallet_passphrase(uuid: str):
+    """
+    Set a passphrase with a currently unlocked hardware wallet
+    """
+    try:
+        data = SetWalletPassphraseRequestDto.model_validate_json(request.data)
+        was_passphrase_set = HardwareWalletService.set_passphrase(uuid, data.passphrase)
+
+        return SetWalletPassphraseResponseDto(
+            was_passphrase_set=was_passphrase_set
+        ).model_dump()
+
+    except ValidationError as e:
+        return (
+            ValidationErrorResponse(
+                message="Error setting passphrase", errors=e.errors()
             ).model_dump(),
             400,
         )

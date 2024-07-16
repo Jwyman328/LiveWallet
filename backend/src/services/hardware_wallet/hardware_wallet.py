@@ -11,6 +11,7 @@ from pydantic import BaseModel, TypeAdapter
 from src.models.hardware_wallet import HardwareWallet
 import structlog
 
+from cryptography.fernet import Fernet
 
 LOGGER = structlog.get_logger()
 
@@ -27,6 +28,18 @@ class HardwareWalletDetails(BaseModel):
 
 
 class HardwareWalletService:
+    # Class variable
+    cipher_suite = None
+
+    @classmethod
+    def get_cipher_suite(cls):
+        """Return the singleton instance of cipher_suite."""
+        if cls.cipher_suite is None:
+            # Initialize the cipher_suite if it does not exist
+            key = Fernet.generate_key()
+            cls.cipher_suite = Fernet(key)
+        return cls.cipher_suite
+
     @staticmethod
     def get_connected_hardware_wallets() -> List[HardwareWalletDetails]:
         "Get the hardware wallets that are connected to the computer, add them to the database and return them as a pydantic model with the id attached"
@@ -126,6 +139,24 @@ class HardwareWalletService:
         return was_unlock_successful
 
     @staticmethod
+    def set_passphrase(wallet_uuid: str, passphrase: str) -> bool:
+        """Set passphrase to : TODO more info"""
+        try:
+            wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+            if wallet is None:
+                LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
+                return False
+
+            wallet.set_encrypted_passphrase(
+                passphrase, HardwareWalletService.get_cipher_suite()
+            )
+            DB.session.commit()
+            return True
+        except Exception as e:
+            LOGGER.info("Error adding passphrase to wallet", error=e)
+            return False
+
+    @staticmethod
     def get_xpub_from_device(
         wallet_uuid: str, account_number: int, address_type: common.AddressType
     ) -> Optional[str]:
@@ -154,14 +185,20 @@ class HardwareWalletService:
 
         return xpub
 
-    @staticmethod
+    @classmethod
     def connect_to_hardware_wallet(
+        cls,
         hardware_wallet_details: HardwareWallet,
         chain: Chain = Chain.MAIN,
-        password=None,
     ) -> Optional[HardwareWalletClient]:
         "Connect to the hardware wallet on the local system"
+        # do I need this log?
         LOGGER.info("what is hw details", hw=hardware_wallet_details.type)
+        password = hardware_wallet_details.encrypted_passphrase
+        if password is not None:
+            cipher_suite = cls.get_cipher_suite()
+            password = hardware_wallet_details.get_decrypted_passphrase(cipher_suite)
+
         if hardware_wallet_details.path:
             hardware_wallet_connection = commands.get_client(
                 hardware_wallet_details.type,
@@ -196,6 +233,14 @@ class HardwareWalletService:
     ) -> bool:
         "Send the pin to the hardware wallet, and return if pin was valid."
         return hardware_wallet_connection.send_pin(pin)
+
+    # @staticmethod
+    # def send_passphrase_to_device(
+    #     hardware_wallet_connection: HardwareWalletClient,
+    #     passphrase: str,
+    # ) -> bool:
+    #     "Send the pin to the hardware wallet, and return if pin was valid."
+    #     return hardware_wallet_connection.pa(pin)
 
     @staticmethod
     def get_xpub(

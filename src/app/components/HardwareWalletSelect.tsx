@@ -55,11 +55,14 @@ export const HardwareWalletSelect = ({
 
   const [isReadyForPin, setIsReadyForPin] = useState(false);
   const [wasUnlockSuccessful, setWasUnlockSuccessful] = useState(false);
+  // can probably remove this once I start using a hook and can use the .success
+  const [wasPassphraseSuccessful, setWasPassphraseSuccessful] = useState(false);
   const [hasPromptedSuccessfullyOnce, setHasPromptedSuccessfullyOnce] =
     useState(false);
-  const isLockedOrNeedsPassphrase =
-    !wasUnlockSuccessful &&
-    (wallet.needs_pin_send || wallet.needs_passphrase_sent);
+  const isLocked = !wasUnlockSuccessful && wallet.needs_pin_sent;
+  const isPassphrasePending =
+    wallet.needs_passphrase_sent && !wasPassphraseSuccessful;
+  const isLockedOrNeedsPassphrase = isLocked || isPassphrasePending;
 
   const [isShowDerivation, setIsShowDerivation] = useState(false);
   const onPromptToUnlockSuccess = (
@@ -125,6 +128,22 @@ export const HardwareWalletSelect = ({
       console.log('error', e);
     }
   };
+
+  const [passphrase, setPassphrase] = useState('');
+
+  const sendPassphrase = async () => {
+    console.log('sending passphrase', passphrase);
+    try {
+      const response = await ApiClient.setWalletPassphrase(
+        wallet.id,
+        passphrase,
+      );
+      setWasPassphraseSuccessful(response.was_passphrase_set);
+      console.log('set passphrase response', response);
+    } catch (e) {
+      console.log('error', e);
+    }
+  };
   return (
     <div>
       <div className="flex flex-row w-full items-center">
@@ -154,7 +173,7 @@ export const HardwareWalletSelect = ({
                 </Button>
               )}
             </div>
-            {isLockedOrNeedsPassphrase ? (
+            {isLocked ? (
               <Button
                 loading={promptToUnlockMutation.isLoading}
                 onClick={promptToUnlock}
@@ -164,6 +183,10 @@ export const HardwareWalletSelect = ({
               >
                 Unlock
               </Button>
+            ) : isPassphrasePending ? (
+              <div className="flex items-center justify-center  text-sm">
+                passphrase required
+              </div>
             ) : (
               <Select
                 data={accountOptions}
@@ -180,11 +203,7 @@ export const HardwareWalletSelect = ({
             )}
           </div>
           <Collapse
-            in={
-              (isReadyForPin || hasPromptedSuccessfullyOnce) &&
-              isLockedOrNeedsPassphrase &&
-              !wasUnlockSuccessful
-            }
+            in={(isReadyForPin || hasPromptedSuccessfullyOnce) && isLocked}
           >
             {isTrezor ? (
               <div className="flex flex-row mt-4">
@@ -233,6 +252,31 @@ export const HardwareWalletSelect = ({
                 </Button>
               </>
             )}
+          </Collapse>
+          <Collapse in={!isLocked && isPassphrasePending}>
+            <div className="flex flex-row mt-1">
+              <Input
+                data-testid="send passphrase"
+                className="flex-grow"
+                placeholder="Enter passphrase"
+                value={passphrase}
+                onInput={(event) => {
+                  setPassphrase(event.target.value);
+                }}
+                type="password"
+                disabled={false}
+              />
+
+              <Button
+                loading={false}
+                onClick={sendPassphrase}
+                color={'green'}
+                disabled={false}
+                className="ml-2"
+              >
+                Send
+              </Button>
+            </div>
           </Collapse>
           <Collapse in={isShowDerivation}>
             <Input

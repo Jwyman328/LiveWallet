@@ -12,6 +12,7 @@ import {
   HardwareWalletPromptToUnlockResponseType,
   HardwareWalletUnlockResponseType,
   HardwareWalletXpubResponseType,
+  HardwareWalletSetPassphraseResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -178,6 +179,18 @@ export class ApiClient {
     );
 
     const data = (await response.json()) as HardwareWalletXpubResponseType;
+    return data;
+  }
+
+  static async setWalletPassphrase(walletUuid: string, passphrase: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/passphrase`,
+      'POST',
+      { passphrase },
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletSetPassphraseResponseType;
     return data;
   }
 }

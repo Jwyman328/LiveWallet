@@ -7,5 +7,5 @@ class ServiceContainer(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(packages=["..views", "..services"])
 
     wallet_service = providers.Factory(WalletService)
-    hardware_wallet_service = providers.Factory(HardwareWalletService)
+    hardware_wallet_service = providers.Singleton(HardwareWalletService)
     fee_service = providers.Factory(FeeService)
