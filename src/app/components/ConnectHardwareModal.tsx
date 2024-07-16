@@ -147,7 +147,12 @@ export const ConnectHardwareModal = ({
             // TODO fix height of modal to be dynamic
             style={{ minHeight: '450px' }}
           >
-            <h1> Connect a Hardware Wallet</h1>
+            <div className="text-center w-full">
+              <h1> Connect a Hardware Wallet</h1>
+              <h1 className="text-sm">
+                You may need to unlock your wallet before it is discoverable
+              </h1>
+            </div>
             <IconUsb style={{ width: '10rem', height: '10rem' }} />
             <Button
               variant="filled"
