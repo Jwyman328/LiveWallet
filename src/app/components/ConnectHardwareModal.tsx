@@ -127,6 +127,15 @@ export const ConnectHardwareModal = ({
     }
   };
 
+  const closeModalAndHardwareWallets = async () => {
+    try {
+      await ApiClient.closeAndRemoveHardwareWallets();
+    } catch (e) {
+      console.log('Error closing and removing hardware wallets');
+    }
+    closeModal();
+  };
+
   return (
     <Modal
       styles={{
@@ -134,7 +143,7 @@ export const ConnectHardwareModal = ({
         title: { fontWeight: '700' },
       }}
       opened={isOpen}
-      onClose={closeModal}
+      onClose={closeModalAndHardwareWallets}
       centered
       size="md"
       title={isShowFoundDevices ? 'Complete wallet setup' : ''}

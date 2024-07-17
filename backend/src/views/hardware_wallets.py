@@ -20,6 +20,10 @@ class ScanForWalletsResponseDto(BaseModel):
     wallets: List[HardwareWalletDetails]
 
 
+class CloseAndRemoveWalletsResponseDto(BaseModel):
+    was_close_and_remove_successful: bool
+
+
 class UnlockWalletPromptResponseDto(BaseModel):
     was_prompt_successful: bool
 
@@ -63,6 +67,29 @@ def scan_for_wallets():
         return (
             ValidationErrorResponse(
                 message="Error scanning for hardware wallets", errors=e.errors()
+            ).model_dump(),
+            400,
+        )
+
+
+@hardware_wallet_api.route("/close", methods=["DELETE"])
+def close_and_remove_wallets():
+    """
+    Close all connected wallets and delete them from the database
+    """
+    try:
+        was_close_successful = (
+            HardwareWalletService.close_and_remove_all_hardware_wallets()
+        )
+
+        return CloseAndRemoveWalletsResponseDto(
+            was_close_and_remove_successful=was_close_successful
+        ).model_dump()
+
+    except ValidationError as e:
+        return (
+            ValidationErrorResponse(
+                message="Error closing and deleting hardware wallets", errors=e.errors()
             ).model_dump(),
             400,
         )

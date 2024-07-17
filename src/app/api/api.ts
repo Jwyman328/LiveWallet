@@ -13,6 +13,7 @@ import {
   HardwareWalletUnlockResponseType,
   HardwareWalletXpubResponseType,
   HardwareWalletSetPassphraseResponseType,
+  HardwareWalletCloseAndRemoveResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -191,6 +192,17 @@ export class ApiClient {
 
     const data =
       (await response.json()) as HardwareWalletSetPassphraseResponseType;
+    return data;
+  }
+
+  static async closeAndRemoveHardwareWallets() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/close`,
+      'DELETE',
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletCloseAndRemoveResponseType;
     return data;
   }
 }

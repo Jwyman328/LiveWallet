@@ -28,7 +28,6 @@ class HardwareWalletDetails(BaseModel):
 
 
 class HardwareWalletService:
-    # Class variable
     cipher_suite = None
 
     @classmethod
@@ -55,6 +54,28 @@ class HardwareWalletService:
         for index, hww_with_id in enumerate(hwws_in_db):
             hwws_found[index].id = hww_with_id.id
         return hwws_found
+
+    @staticmethod
+    def close_and_remove_all_hardware_wallets() -> bool:
+        hardware_wallets: List[HardwareWallet] = HardwareWallet.query.all()
+        for hardware_wallet in hardware_wallets:
+            try:
+                hww_client = HardwareWalletService.connect_to_hardware_wallet(
+                    hardware_wallet
+                )
+                if hww_client is not None:
+                    HardwareWalletService.close_device(hww_client)
+            except Exception as e:
+                LOGGER.error(
+                    "Error closing hardware wallet",
+                    hardware_wallet=hardware_wallet.type,
+                    error=e,
+                )
+
+            DB.session.delete(hardware_wallet)
+
+        DB.session.commit()
+        return True
 
     @staticmethod
     def scan_for_hardware_wallets() -> List[HardwareWalletDetails]:
@@ -229,6 +250,14 @@ class HardwareWalletService:
     ) -> bool:
         "Send the pin to the hardware wallet, and return if pin was valid."
         return hardware_wallet_connection.send_pin(pin)
+
+    @staticmethod
+    def close_device(
+        hardware_wallet_connection: HardwareWalletClient,
+    ):
+        "TODO add docstring"
+        LOGGER.info("Closing hardware wallet connection")
+        return hardware_wallet_connection.close()
 
     @staticmethod
     def get_xpub(
