@@ -128,14 +128,10 @@ class HardwareWalletService:
             )
             return False
 
-        was_unlock_successful = False
-        try:
-            was_unlock_successful = HardwareWalletService.send_pin_to_device(
-                connected_wallet, pin
-            )
+        was_unlock_successful = HardwareWalletService.send_pin_to_device(
+            connected_wallet, pin
+        )
 
-        except Exception as e:
-            LOGGER.info("caught it error", error=e)
         return was_unlock_successful
 
     @staticmethod
@@ -233,14 +229,6 @@ class HardwareWalletService:
     ) -> bool:
         "Send the pin to the hardware wallet, and return if pin was valid."
         return hardware_wallet_connection.send_pin(pin)
-
-    # @staticmethod
-    # def send_passphrase_to_device(
-    #     hardware_wallet_connection: HardwareWalletClient,
-    #     passphrase: str,
-    # ) -> bool:
-    #     "Send the pin to the hardware wallet, and return if pin was valid."
-    #     return hardware_wallet_connection.pa(pin)
 
     @staticmethod
     def get_xpub(

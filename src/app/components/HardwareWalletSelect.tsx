@@ -1,6 +1,7 @@
 import {
   HardwareWalletDetails,
   HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletSetPassphraseResponseType,
   HardwareWalletUnlockResponseType,
 } from '../api/types';
 
@@ -22,6 +23,7 @@ import { ApiClient } from '../api/api';
 import { TrezorKeypad } from './TrezorKeypad';
 import {
   usePromptToUnlockWallet,
+  useSetWalletPassphraseMutation,
   useUnlockWalletMutation,
 } from '../hooks/hardwareWallets';
 
@@ -55,13 +57,19 @@ export const HardwareWalletSelect = ({
 
   const [isReadyForPin, setIsReadyForPin] = useState(false);
   const [wasUnlockSuccessful, setWasUnlockSuccessful] = useState(false);
-  // can probably remove this once I start using a hook and can use the .success
-  const [wasPassphraseSuccessful, setWasPassphraseSuccessful] = useState(false);
   const [hasPromptedSuccessfullyOnce, setHasPromptedSuccessfullyOnce] =
     useState(false);
   const isLocked = !wasUnlockSuccessful && wallet.needs_pin_sent;
+
+  const onSetWalletPassphraseError = () => {
+    console.log('TODO handle error');
+  };
+  const setWalletPassphraseMutation = useSetWalletPassphraseMutation(
+    undefined,
+    onSetWalletPassphraseError,
+  );
   const isPassphrasePending =
-    wallet.needs_passphrase_sent && !wasPassphraseSuccessful;
+    wallet.needs_passphrase_sent && !setWalletPassphraseMutation.isSuccess;
   const isLockedOrNeedsPassphrase = isLocked || isPassphrasePending;
 
   const [isShowDerivation, setIsShowDerivation] = useState(false);
@@ -69,11 +77,9 @@ export const HardwareWalletSelect = ({
     response: HardwareWalletPromptToUnlockResponseType,
   ) => {
     if (response.was_prompt_successful) {
-      setIsReadyForPin(true);
       setHasPromptedSuccessfullyOnce(true);
-    } else {
-      setIsReadyForPin(false);
     }
+    setIsReadyForPin(response.was_prompt_successful);
   };
   const onPromptToUnlockError = () => {
     console.log('TODO handle error');
@@ -132,16 +138,13 @@ export const HardwareWalletSelect = ({
   const [passphrase, setPassphrase] = useState('');
 
   const sendPassphrase = async () => {
-    console.log('sending passphrase', passphrase);
     try {
-      const response = await ApiClient.setWalletPassphrase(
-        wallet.id,
-        passphrase,
-      );
-      setWasPassphraseSuccessful(response.was_passphrase_set);
-      console.log('set passphrase response', response);
+      await setWalletPassphraseMutation.mutateAsync({
+        walletUuid: wallet.id,
+        passphrase: passphrase,
+      });
     } catch (e) {
-      console.log('error', e);
+      //Error handled in the hook
     }
   };
   return (

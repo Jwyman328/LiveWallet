@@ -2,10 +2,10 @@ import { useMutation } from 'react-query';
 import { ApiClient } from '../api/api';
 import {
   HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletSetPassphraseResponseType,
   HardwareWalletUnlockResponseType,
   HardwareWalletXpubResponseType,
 } from '../api/types';
-import { Network } from '../types/network';
 
 export function useGetConnectedHardwareWallets(
   onSuccess?: () => void,
@@ -95,6 +95,32 @@ export function useUnlockWalletMutation(
       ApiClient.unlockWallet(walletUuid, pin),
     {
       onSuccess: (data: HardwareWalletUnlockResponseType) => {
+        if (onSuccess) {
+          onSuccess(data);
+        }
+      },
+      onError: () => {
+        if (onError) {
+          onError();
+        }
+      },
+    },
+  );
+}
+
+type SetWalletPassphraseParams = {
+  walletUuid: string;
+  passphrase: string;
+};
+export function useSetWalletPassphraseMutation(
+  onSuccess?: (data: HardwareWalletSetPassphraseResponseType) => void,
+  onError?: () => void,
+) {
+  return useMutation(
+    ({ walletUuid, passphrase }: SetWalletPassphraseParams) =>
+      ApiClient.setWalletPassphrase(walletUuid, passphrase),
+    {
+      onSuccess: (data: HardwareWalletSetPassphraseResponseType) => {
         if (onSuccess) {
           onSuccess(data);
         }
