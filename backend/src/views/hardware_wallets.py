@@ -56,7 +56,7 @@ class SetWalletPassphraseResponseDto(BaseModel):
 @hardware_wallet_api.route("/", methods=["GET"])
 def scan_for_wallets():
     """
-    Scan the system for connected hardware wallets
+    Scan the system for connected hardware wallets.
     """
     try:
         connected_hwws = HardwareWalletService.get_connected_hardware_wallets()
@@ -75,7 +75,11 @@ def scan_for_wallets():
 @hardware_wallet_api.route("/close", methods=["DELETE"])
 def close_and_remove_wallets():
     """
-    Close all connected wallets and delete them from the database
+    Delete all hardware wallets from the database, also try to close each hardware wallet device.
+    For some reason closing is not always successful. We have no way of knowing
+    if a close was successful though, there is no response from the hwi close function.
+    It isn't a big deal, we will still remove the wallet from the db even if it
+    the wallet doesn't close and will rely on the user to manually close the device.
     """
     try:
         was_close_successful = (
@@ -98,7 +102,9 @@ def close_and_remove_wallets():
 @hardware_wallet_api.route("/unlock/<uuid>/prompt", methods=["POST"])
 def prompt_unlock_wallet(uuid: str):
     """
-    Prompt a hardware wallet to unlock
+    Prompt a hardware wallet to unlock.
+
+    Prompting must be done before sending a pin to unlock the wallet.
     """
     try:
         was_prompt_successful = HardwareWalletService.prompt_to_unlock_wallet(uuid)
@@ -119,7 +125,7 @@ def prompt_unlock_wallet(uuid: str):
 @hardware_wallet_api.route("/unlock/<uuid>/pin", methods=["POST"])
 def unlock_wallet(uuid: str):
     """
-    Unlock a locked hardware wallet
+    Attempt to unlock a hardware wallet that is locked, by sending a pin to the wallet.
     """
     try:
         data = UnlockWalletWithPinRequestDto.model_validate_json(request.data)
@@ -143,7 +149,12 @@ def unlock_wallet(uuid: str):
 @hardware_wallet_api.route("/unlock/<uuid>/passphrase", methods=["POST"])
 def set_wallet_passphrase(uuid: str):
     """
-    Set a passphrase with a currently unlocked hardware wallet
+    Set a passphrase on a hardware wallet.
+
+    This will not interact with the hardware wallet device yet,
+    it will just save the passphrase in the db on the associated wallet db object.
+
+    The passphrase will later be used when connecting to the related hardware wallet device.
     """
     try:
         data = SetWalletPassphraseRequestDto.model_validate_json(request.data)
@@ -165,7 +176,8 @@ def set_wallet_passphrase(uuid: str):
 @hardware_wallet_api.route("/unlock/<uuid>/xpub", methods=["POST"])
 def get_xpub(uuid: str):
     """
-    Get the xpub from a hardware wallet
+    Generate an xpub from a hardware wallet, based on the derivation path provided
+    and the existing details in the db for this hardware wallet.
     """
     try:
         data = GetXpubRequestDto.model_validate_json(request.data)
