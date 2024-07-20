@@ -21,6 +21,12 @@ import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
 import { notifications } from '@mantine/notifications';
+import { Wallet } from '../types/wallet';
+import {
+  getScriptTypeFromDerivationPath,
+  ScriptTypes,
+} from '../types/scriptTypes';
+import { useNavigate } from 'react-router-dom';
 
 export type WalletIdAccountNumbers = {
   // the key is the walletId and the value is the account number
@@ -40,6 +46,7 @@ export const ConnectHardwareModal = ({
   closeModal,
 }: ConnectHardwareModalProps) => {
   const getConnectedHardwareWalletsQuery = useGetConnectedHardwareWallets();
+  const navigate = useNavigate();
 
   const scanForConnectedHardwareWallets = () => {
     getConnectedHardwareWalletsQuery.mutate();
@@ -104,7 +111,27 @@ export const ConnectHardwareModal = ({
   const handleGetXpubFromHardwareWalletSuccess = (
     data: HardwareWalletXpubResponseType,
   ) => {
-    console.log('TODO: do something with this', data);
+    const derivationPath =
+      selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'";
+    const wallet: Wallet = {
+      defaultNetwork: network.value,
+      defaultDerivationPath: derivationPath,
+      defaultScriptType: getScriptTypeFromDerivationPath(
+        derivationPath,
+      ) as ScriptTypes,
+      defaultXpub: data.xpub,
+      defaultDescriptor: '', // since we are sending all the individual components of the descriptor, we don't need to send the full descriptor
+      defaultMasterFingerprint: '00000000', // since this is a watch only wallet we don't need to send the master fingerprint
+      defaultElectrumServerUrl: '',
+      backendServerBaseUrl: '',
+      isUsingPublicServer: false,
+      privateElectrumUrl: '',
+      publicElectrumUrl: '',
+    };
+
+    navigate('/sign-in', {
+      state: { walletData: wallet },
+    });
   };
   const handleGetXpubFromHardwareWalletError = () => {
     notifications.show({
