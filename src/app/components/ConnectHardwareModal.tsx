@@ -20,6 +20,7 @@ import { NetworkTypeOption, networkOptions } from './formOptions';
 import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
+import { notifications } from '@mantine/notifications';
 
 export type WalletIdAccountNumbers = {
   // the key is the walletId and the value is the account number
@@ -106,7 +107,11 @@ export const ConnectHardwareModal = ({
     console.log('TODO: do something with this', data);
   };
   const handleGetXpubFromHardwareWalletError = () => {
-    console.log('TODO: do something with this error');
+    notifications.show({
+      title: 'Error retrieving xpub from your hardware wallet.',
+      message: 'Please try again.',
+      color: 'red',
+    });
   };
 
   const getXpubFromHardwareWalletMutation = useGetXpubFromHardwareWallet(
@@ -123,7 +128,7 @@ export const ConnectHardwareModal = ({
           selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'",
       });
     } catch (e) {
-      console.log('error from getting xpub', e);
+      // Error handled in the hook
     }
   };
 

@@ -5,21 +5,15 @@ import {
   HardwareWalletUnlockResponseType,
 } from '../api/types';
 
-import {
-  Button,
-  Checkbox,
-  Collapse,
-  Input,
-  Loader,
-  Select,
-} from '@mantine/core';
+import { Button, Checkbox, Collapse, Input, Select } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+
 import { AccountTypeOption } from './formOptions';
 import {
   WalletIdAccountNumbers,
   WalletIdDerivationPaths,
 } from './ConnectHardwareModal';
-import { useState } from 'react';
-import { ApiClient } from '../api/api';
+import { useMemo, useState } from 'react';
 import { TrezorKeypad } from './TrezorKeypad';
 import {
   usePromptToUnlockWallet,
@@ -42,6 +36,12 @@ type HardwareWalletSelectProps = {
   selectedDerivationPaths: WalletIdDerivationPaths;
 };
 
+// Select state machine
+// - locked
+// - ReadyForPin
+// - ReadyForPassphrase
+// - available
+
 export const HardwareWalletSelect = ({
   wallet,
   accountOptions,
@@ -62,7 +62,11 @@ export const HardwareWalletSelect = ({
   const isLocked = !wasUnlockSuccessful && wallet.needs_pin_sent;
 
   const onSetWalletPassphraseError = () => {
-    console.log('TODO handle error');
+    notifications.show({
+      title: 'Setting passphrase failed',
+      message: 'Please try again.',
+      color: 'red',
+    });
   };
   const setWalletPassphraseMutation = useSetWalletPassphraseMutation(
     undefined,
@@ -82,7 +86,11 @@ export const HardwareWalletSelect = ({
     setIsReadyForPin(response.was_prompt_successful);
   };
   const onPromptToUnlockError = () => {
-    console.log('TODO handle error');
+    notifications.show({
+      title: 'Unlocking wallet failed.',
+      message: 'Please try again.',
+      color: 'red',
+    });
   };
   const promptToUnlockMutation = usePromptToUnlockWallet(
     onPromptToUnlockSuccess,
@@ -90,12 +98,11 @@ export const HardwareWalletSelect = ({
   );
   const promptToUnlock = async () => {
     try {
-      // TODO use hook and use loading states
       await promptToUnlockMutation.mutateAsync({
         walletUuid: wallet.id,
       });
     } catch (e) {
-      console.log('error', e);
+      // Error handled in the hook
     }
   };
   const [pin, setPin] = useState('');
@@ -110,13 +117,23 @@ export const HardwareWalletSelect = ({
       setIsReadyForPin(false);
 
       setPin('');
+
+      notifications.show({
+        title: 'Invalid pin.',
+        message: 'Please unlock and try again.',
+        color: 'red',
+      });
     }
   };
   const handleUnlockError = () => {
-    console.log('TODO handle error');
-
     setWasUnlockSuccessful(false);
     setPin('');
+
+    notifications.show({
+      title: 'Unlocking wallet with pin failed.',
+      message: 'Please try again.',
+      color: 'red',
+    });
   };
   const unlockWalletMutation = useUnlockWalletMutation(
     handleUnlockSuccess,
@@ -147,6 +164,20 @@ export const HardwareWalletSelect = ({
       //Error handled in the hook
     }
   };
+  const EnterPinButton = useMemo(() => {
+    return () => (
+      <Button
+        loading={unlockWalletMutation.isLoading}
+        className="mb-2"
+        color={'green'}
+        onClick={sendPin}
+        disabled={!isReadyForPin}
+      >
+        Enter Pin
+      </Button>
+    );
+  }, [unlockWalletMutation.isLoading, isReadyForPin, sendPin]);
+
   return (
     <div>
       <div className="flex flex-row w-full items-center">
@@ -210,7 +241,10 @@ export const HardwareWalletSelect = ({
           >
             {isTrezor ? (
               <div className="flex flex-row mt-4">
-                <TrezorKeypad currentPin={pin} onPadClick={setPin} />
+                <TrezorKeypad
+                  currentPin={pin}
+                  onPadClick={isReadyForPin ? setPin : () => {}}
+                />
                 <div className="w-full ml-3 flex flex-col justify-between">
                   <Input
                     data-testid="send pin"
@@ -222,15 +256,7 @@ export const HardwareWalletSelect = ({
                     styles={{ input: { fontSize: '2.5rem' } }}
                     disabled={unlockWalletMutation.isLoading || !isReadyForPin}
                   />
-                  <Button
-                    loading={unlockWalletMutation.isLoading}
-                    className="mb-2"
-                    color={'green'}
-                    onClick={sendPin}
-                    disabled={!isReadyForPin}
-                  >
-                    Enter Pin
-                  </Button>
+                  <EnterPinButton />
                 </div>
               </div>
             ) : (
@@ -245,14 +271,7 @@ export const HardwareWalletSelect = ({
                   disabled={unlockWalletMutation.isLoading || !isReadyForPin}
                 />
 
-                <Button
-                  loading={unlockWalletMutation.isLoading}
-                  onClick={sendPin}
-                  color={'green'}
-                  disabled={!isReadyForPin}
-                >
-                  Enter Pin
-                </Button>
+                <EnterPinButton />
               </>
             )}
           </Collapse>
