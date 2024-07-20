@@ -140,6 +140,8 @@ export const ConnectHardwareModal = ({
     }
     closeModal();
   };
+  const modalHeight = hwwData.length > 1 ? '500px' : '400px';
+  const walletsSectionHeight = hwwData.length > 1 ? '370px' : '270px';
 
   return (
     <Modal
@@ -154,13 +156,9 @@ export const ConnectHardwareModal = ({
       title={isShowFoundDevices ? 'Complete wallet setup' : ''}
       scrollAreaComponent={ScrollArea.Autosize}
     >
-      <div className="relative">
+      <div style={{ height: modalHeight, overflow: 'scroll' }}>
         {isShowScan && (
-          <div
-            className="flex justify-between flex-col items-center"
-            // TODO fix height of modal to be dynamic
-            style={{ minHeight: '450px' }}
-          >
+          <div className="flex justify-between flex-col items-center h-full">
             <div className="text-center w-full">
               <h1> Connect a Hardware Wallet</h1>
               <h1 className="text-sm">
@@ -180,10 +178,7 @@ export const ConnectHardwareModal = ({
           </div>
         )}
         {getConnectedHardwareWalletsQuery.isLoading && (
-          <div
-            className="flex flex-col items-center"
-            style={{ height: '450px' }}
-          >
+          <div className="flex flex-col items-center h-full">
             <h1>Check your hardware device</h1>
 
             <Loader className="mt-40" size={60} color="blue" />
@@ -191,11 +186,14 @@ export const ConnectHardwareModal = ({
         )}
         {isShowFoundDevices && (
           <div
-            className="flex flex-col justify-between"
-            style={{ height: '450px' }}
+            className="flex flex-col justify-between h-full relative bottom-2"
+            style={{ zIndex: '1000000' }}
           >
-            <div style={{ zIndex: '1000000' }} className="relative bottom-2">
-              {hardwareWalletsDisplay}
+            <div>
+              <div style={{ height: walletsSectionHeight, overflow: 'scroll' }}>
+                {hardwareWalletsDisplay}
+              </div>
+
               <InputLabel className={`mt-1 mb-2`}>Network</InputLabel>
               <Select
                 allowDeselect={false}

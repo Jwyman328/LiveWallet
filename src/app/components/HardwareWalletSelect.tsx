@@ -1,7 +1,6 @@
 import {
   HardwareWalletDetails,
   HardwareWalletPromptToUnlockResponseType,
-  HardwareWalletSetPassphraseResponseType,
   HardwareWalletUnlockResponseType,
 } from '../api/types';
 
@@ -147,8 +146,7 @@ export const HardwareWalletSelect = ({
         pin: pin,
       });
     } catch (e) {
-      // TODO throw some type of toast to let the user know the request failed and they should try again
-      console.log('error', e);
+      // Error handled in hook
     }
   };
 
