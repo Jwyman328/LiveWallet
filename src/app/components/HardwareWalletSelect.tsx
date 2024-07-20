@@ -35,6 +35,7 @@ type HardwareWalletSelectProps = {
   selectedDerivationPaths: WalletIdDerivationPaths;
 };
 
+// Finish tests before refactoring to state machine model
 // Select state machine
 // - locked
 // - ReadyForPin

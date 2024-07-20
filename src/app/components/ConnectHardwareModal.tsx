@@ -126,6 +126,7 @@ export const ConnectHardwareModal = ({
         accountNumber: selectedAccounts[selectedHWId as string] || '0',
         derivationPath:
           selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'",
+        network: network.value,
       });
     } catch (e) {
       // Error handled in the hook

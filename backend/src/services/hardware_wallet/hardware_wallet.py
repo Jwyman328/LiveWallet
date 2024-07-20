@@ -142,7 +142,8 @@ class HardwareWalletService:
         Returns True if the prompt was successful.
         """
         connected_wallet = (
-            HardwareWalletService.get_wallet_from_db_and_connect_to_device(wallet_uuid)
+            HardwareWalletService.get_wallet_from_db_and_connect_to_device(
+                wallet_uuid)
         )
 
         if connected_wallet is None:
@@ -160,7 +161,8 @@ class HardwareWalletService:
         Return True if the pin successfully unlocked the wallet.
         """
         connected_wallet = (
-            HardwareWalletService.get_wallet_from_db_and_connect_to_device(wallet_uuid)
+            HardwareWalletService.get_wallet_from_db_and_connect_to_device(
+                wallet_uuid)
         )
 
         if connected_wallet is None:
@@ -180,7 +182,8 @@ class HardwareWalletService:
         Return True if the passphrase was successfully saved.
         """
         try:
-            wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+            wallet: Optional[HardwareWallet] = HardwareWallet.query.get(
+                wallet_uuid)
             if wallet is None:
                 LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
                 return False
@@ -196,11 +199,16 @@ class HardwareWalletService:
 
     @staticmethod
     def get_xpub_from_device(
-        wallet_uuid: str, account_number: int, address_type: common.AddressType
+        wallet_uuid: str,
+        account_number: int,
+        address_type: common.AddressType,
+        chain: Chain,
     ) -> Optional[str]:
         """Get the xpub from the hardware wallet device."""
         connected_wallet = (
-            HardwareWalletService.get_wallet_from_db_and_connect_to_device(wallet_uuid)
+            HardwareWalletService.get_wallet_from_db_and_connect_to_device(
+                wallet_uuid, chain
+            )
         )
 
         if connected_wallet is None:
@@ -219,18 +227,19 @@ class HardwareWalletService:
 
     @staticmethod
     def get_wallet_from_db_and_connect_to_device(
-        wallet_uuid: str,
+        wallet_uuid: str, chain: Chain = Chain.MAIN
     ) -> Optional[HardwareWalletClient]:
         """Get the hardware wallet details from the database and
         attempt to connect to the hardware wallet device."""
 
-        wallet: Optional[HardwareWallet] = HardwareWallet.query.get(wallet_uuid)
+        wallet: Optional[HardwareWallet] = HardwareWallet.query.get(
+            wallet_uuid)
         if wallet is None:
             LOGGER.info("Wallet not found in db", wallet_uuid=wallet_uuid)
             return None
 
         connected_wallet: Optional[HardwareWalletClient] = (
-            HardwareWalletService.connect_to_hardware_wallet(wallet)
+            HardwareWalletService.connect_to_hardware_wallet(wallet, chain)
         )
 
         if connected_wallet is None:
@@ -254,7 +263,8 @@ class HardwareWalletService:
         password = hardware_wallet_details.encrypted_passphrase
         if password is not None:
             cipher_suite = cls.get_cipher_suite()
-            password = hardware_wallet_details.get_decrypted_passphrase(cipher_suite)
+            password = hardware_wallet_details.get_decrypted_passphrase(
+                cipher_suite)
 
         if hardware_wallet_details.path:
             hardware_wallet_connection = commands.get_client(

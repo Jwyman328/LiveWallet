@@ -6,6 +6,7 @@ import {
   HardwareWalletUnlockResponseType,
   HardwareWalletXpubResponseType,
 } from '../api/types';
+import { Network } from '../types/network';
 
 export function useGetConnectedHardwareWallets(
   onSuccess?: () => void,
@@ -29,6 +30,7 @@ type GetHardwareWalletXpubParams = {
   walletUuid: string;
   accountNumber: string;
   derivationPath: string;
+  network: Network;
 };
 
 export function useGetXpubFromHardwareWallet(
@@ -40,8 +42,14 @@ export function useGetXpubFromHardwareWallet(
       walletUuid,
       derivationPath,
       accountNumber,
+      network,
     }: GetHardwareWalletXpubParams) =>
-      ApiClient.getXpubFromDevice(walletUuid, accountNumber, derivationPath),
+      ApiClient.getXpubFromDevice(
+        walletUuid,
+        accountNumber,
+        derivationPath,
+        network,
+      ),
     {
       onSuccess: (data: HardwareWalletXpubResponseType) => {
         if (onSuccess) {

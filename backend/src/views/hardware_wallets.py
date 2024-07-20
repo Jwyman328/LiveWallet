@@ -1,7 +1,9 @@
-from typing import List, Optional
-from pydantic import BaseModel, ValidationError
+from typing import Annotated, List, Optional
+from pydantic import BaseModel, ValidationError, field_validator
 import structlog
 from flask import Blueprint, request
+
+from hwilib.common import Chain
 
 from src.services.hardware_wallet.hardware_wallet import (
     HardwareWalletDetails,
@@ -39,6 +41,16 @@ class UnlockWalletWithPinResponseDto(BaseModel):
 class GetXpubRequestDto(BaseModel):
     account_number: int
     derivation_path: str
+    network: Annotated[Chain, str]
+
+    @field_validator("network", mode="before")
+    def parse_enum(cls, value) -> Optional[Chain]:
+        if value == "REGTEST":
+            return Chain.REGTEST
+        elif value == "TESTNET":
+            return Chain.TEST
+        elif value == "BITCOIN":
+            return Chain.MAIN
 
 
 class GetXpubResponseDto(BaseModel):
@@ -195,7 +207,7 @@ def get_xpub(uuid: str):
                 ]
             )
         xpub = HardwareWalletService.get_xpub_from_device(
-            uuid, data.account_number, script_type
+            uuid, data.account_number, script_type, data.network
         )
 
         return GetXpubResponseDto(xpub=xpub).model_dump()

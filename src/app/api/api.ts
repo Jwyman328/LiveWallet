@@ -172,11 +172,16 @@ export class ApiClient {
     walletUuid: string,
     accountNumber: string,
     derivationPath: string,
+    network: Network,
   ) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/xpub`,
       'POST',
-      { account_number: accountNumber, derivation_path: derivationPath },
+      {
+        account_number: accountNumber,
+        derivation_path: derivationPath,
+        network,
+      },
     );
 
     const data = (await response.json()) as HardwareWalletXpubResponseType;
