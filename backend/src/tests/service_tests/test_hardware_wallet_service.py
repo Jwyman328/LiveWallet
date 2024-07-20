@@ -114,3 +114,77 @@ class TestHardwareWalletService(TestCase):
             assert DB_session_mock.commit.call_count == 1
 
             assert was_removed is True
+
+    def test_scan_for_hardware_wallets_success(self):
+        connected_hardware_wallets_mock = [
+            {
+                "type": "trezor",
+                "model": "trezor_t",
+                "needs_pin_sent": False,
+                "needs_passphrase_sent": False,
+                "fingerprint": None,
+            }
+        ]
+        with patch(
+            "src.services.hardware_wallet.hardware_wallet.commands.enumerate",
+            return_value=connected_hardware_wallets_mock,
+        ) as enumerate_mock:
+            hardware_wallet_details = HardwareWalletService.scan_for_hardware_wallets()
+            enumerate_mock.assert_called_once()
+            assert len(hardware_wallet_details) == 1
+            # assert that pydantic model was created from dictionary
+            self.assertIsInstance(hardware_wallet_details[0], HardwareWalletDetails)
+
+    def test_scan_for_hardware_wallets_when_no_wallets_found(self):
+        connected_hardware_wallets_mock = []
+        with patch(
+            "src.services.hardware_wallet.hardware_wallet.commands.enumerate",
+            return_value=connected_hardware_wallets_mock,
+        ) as enumerate_mock:
+            hardware_wallet_details = HardwareWalletService.scan_for_hardware_wallets()
+            enumerate_mock.assert_called_once()
+            assert hardware_wallet_details == []
+
+    def test_scan_for_hardware_wallets_when_pydantic_validation_error(self):
+        connected_hardware_wallets_mock = [
+            {
+                "needs_pin_sent": False,
+                "needs_passphrase_sent": False,
+                "fingerprint": None,
+                "unexpected_field": "unexpected_field",
+            }
+        ]
+        with patch(
+            "src.services.hardware_wallet.hardware_wallet.commands.enumerate",
+            return_value=connected_hardware_wallets_mock,
+        ) as enumerate_mock:
+            hardware_wallet_details = HardwareWalletService.scan_for_hardware_wallets()
+            enumerate_mock.assert_called_once()
+            # validation error captured and empty list returned
+            assert hardware_wallet_details == []
+
+    def test_save_hardware_wallet(self):
+        hardware_wallet_mock = MagicMock()
+        mock_hardware_wallet_details = HardwareWalletDetails(
+            id=None,
+            type="trezor",
+            path=None,
+            label=None,
+            model="trezor_t",
+            needs_pin_sent=False,
+            needs_passphrase_sent=False,
+            fingerprint=None,
+        )
+        with patch(
+            "src.services.hardware_wallet.hardware_wallet.HardwareWallet",
+            return_value=hardware_wallet_mock,
+        ), patch(
+            "src.services.hardware_wallet.hardware_wallet.DB.session"
+        ) as DB_session_mock:
+            response = HardwareWalletService.save_hardware_wallet(
+                mock_hardware_wallet_details
+            )
+
+            DB_session_mock.add.assert_called_once_with(hardware_wallet_mock)
+            DB_session_mock.commit.assert_called_once()
+            assert response == hardware_wallet_mock
