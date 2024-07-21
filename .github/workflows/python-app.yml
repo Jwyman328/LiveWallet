@@ -22,10 +22,8 @@ jobs:
     - name: Create and activate virtual environment and run tests
       working-directory: backend
       run: |
-        python -m venv venv
         source environment.sh
         pip install --upgrade pip
-        pip install -r requirements.txt
         pip install flake8 pytest
         ENVIRONMENT="TESTING" pytest -v -s
     # - name: Install dependencies
