@@ -141,12 +141,12 @@ def unlock_wallet(uuid: str):
     """
     try:
         data = UnlockWalletWithPinRequestDto.model_validate_json(request.data)
-        was_prompt_successful = HardwareWalletService.send_pin_to_unlock_wallet(
+        was_unlock_successful = HardwareWalletService.send_pin_to_unlock_wallet(
             uuid, data.pin
         )
 
         return UnlockWalletWithPinResponseDto(
-            was_unlock_successful=was_prompt_successful
+            was_unlock_successful=was_unlock_successful
         ).model_dump()
 
     except ValidationError as e:
@@ -197,14 +197,12 @@ def get_xpub(uuid: str):
             data.derivation_path
         )
         if script_type is None:
-            raise ValidationError(
-                [
-                    {
-                        "loc": ["derivation_path"],
-                        "msg": "Derivation path is not a valid BIP32 path",
-                        "type": "value_error",
-                    }
-                ]
+            return (
+                ValidationErrorResponse(
+                    message="Derivation path was invalid",
+                    errors=["Derivation path was invalid"],
+                ).model_dump(),
+                400,
             )
         xpub = HardwareWalletService.get_xpub_from_device(
             uuid, data.account_number, script_type, data.network
@@ -215,7 +213,7 @@ def get_xpub(uuid: str):
     except ValidationError as e:
         return (
             ValidationErrorResponse(
-                message="Error getting xpub from hardare wallet",
+                message="Error getting xpub from hardware wallet",
                 errors=e.errors(),
             ).model_dump(),
             400,
