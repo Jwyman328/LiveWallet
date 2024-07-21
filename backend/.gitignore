@@ -24,8 +24,9 @@ htmlcov/
 .coverage
 .coverage.*
 *,cover
-
+# make sure environment.sh file not git ignored
 !environment.sh
+
 # Byte-compiled / optimized / DLL files
 */__pycache__/*
 *.py[cod]
