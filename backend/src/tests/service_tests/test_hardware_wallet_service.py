@@ -691,4 +691,4 @@ class TestHardwareWalletService(TestCase):
         response = HardwareWalletService.get_script_type_from_derivation_path(
             derivation_path_invalid
         )
-        assert response == False
+        assert response == None
