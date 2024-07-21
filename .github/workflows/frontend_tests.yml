@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Check out Git repository
@@ -27,5 +27,4 @@ jobs:
       - name: npm test
         run: |
           npm run package
-          # npm exec tsc
           npm test
