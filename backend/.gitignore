@@ -25,7 +25,7 @@ htmlcov/
 .coverage.*
 *,cover
 
-
+!environment.sh
 # Byte-compiled / optimized / DLL files
 */__pycache__/*
 *.py[cod]
