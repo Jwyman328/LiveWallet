@@ -43,7 +43,6 @@ class AppCreator:
             container = ServiceContainer()
 
             cls.app.container = container
-            # cls.app.data_container = data_container
             cls.app.register_blueprint(balance_page)
             cls.app.register_blueprint(utxo_page)
             cls.app.register_blueprint(fees_api)
