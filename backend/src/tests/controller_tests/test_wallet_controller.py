@@ -17,7 +17,7 @@ class TestWalletController(TestCase):
         self.test_client = self.app.test_client()
 
     def test_wallet_controller_success(self):
-        with patch("src.views.wallet.WalletService") as wallet_service_mock:
+        with patch("src.controllers.wallet.WalletService") as wallet_service_mock:
             wallet_service_mock.create_wallet = MagicMock()
 
             descriptor = "mock_descriptor"
@@ -99,7 +99,7 @@ class TestWalletController(TestCase):
             self.mock_wallet_service.get_script_type.assert_called_once()
 
     def test_remove_wallet_success(self):
-        with patch("src.views.wallet.WalletService") as wallet_service_mock:
+        with patch("src.controllers.wallet.WalletService") as wallet_service_mock:
             wallet_service_mock.remove_global_wallet_and_details = MagicMock()
 
             wallet_response = self.test_client.delete(
@@ -132,9 +132,9 @@ class TestWalletController(TestCase):
 
         with (
             patch(
-                "src.views.wallet.randomly_fund_mock_wallet"
+                "src.controllers.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
-            patch("src.views.wallet.sleep", return_value=None),
+            patch("src.controllers.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -194,9 +194,9 @@ class TestWalletController(TestCase):
 
         with (
             patch(
-                "src.views.wallet.randomly_fund_mock_wallet"
+                "src.controllers.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
-            patch("src.views.wallet.sleep", return_value=None),
+            patch("src.controllers.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -248,9 +248,9 @@ class TestWalletController(TestCase):
 
         with (
             patch(
-                "src.views.wallet.randomly_fund_mock_wallet"
+                "src.controllers.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
-            patch("src.views.wallet.sleep", return_value=None),
+            patch("src.controllers.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",
@@ -306,9 +306,9 @@ class TestWalletController(TestCase):
 
         with (
             patch(
-                "src.views.wallet.randomly_fund_mock_wallet"
+                "src.controllers.wallet.randomly_fund_mock_wallet"
             ) as randomly_fund_mock_wallet_mock,
-            patch("src.views.wallet.sleep", return_value=None),
+            patch("src.controllers.wallet.sleep", return_value=None),
             patch.object(
                 WalletService,
                 "create_spendable_descriptor",

@@ -15,7 +15,7 @@ class AppCreator:
 
     @classmethod
     def create_app(cls) -> Flask:
-        from src.views import (
+        from src.controllers import (
             balance_page,
             utxo_page,
             fees_api,
@@ -101,8 +101,8 @@ def setup_database(app):
 if __name__ == "__main__":
     app = create_app()
     # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
-    app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)
+    # app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)
 else:
     app = create_app()
     # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
-    app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)
+    # app.run(host="127.0.0.1", port=5011, debug=True, threaded=False)
