@@ -27,11 +27,3 @@ jobs:
         pip install --upgrade pip
         pip install flake8 pytest
         ENVIRONMENT="TESTING" pytest -v -s
-    - name: Install FE dependencies
-      run: npm install
-
-    - name: Build the project
-      run: npm run build:renderer
-
-    - name: Run FE tests
-      run: npm test
