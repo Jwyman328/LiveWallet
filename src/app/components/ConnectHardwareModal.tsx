@@ -162,11 +162,11 @@ export const ConnectHardwareModal = ({
 
   const closeModalAndHardwareWallets = async () => {
     try {
+      closeModal();
       await ApiClient.closeAndRemoveHardwareWallets();
     } catch (e) {
       console.log('Error closing and removing hardware wallets');
     }
-    closeModal();
   };
   const modalHeight = hwwData.length > 1 ? '500px' : '400px';
   const walletsSectionHeight = hwwData.length > 1 ? '370px' : '270px';
