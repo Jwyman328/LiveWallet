@@ -493,3 +493,202 @@ class TestHardwareWalletService(TestCase):
             connect_to_hardware_wallet_mock.assert_not_called()
 
             assert response == None
+
+    def test_connect_to_hardware_wallet_with_path(self):
+        hardware_wallet_mock = MagicMock()
+        hardware_wallet_mock.encrypted_passphrase = "mock_encrypted_passphrase"
+        hardware_wallet_mock.path = "mock_path"
+        hardware_wallet_mock.finger_print = "mock_finger_print"
+        decrypted_passphrase_mock = "mock_passphrase"
+        get_decryted_passphrase_mock = MagicMock()
+        get_decryted_passphrase_mock.return_value = decrypted_passphrase_mock
+        hardware_wallet_mock.get_decrypted_passphrase = get_decryted_passphrase_mock
+        cipher_suite_mock = "mock_cipher_suite"
+        with (
+            patch(
+                "src.services.hardware_wallet.hardware_wallet.commands"
+            ) as commands_mock,
+            patch.object(
+                HardwareWalletService,
+                "get_cipher_suite",
+                return_value=cipher_suite_mock,
+            ) as get_cipher_suite_mock,
+        ):
+            mock_client = MagicMock()
+            commands_mock.get_client.return_value = mock_client
+            response = HardwareWalletService.connect_to_hardware_wallet(
+                hardware_wallet_mock, common.Chain.TEST
+            )
+            get_cipher_suite_mock.assert_called_once()
+            get_decryted_passphrase_mock.assert_called_once_with(cipher_suite_mock)
+            commands_mock.get_client.assert_called_with(
+                hardware_wallet_mock.type,
+                hardware_wallet_mock.path,
+                decrypted_passphrase_mock,
+                False,
+                common.Chain.TEST,
+            )
+
+            assert response == mock_client
+
+    def test_connect_to_hardware_wallet_without_path(self):
+        hardware_wallet_mock = MagicMock()
+        hardware_wallet_mock.encrypted_passphrase = "mock_encrypted_passphrase"
+        hardware_wallet_mock.path = None
+        mock_finger_print = "mock_finger_print"
+        hardware_wallet_mock.fingerprint = mock_finger_print
+        decrypted_passphrase_mock = "mock_passphrase"
+        get_decryted_passphrase_mock = MagicMock()
+        get_decryted_passphrase_mock.return_value = decrypted_passphrase_mock
+        hardware_wallet_mock.get_decrypted_passphrase = get_decryted_passphrase_mock
+        cipher_suite_mock = "mock_cipher_suite"
+        with (
+            patch(
+                "src.services.hardware_wallet.hardware_wallet.commands"
+            ) as commands_mock,
+            patch.object(
+                HardwareWalletService,
+                "get_cipher_suite",
+                return_value=cipher_suite_mock,
+            ) as get_cipher_suite_mock,
+        ):
+            mock_client = MagicMock()
+            commands_mock.find_device.return_value = mock_client
+            response = HardwareWalletService.connect_to_hardware_wallet(
+                hardware_wallet_mock, common.Chain.TEST
+            )
+            get_cipher_suite_mock.assert_called_once()
+            get_decryted_passphrase_mock.assert_called_once_with(cipher_suite_mock)
+            commands_mock.find_device.assert_called_with(
+                decrypted_passphrase_mock,
+                hardware_wallet_mock.type,
+                mock_finger_print,
+                False,
+                common.Chain.TEST,
+            )
+
+            assert response == mock_client
+
+    def test_connect_to_hardware_wallet_without_passphrase(self):
+        hardware_wallet_mock = MagicMock()
+        hardware_wallet_mock.encrypted_passphrase = None
+        hardware_wallet_mock.path = "mock_path"
+        mock_finger_print = "mock_finger_print"
+        hardware_wallet_mock.fingerprint = mock_finger_print
+        decrypted_passphrase_mock = "mock_passphrase"
+        get_decryted_passphrase_mock = MagicMock()
+        get_decryted_passphrase_mock.return_value = decrypted_passphrase_mock
+        hardware_wallet_mock.get_decrypted_passphrase = get_decryted_passphrase_mock
+        cipher_suite_mock = "mock_cipher_suite"
+        with (
+            patch(
+                "src.services.hardware_wallet.hardware_wallet.commands"
+            ) as commands_mock,
+            patch.object(
+                HardwareWalletService,
+                "get_cipher_suite",
+                return_value=cipher_suite_mock,
+            ) as get_cipher_suite_mock,
+        ):
+            mock_client = MagicMock()
+            commands_mock.get_client.return_value = mock_client
+            response = HardwareWalletService.connect_to_hardware_wallet(
+                hardware_wallet_mock, common.Chain.TEST
+            )
+            get_cipher_suite_mock.assert_not_called()
+            get_decryted_passphrase_mock.assert_not_called()
+            commands_mock.get_client.assert_called_with(
+                hardware_wallet_mock.type,
+                hardware_wallet_mock.path,
+                None,
+                False,
+                common.Chain.TEST,
+            )
+
+            assert response == mock_client
+
+    def test_prompt_device_to_prepare_for_pin(self):
+        connected_wallet_mock = MagicMock()
+
+        connected_wallet_mock.prompt_pin.return_value = True
+        response = HardwareWalletService.prompt_device_to_prepare_for_pin(
+            connected_wallet_mock
+        )
+        connected_wallet_mock.prompt_pin.assert_called_once_with()
+        assert response == True
+
+    def test_send_pin_to_device(self):
+        connected_wallet_mock = MagicMock()
+
+        connected_wallet_mock.send_pin.return_value = False
+        mock_pin = "1234"
+        response = HardwareWalletService.send_pin_to_device(
+            connected_wallet_mock, mock_pin
+        )
+        connected_wallet_mock.send_pin.assert_called_once_with(mock_pin)
+        assert response == False
+
+    def test_close_device(self):
+        connected_wallet_mock = MagicMock()
+
+        connected_wallet_mock.close.return_value = False
+        response = HardwareWalletService.close_device(connected_wallet_mock)
+        connected_wallet_mock.close.assert_called_once_with()
+        assert response == False
+
+    def test_get_xpub(self):
+        connected_wallet_mock = MagicMock()
+        mock_account_number = 2
+        mock_address_type = common.AddressType.TAP
+        mock_xpub = MagicMock()
+        mock_xpub_string = "mock_xpub"
+        mock_xpub.to_string.return_value = mock_xpub_string
+
+        connected_wallet_mock.get_master_xpub.return_value = mock_xpub
+        response = HardwareWalletService.get_xpub(
+            connected_wallet_mock, mock_account_number, mock_address_type
+        )
+        connected_wallet_mock.get_master_xpub.assert_called_once_with(
+            mock_address_type, mock_account_number
+        )
+        assert response == mock_xpub_string
+
+    def test_get_script_type_from_derivation_path_legacy(self):
+        derivation_path_legacy = "m/44'/0'/0'/0/0"
+
+        response = HardwareWalletService.get_script_type_from_derivation_path(
+            derivation_path_legacy
+        )
+        assert response == common.AddressType.LEGACY
+
+    def test_get_script_type_from_derivation_path_wrapped_segwit(self):
+        derivation_path_wrapped_witness = "m/49'/0'/0'/0/0"
+
+        response = HardwareWalletService.get_script_type_from_derivation_path(
+            derivation_path_wrapped_witness
+        )
+        assert response == common.AddressType.SH_WIT
+
+    def test_get_script_type_from_derivation_path_segwit(self):
+        derivation_path_segwit = "m/84'/0'/0'/0/0"
+
+        response = HardwareWalletService.get_script_type_from_derivation_path(
+            derivation_path_segwit
+        )
+        assert response == common.AddressType.WIT
+
+    def test_get_script_type_from_derivation_path_tap(self):
+        derivation_path_taproot = "m/86'/0'/0'/0/0"
+
+        response = HardwareWalletService.get_script_type_from_derivation_path(
+            derivation_path_taproot
+        )
+        assert response == common.AddressType.TAP
+
+    def test_get_script_type_from_invalid_derivation_path(self):
+        derivation_path_invalid = "m/100'/0'/0'/0/0"
+
+        response = HardwareWalletService.get_script_type_from_derivation_path(
+            derivation_path_invalid
+        )
+        assert response == None
