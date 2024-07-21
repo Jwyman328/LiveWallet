@@ -22,6 +22,7 @@ jobs:
     - name: Install dependencies
       working-directory: backend
       run: |
+        source venv/bin/activate
         python -m pip install --upgrade pip
         pip install flake8 pytest
         bash -c 'if [ -f environment.sh ]; then source environment.sh; fi'
@@ -34,4 +35,4 @@ jobs:
     - name: Test with pytest
       working-directory: backend
       run: |
-        ENVIRONMENT="TESTING" pytest -v -s
+        ENVIRONMENT="TESTING" VIRTUAL_ENV="./venv" FLASK_APP="src/app.py" pytest -v -s
