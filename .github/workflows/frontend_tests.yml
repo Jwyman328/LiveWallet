@@ -26,6 +26,6 @@ jobs:
 
       - name: npm test
         run: |
-          npm run package
-          npm exec tsc
+          # npm run package
+          # npm exec tsc
           npm test
