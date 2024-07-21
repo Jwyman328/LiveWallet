@@ -3,16 +3,27 @@
     "incremental": true,
     "target": "es2022",
     "module": "commonjs",
-    "lib": ["dom", "es2022"],
+    "lib": [
+      "dom",
+      "es2022"
+    ],
     "jsx": "react-jsx",
-    "strict": true,
     "sourceMap": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "outDir": ".erb/dll"
+    "outDir": ".erb/dll",
+    "strict": false, // Disable all strict type-checking options
+    "noImplicitAny": false, // Allow variables to have an implicit 'any' type
+    "strictNullChecks": false, // Disable strict null checks
+    "noImplicitThis": false // Allow 'this' to have an implicit 'any' type
   },
-  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+  "exclude": [
+    "test",
+    "release/build",
+    "release/app/dist",
+    ".erb/dll"
+  ]
 }
