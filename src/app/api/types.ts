@@ -89,3 +89,7 @@ export type HardwareWalletXpubResponseType = {
 export type HardwareWalletSetPassphraseResponseType = {
   was_passphrase_set: boolean;
 };
+
+export type HardwareWalletCloseAndRemoveResponseType = {
+  was_close_and_remove_successful: boolean;
+};
