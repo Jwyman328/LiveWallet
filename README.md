@@ -44,16 +44,21 @@ $ sudo npm start
 ```
 - To start up the backend server and related services run
 ```bash
-$ backend/start_app.sh
+$ bash backend/start_app.sh
 ```
   - Docker must be running in order to run the related backend services. (chopsticks, espolora, electrs, bitcoin)
   - These are needed for the backend to be able to communicate with an electrum server which talks with a bitcoind container, this is all handled via [nigiri](https://github.com/vulpemventures/nigiri)
 
 - To tear down containers from start_app.sh run
 ```bash
-$ backend/clean_up.sh
+$ bash backend/clean_up.sh
 ```
 
+## How to run backend tests
+- You can run
+```bash
+$ bash backend/test_app.sh
+```
 
 
 # Development fixtures

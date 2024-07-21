@@ -3,13 +3,15 @@ from PyInstaller.utils.hooks import collect_dynamic_libs
 from PyInstaller.utils.hooks import collect_submodules
 
 binaries = []
-hiddenimports = ['configparser', 'six', 'dependency_injector.errors']
+hiddenimports = ['configparser', 'six', 'dependency_injector.errors', 'hwilib.devices.trezor', 'hwilib.devices.ledger', 'hwilib.devices.keepkey', 'hwilib.devices.digitalbitbox', 'hwilib.devices.coldcard', 'hwilib.devices.bitbox02', 'hwilib.devices.jade']
 binaries += collect_dynamic_libs('bdkpython')
+binaries += collect_dynamic_libs('hwi')
 hiddenimports += collect_submodules('bdkpython')
+hiddenimports += collect_submodules('hwi')
 
 
 a = Analysis(
-    ['/Users/jwyman/Documents/programming/python/family_wallet_fe/utxo_fee_estimation_fe_electron_app/utxo_fee_estimation_fe_electron_app/backend/src/app.py'],
+    ['src/app.py'],
     pathex=[],
     binaries=binaries,
     datas=[],
