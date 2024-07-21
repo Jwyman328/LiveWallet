@@ -27,7 +27,11 @@ jobs:
         pip install --upgrade pip
         pip install flake8 pytest
         ENVIRONMENT="TESTING" pytest -v -s
-    - name: Run frontend tests
-      run: |
-        npm install
-        npm run test
+    - name: Install FE dependencies
+      run: npm install
+
+    - name: Build the project
+      run: npm run build:main
+
+    - name: Run FE tests
+      run: npm test
