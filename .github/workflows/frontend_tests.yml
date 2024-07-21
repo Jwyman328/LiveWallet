@@ -1,25 +1,32 @@
-name: Node.js CI
+name: Test FE
 
 on: [push]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Check out Git repository
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20.11.0'  # Replace with the Node.js version you need
+      - name: Install Node.js and NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: npm
 
-    - name: Install dependencies
-      run: npm install
+      - name: npm install
+        run: |
+          npm install
 
-    - name: Build the project
-      run: npm run build:main
-
-    - name: Run tests
-      run: npm test
+      - name: npm test
+        run: |
+          npm run package
+          npm run lint
+          npm exec tsc
+          npm test
