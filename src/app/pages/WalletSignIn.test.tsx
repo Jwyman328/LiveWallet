@@ -7,6 +7,8 @@ import {
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
+import { ScriptTypes } from '../types/scriptTypes';
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 const mockNavigate = jest.fn();
 let initiateWalletSpy: jest.SpyInstance;
@@ -57,7 +59,7 @@ describe('WalletSignIn', () => {
 
     const derivationPathLabel = screen.getByText('Derivation path');
     const derivationPathInput = screen.getByPlaceholderText(
-      "m/49'/0'/0'",
+      "m/84'/0'/0'",
     ) as HTMLInputElement;
 
     const xpubLabel = screen.getByText('xpub');
@@ -112,7 +114,7 @@ describe('WalletSignIn', () => {
     expect(setupButton).toBeDisabled();
 
     const derivationPathInput = screen.getByPlaceholderText(
-      "m/49'/0'/0'",
+      "m/84'/0'/0'",
     ) as HTMLInputElement;
 
     const derivationPath = "m/84'/0'/0'";
@@ -230,7 +232,7 @@ describe('WalletSignIn', () => {
     )) as HTMLInputElement;
 
     const derivationPathInput = screen.getByPlaceholderText(
-      "m/49'/0'/0'",
+      "m/86'/0'/0'",
     ) as HTMLInputElement;
 
     const xpubInput = screen.getByPlaceholderText(
@@ -380,5 +382,55 @@ describe('WalletSignIn', () => {
 
       expect(createMockButton).not.toBeInTheDocument();
     });
+  });
+  it('Derivation path placeholder changes as script type changes', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Watch Only Wallet');
+    let scriptTypeSelect = screen.getByTestId('script-type-select');
+    let scriptTypeSelected = screen.getByText('Native Segwit (P2WPKH)');
+    let derivationPathSegwit = screen.getByPlaceholderText(
+      "m/84'/0'/0'",
+    ) as HTMLInputElement;
+    expect(title).toBeInTheDocument();
+    expect(scriptTypeSelected).toBeInTheDocument();
+    expect(derivationPathSegwit).toBeInTheDocument();
+
+    // open dropdown
+    fireEvent.click(scriptTypeSelect);
+    let option = await screen.findByRole('option', {
+      name: /Legacy \(P2PKH\)/,
+    });
+    fireEvent.click(option);
+    let derivationLegacy = (await screen.findByPlaceholderText(
+      "m/44'/0'/0'",
+    )) as HTMLInputElement;
+    expect(derivationLegacy).toBeInTheDocument();
+
+    // open dropdown
+    fireEvent.click(scriptTypeSelect);
+    option = await screen.findByRole('option', {
+      name: /Nested Segwit \(P2SH-P2WPKH\)/,
+    });
+    fireEvent.click(option);
+    let derivationWrappedSegit = (await screen.findByPlaceholderText(
+      "m/49'/0'/0'",
+    )) as HTMLInputElement;
+    expect(derivationWrappedSegit).toBeInTheDocument();
+
+    // open dropdown
+    fireEvent.click(scriptTypeSelect);
+    option = await screen.findByRole('option', {
+      name: /Taproot \(P2TR\)/,
+    });
+    fireEvent.click(option);
+    let derivationTaproot = (await screen.findByPlaceholderText(
+      "m/86'/0'/0'",
+    )) as HTMLInputElement;
+    expect(derivationTaproot).toBeInTheDocument();
   });
 });

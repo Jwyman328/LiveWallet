@@ -31,7 +31,10 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import {
+  getDerivationPathFromScriptType,
+  scriptTypeToDescriptorMap,
+} from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
@@ -190,6 +193,10 @@ export const WalletSignIn = () => {
   ) => {
     setDerivationPath(e.target.value);
   };
+
+  const derivationPathPlaceHolder = getDerivationPathFromScriptType(
+    scriptType.value,
+  );
 
   const [xpub, setXpub] = useState<string>(configs.defaultXpub);
   const handleXpubChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -374,11 +381,13 @@ export const WalletSignIn = () => {
           Script type
         </InputLabel>
         <Select
+          data-testid="script-type-select"
           allowDeselect={false}
           className={`mb-4 ${formItemWidth}`}
           data={scriptTypeOptions}
           value={scriptType ? scriptType.value : null}
           onChange={(_value, option) => {
+            console.log('in onchagne', _value, option);
             if (option) {
               setScriptType(option as ScriptTypeOption);
             }
@@ -414,7 +423,7 @@ export const WalletSignIn = () => {
         <Input
           data-testid="derivation-path"
           className={`${formItemWidth}`}
-          placeholder="m/49'/0'/0'"
+          placeholder={derivationPathPlaceHolder}
           value={derivationPath}
           onInput={handleDerivationPathChange}
         />

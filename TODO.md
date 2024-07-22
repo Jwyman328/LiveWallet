@@ -1,4 +1,11 @@
 # TODO frontend
+- refactor hardware wallet select to use a state machine for the varous states of the flow.
+  // Finish tests before refactoring to state machine model
+  // Select state machine
+  // - locked
+  // - ReadyForPin
+  // - ReadyForPassphrase
+  // - available
 - changing the address type should change the derivation path placeholder values
 - use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it

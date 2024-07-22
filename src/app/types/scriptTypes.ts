@@ -45,3 +45,16 @@ export const getScriptTypeFromDerivationPath = (derivationPath: string) => {
     return null;
   }
 };
+
+export const getDerivationPathFromScriptType = (scriptType: ScriptTypes) => {
+  switch (scriptType) {
+    case ScriptTypes.P2PKH:
+      return "m/44'/0'/0'";
+    case ScriptTypes.P2WSH:
+      return "m/49'/0'/0'";
+    case ScriptTypes.P2WPKH:
+      return "m/84'/0'/0'";
+    case ScriptTypes.P2TR:
+      return "m/86'/0'/0'";
+  }
+};
