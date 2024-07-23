@@ -79,11 +79,12 @@ export class ApiClient {
     walletDescriptor: string,
     network: Network,
     electrumUrl: string,
+    gapLimit: number,
   ) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/wallet`,
       'POST',
-      { descriptor: walletDescriptor, electrumUrl, network },
+      { descriptor: walletDescriptor, electrumUrl, network, gapLimit },
     );
 
     const data = await response.json();

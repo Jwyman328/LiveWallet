@@ -55,14 +55,23 @@ class WalletService:
         self.wallet = WalletService.connect_wallet()
 
     @classmethod
-    def create_wallet(cls, descriptor: str, network: bdk.Network, electrum_url: str):
+    def create_wallet(
+        cls,
+        descriptor: str,
+        network: bdk.Network,
+        electrum_url: str,
+        stop_gap: Optional[int] = 100,
+    ):
         """Store the wallet details in the database.
         There should ever only be one wallet in the db at a time. If a new wallet is created, the old one should be removed.
         """
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
         new_wallet = Wallet(
-            descriptor=descriptor, network=network.value, electrum_url=electrum_url
+            descriptor=descriptor,
+            network=network.value,
+            electrum_url=electrum_url,
+            stop_gap=stop_gap,
         )
         DB.session.add(new_wallet)
         DB.session.commit()
@@ -109,6 +118,7 @@ class WalletService:
         descriptor = wallet_details.descriptor
         network = wallet_details.network
         electrum_url = wallet_details.electrum_url
+        stop_gap = wallet_details.stop_gap
 
         wallet_descriptor = bdk.Descriptor(
             descriptor, bdk.Network._value2member_map_[network]
@@ -117,7 +127,7 @@ class WalletService:
         db_config = bdk.DatabaseConfig.MEMORY()
 
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
-            bdk.ElectrumConfig(electrum_url, None, 2, 30, 100, True)
+            bdk.ElectrumConfig(electrum_url, None, 2, 30, stop_gap, True)
         )
 
         blockchain = bdk.Blockchain(blockchain_config)

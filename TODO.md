@@ -1,4 +1,5 @@
 # TODO frontend
+- add a supported wallets section
 - refactor hardware wallet select to use a state machine for the varous states of the flow.
   // Finish tests before refactoring to state machine model
   // Select state machine
@@ -36,16 +37,7 @@
 
 
 # Feature Ideas
-- integrate signing devices to export wallet details
-  - Python bitcoin hardware wallet interface pip package.
-   - Written by Andrew chow.
-   - https://hwi.readthedocs.io/en/latest/devices/index.html
-   - https://pypi.org/project/hwi/
-   - https://github.com/bitcoin-core/HWI
-   - https://bitcoinops.org/en/topics/hwi/
-    
-  - add close request to all hardware wallets when the hardware wallet modal closes
-- A suggestion: Add gap limit option
+- a chart of the history of fees in bitcoin
 - breakdown where the cost comes form for each part of the transaction
 - ability to just put in a utxo and test that instead of an entire wallet.
 - click on a utxo and get told when it is unspendable.

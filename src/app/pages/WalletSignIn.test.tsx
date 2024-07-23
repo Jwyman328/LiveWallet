@@ -40,7 +40,7 @@ describe('WalletSignIn', () => {
     getServerHealthStatusSpy.mockClear();
   });
 
-  test('Default Wallet sign displays correctly', async () => {
+  it('Default Wallet sign displays correctly', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <WalletSignIn />
@@ -52,10 +52,6 @@ describe('WalletSignIn', () => {
     const networkSelected = screen.getByText('REGTEST');
     const scriptTypeLabel = screen.getByText('Script type');
     const scriptTypeSelected = screen.getByText('Native Segwit (P2WPKH)');
-    const masterFingerPrintLabel = screen.getByText('Master fingerprint');
-    const masterFingerPrintSelected = (await screen.findByPlaceholderText(
-      '00000000',
-    )) as HTMLInputElement;
 
     const derivationPathLabel = screen.getByText('Derivation path');
     const derivationPathInput = screen.getByPlaceholderText(
@@ -81,6 +77,18 @@ describe('WalletSignIn', () => {
 
     const setupButton = screen.getByRole('button', { name: 'Connect' });
 
+    // Advanced options
+    const advancedTab = screen.getByText('Advanced');
+    fireEvent.click(advancedTab);
+    const masterFingerPrintLabel =
+      await screen.findByText('Master fingerprint');
+    const masterFingerPrintSelected = (await screen.findByPlaceholderText(
+      '00000000',
+    )) as HTMLInputElement;
+
+    const gapLimitLabel = await screen.findByText('Gap limit');
+    const gapLimit = await screen.findByDisplayValue('100');
+
     expect(title).toBeInTheDocument();
     expect(networkLabel).toBeInTheDocument();
     expect(networkSelected).toBeInTheDocument();
@@ -96,6 +104,8 @@ describe('WalletSignIn', () => {
     expect(privateElectrumServer).toBeChecked();
     expect(publicElectrumServer).not.toBeChecked();
     expect(privateElectrumUrl.value).toBe('127.0.0.1:50000');
+    expect(gapLimitLabel).toBeInTheDocument();
+    expect(gapLimit).toBeInTheDocument();
     expect(setupButton).toBeDisabled();
   });
 
@@ -147,6 +157,7 @@ describe('WalletSignIn', () => {
         createdDescriptor,
         'REGTEST',
         defaultElectrumUrl,
+        100,
       );
     });
     expect(mockNavigate).toHaveBeenCalledWith('/home');
@@ -283,6 +294,7 @@ describe('WalletSignIn', () => {
         "tr([11111111/44'/0'/0']mockXpub/0/*)",
         mockImportedWalletData.defaultNetwork,
         `${mockImportedWalletData.publicElectrumUrl}:50001`,
+        100,
       );
     });
   });
@@ -320,6 +332,7 @@ describe('WalletSignIn', () => {
         "tr([11111111/44'/0'/0']mockXpub/0/*)",
         mockImportedWalletDataWithoutConfigs.defaultNetwork,
         `${mockImportedWalletDataWithoutConfigs.publicElectrumUrl}:50001`,
+        100,
       );
     });
     // get error toast

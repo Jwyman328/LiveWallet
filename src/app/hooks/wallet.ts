@@ -11,12 +11,13 @@ export const walletTypeQueryKeys = {
 export function useCreateWallet(
   network: Network,
   electrumUrl: string,
+  gapLimit: number,
   onSuccess: () => void,
   onError: () => void,
 ) {
   return useMutation(
     (descriptor: string) =>
-      ApiClient.initiateWallet(descriptor, network, electrumUrl),
+      ApiClient.initiateWallet(descriptor, network, electrumUrl, gapLimit),
     {
       onSuccess: () => {
         onSuccess();

@@ -27,6 +27,7 @@ class CreateWalletRequestDto(BaseModel):
     descriptor: str
     network: Annotated[bdk.Network, str]
     electrumUrl: str
+    gapLimit: Optional[int] = None
 
     @field_validator("network", mode="before")
     def parse_enum(cls, value) -> Optional[bdk.Network]:
@@ -77,7 +78,9 @@ def create_wallet():
     try:
         data = CreateWalletRequestDto.model_validate_json(request.data)
 
-        WalletService.create_wallet(data.descriptor, data.network, data.electrumUrl)
+        WalletService.create_wallet(
+            data.descriptor, data.network, data.electrumUrl, data.gapLimit
+        )
 
         WalletService()
 
