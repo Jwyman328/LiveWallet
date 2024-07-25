@@ -5,12 +5,13 @@ import {
   Modal,
   ScrollArea,
   Select,
+  Tooltip,
 } from '@mantine/core';
 import {
   useGetConnectedHardwareWallets,
   useGetXpubFromHardwareWallet,
 } from '../hooks/hardwareWallets';
-import { IconUsb } from '@tabler/icons-react';
+import { IconInfoCircle, IconUsb } from '@tabler/icons-react';
 import {
   HardwareWalletDetails,
   HardwareWalletXpubResponseType,
@@ -40,10 +41,12 @@ export type WalletIdDerivationPaths = {
 type ConnectHardwareModalProps = {
   isOpen: boolean;
   closeModal: () => void;
+  nextModal: () => void;
 };
 export const ConnectHardwareModal = ({
   isOpen,
   closeModal,
+  nextModal,
 }: ConnectHardwareModalProps) => {
   const getConnectedHardwareWalletsQuery = useGetConnectedHardwareWallets();
   const navigate = useNavigate();
@@ -171,6 +174,28 @@ export const ConnectHardwareModal = ({
   const modalHeight = hwwData.length > 1 ? '500px' : '400px';
   const walletsSectionHeight = hwwData.length > 1 ? '370px' : '270px';
 
+  const getHeader = () => {
+    if (isShowFoundDevices) {
+      return 'Complete wallet setup';
+    }
+
+    if (isShowScan) {
+      return (
+        <div>
+          <Button
+            styles={{ root: { paddingLeft: '0px' } }}
+            variant="transparent"
+            onClick={nextModal}
+          >
+            Supported devices
+          </Button>
+        </div>
+      );
+    }
+
+    return '';
+  };
+
   return (
     <Modal
       styles={{
@@ -181,19 +206,22 @@ export const ConnectHardwareModal = ({
       onClose={closeModalAndHardwareWallets}
       centered
       size="md"
-      title={isShowFoundDevices ? 'Complete wallet setup' : ''}
+      title={getHeader()}
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <div style={{ height: modalHeight, overflow: 'scroll' }}>
         {isShowScan && (
           <div className="flex justify-between flex-col items-center h-full">
-            <div className="text-center w-full">
-              <h1> Connect a Hardware Wallet</h1>
-              <h1 className="text-sm">
-                You may need to unlock your wallet before it is discoverable
-              </h1>
+            <div className="flex items-center justify-center">
+              <h1 className="mr-2">Connect a Hardware Wallet</h1>
+              <Tooltip
+                withArrow
+                label="You may need to unlock your wallet before it is discoverable."
+              >
+                <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+              </Tooltip>
             </div>
-            <IconUsb style={{ width: '10rem', height: '10rem' }} />
+            <IconUsb style={{ width: '8rem', height: '8rem' }} />
             <Button
               variant="filled"
               className="mb-4"

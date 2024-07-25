@@ -1,5 +1,4 @@
 # TODO frontend
-- add a supported wallets section
 - refactor hardware wallet select to use a state machine for the varous states of the flow.
   // Finish tests before refactoring to state machine model
   // Select state machine
