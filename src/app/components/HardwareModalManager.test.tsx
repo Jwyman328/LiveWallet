@@ -162,8 +162,8 @@ describe('HardwareWalletModalManager', () => {
     );
     const passphraseInput =
       await screen.findAllByPlaceholderText('Enter passphrase');
-    const sendPassphraseButton = await screen.findAllByRole('button', {
-      name: 'send',
+    const sendPassphraseButton = await screen.findByRole('button', {
+      name: 'Send',
     });
 
     // global hw Ui
@@ -191,7 +191,7 @@ describe('HardwareWalletModalManager', () => {
     expect(passphraseInput[0]).not.toBeVisible();
     expect(passphraseInput[1]).not.toBeVisible();
     expect(passphraseInput[2]).toBeVisible();
-    expect(sendPassphraseButton[2]).toBeEnabled();
+    expect(sendPassphraseButton).toBeEnabled();
     // global hw ui
     expect(networkLabel).toBeInTheDocument();
     expect(defaultSelectedNetwork).toBeInTheDocument();
