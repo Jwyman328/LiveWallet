@@ -7,7 +7,6 @@ import {
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
-import { ScriptTypes } from '../types/scriptTypes';
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 const mockNavigate = jest.fn();

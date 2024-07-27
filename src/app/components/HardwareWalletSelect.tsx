@@ -165,7 +165,7 @@ export const HardwareWalletSelect = ({
         onClick={sendPin}
         disabled={!isReadyForPin}
       >
-        Enter Pin
+        Enter pin
       </Button>
     );
   }, [unlockWalletMutation.isLoading, isReadyForPin, sendPin]);
@@ -174,6 +174,7 @@ export const HardwareWalletSelect = ({
     <div>
       <div className="flex flex-row w-full items-center">
         <Checkbox
+          data-testid={`hardware-walletcheckbox-${wallet.id}`}
           className="mr-2 mb-4"
           onClick={() => {
             if (selectedHWId === wallet.id) {
@@ -216,6 +217,7 @@ export const HardwareWalletSelect = ({
             ) : (
               <Select
                 data={accountOptions}
+                data-testid={`account-select-${wallet.id}`}
                 placeholder="Pick value"
                 defaultValue={'0'}
                 onChange={(value) => {
@@ -239,7 +241,7 @@ export const HardwareWalletSelect = ({
                 />
                 <div className="w-full ml-3 flex flex-col justify-between">
                   <Input
-                    data-testid="send pin"
+                    data-testid="send-pin-input-trezor"
                     value={pin}
                     onInput={(event: any) => {
                       if (event?.target?.value) {
@@ -256,7 +258,8 @@ export const HardwareWalletSelect = ({
             ) : (
               <>
                 <Input
-                  data-testid="send pin"
+                  data-testid="send-pin-input"
+                  placeholder="Enter pin"
                   className="w-full"
                   value={pin}
                   onInput={(event: any) => {
@@ -301,7 +304,7 @@ export const HardwareWalletSelect = ({
           </Collapse>
           <Collapse in={isShowDerivation}>
             <Input
-              data-testid="derivation-path"
+              data-testid={`derivation-path-${wallet.id}`}
               className="w-full"
               value={selectedDerivationPaths[wallet.id] || "m/84'/0'/0'"}
               onInput={(event) => {

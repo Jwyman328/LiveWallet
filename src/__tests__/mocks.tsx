@@ -40,3 +40,47 @@ export const mockImportedWalletDataWithoutConfigs: Wallet = {
   minFeeScale: undefined,
   feeRate: undefined,
 };
+
+export const mockHWNoPinNoPassphraseNeeded = {
+  id: 'mockId',
+  path: 'mockPath',
+  label: 'Mock-Label',
+  type: 'Mock type',
+  model: 'Mock model',
+  needs_pin_sent: false,
+  needs_passphrase_sent: false,
+  fingerprint: 'mock finger print',
+};
+
+export const mockHWPinNeeded = {
+  id: 'mockId2',
+  path: 'mockPath2',
+  label: 'Mock-Label2',
+  type: 'Mock type2',
+  model: 'Mock model2',
+  needs_pin_sent: true,
+  needs_passphrase_sent: false,
+  fingerprint: 'mock finger print2',
+};
+
+export const mockTrezorPinNeeded = {
+  id: 'mockTrezor',
+  path: 'mockTrezor',
+  label: 'Mock-TrezorLabel',
+  type: 'mock-trezor-type',
+  model: 'Mock model trezor',
+  needs_pin_sent: true,
+  needs_passphrase_sent: false,
+  fingerprint: 'trezor fp',
+};
+
+export const mockHWPassphraseNeeded = {
+  id: 'mockId3',
+  path: 'mockPath3',
+  label: 'Mock-Label3',
+  type: 'Mock type3',
+  model: 'Mock model3',
+  needs_pin_sent: false,
+  needs_passphrase_sent: true,
+  fingerprint: 'mock finger print3',
+};

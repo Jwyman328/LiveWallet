@@ -6,7 +6,6 @@ import { Wallet } from '../types/wallet';
 import { IconUsb, IconKeyboard, IconFolder } from '@tabler/icons-react';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
-import { ConnectHardwareModal } from '../components/ConnectHardwareModal';
 import { HardwareModalManager } from '../components/HardwareModalManager';
 
 export const ChoosePath = () => {
