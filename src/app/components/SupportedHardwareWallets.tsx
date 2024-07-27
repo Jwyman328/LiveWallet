@@ -52,6 +52,7 @@ export const SupportedHardwareWallets = ({
           leftSection={<IconArrowLeft />}
           variant="transparent"
           onClick={onBack}
+          data-testid="back-button"
         ></Button>
         <p className="ml-16 font-bold text-lg">Supported devices</p>
       </div>

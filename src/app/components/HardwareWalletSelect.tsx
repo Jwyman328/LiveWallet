@@ -35,13 +35,6 @@ type HardwareWalletSelectProps = {
   selectedDerivationPaths: WalletIdDerivationPaths;
 };
 
-// Finish tests before refactoring to state machine model
-// Select state machine
-// - locked
-// - ReadyForPin
-// - ReadyForPassphrase
-// - available
-
 export const HardwareWalletSelect = ({
   wallet,
   accountOptions,
@@ -248,8 +241,10 @@ export const HardwareWalletSelect = ({
                   <Input
                     data-testid="send pin"
                     value={pin}
-                    onInput={(event) => {
-                      setPin(event.target.value);
+                    onInput={(event: any) => {
+                      if (event?.target?.value) {
+                        setPin(event?.target?.value);
+                      }
                     }}
                     type="password"
                     styles={{ input: { fontSize: '2.5rem' } }}
@@ -264,8 +259,11 @@ export const HardwareWalletSelect = ({
                   data-testid="send pin"
                   className="w-full"
                   value={pin}
-                  onInput={(event) => {
-                    setPin(event.target.value);
+                  onInput={(event: any) => {
+                    if (event?.target?.value) {
+                      //@ts-ignore
+                      setPin(event.target?.value);
+                    }
                   }}
                   disabled={unlockWalletMutation.isLoading || !isReadyForPin}
                 />
@@ -281,8 +279,10 @@ export const HardwareWalletSelect = ({
                 className="flex-grow"
                 placeholder="Enter passphrase"
                 value={passphrase}
-                onInput={(event) => {
-                  setPassphrase(event.target.value);
+                onInput={(event: any) => {
+                  if (event?.target?.value) {
+                    setPassphrase(event.target.value);
+                  }
                 }}
                 type="password"
                 disabled={false}
