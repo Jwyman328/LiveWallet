@@ -9,6 +9,12 @@
 ## Demo
 https://github.com/Jwyman328/LiveWallet/assets/32882426/aa218a2e-bc5b-4795-98bd-6ae839ee091f
 
+## Hardware wallet support demo
+https://github.com/user-attachments/assets/4439fbef-a55e-45dd-8a90-4cc1a60e1be3
+
+
+
+
 
 
 
