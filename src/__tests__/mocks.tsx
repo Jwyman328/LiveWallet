@@ -63,14 +63,14 @@ export const mockHWPinNeeded = {
   fingerprint: 'mock finger print2',
 };
 
-export const mockTrezorPinNeeded = {
+export const mockTrezorPinAndPassNeeded = {
   id: 'mockTrezor',
   path: 'mockTrezor',
   label: 'Mock-TrezorLabel',
-  type: 'mock-trezor-type',
+  type: 'trezor',
   model: 'Mock model trezor',
   needs_pin_sent: true,
-  needs_passphrase_sent: false,
+  needs_passphrase_sent: true,
   fingerprint: 'trezor fp',
 };
 

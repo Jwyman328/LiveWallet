@@ -7,6 +7,7 @@ import {
   mockHWPinNeeded,
   mockHWPassphraseNeeded,
   mockHWNoPinNoPassphraseNeeded,
+  mockTrezorPinAndPassNeeded,
 } from '../../__tests__/mocks';
 import { ScriptTypes } from '../types/scriptTypes';
 
@@ -17,6 +18,8 @@ let getXpubFromDeviceSpy: jest.SpyInstance;
 let setWalletPassphraseSpy: jest.SpyInstance;
 let unlockWalletSpy: jest.SpyInstance;
 let promptToUnlockWalletSpy: jest.SpyInstance;
+let closeHardwareWalletsSpy: jest.SpyInstance;
+const mockXpub = 'mockXpub';
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -31,7 +34,7 @@ describe('HardwareWalletModalManager', () => {
     );
 
     getXpubFromDeviceSpy = jest.spyOn(ApiClient, 'getXpubFromDevice');
-    getXpubFromDeviceSpy.mockResolvedValue({ xpub: 'mockXpub' });
+    getXpubFromDeviceSpy.mockResolvedValue({ xpub: mockXpub });
 
     setWalletPassphraseSpy = jest.spyOn(ApiClient, 'setWalletPassphrase');
     setWalletPassphraseSpy.mockResolvedValue({ was_passphrase_set: true });
@@ -40,6 +43,10 @@ describe('HardwareWalletModalManager', () => {
 
     promptToUnlockWalletSpy = jest.spyOn(ApiClient, 'promptToUnlockWallet');
     promptToUnlockWalletSpy.mockResolvedValue({ was_prompt_successful: true });
+    closeHardwareWalletsSpy = jest.spyOn(
+      ApiClient,
+      'closeAndRemoveHardwareWallets',
+    );
 
     getConnectedHardwareWalletsSpy.mockImplementation(() => {
       return new Promise((resolve) => {
@@ -63,6 +70,7 @@ describe('HardwareWalletModalManager', () => {
     setWalletPassphraseSpy.mockClear();
     unlockWalletSpy.mockClear();
     promptToUnlockWalletSpy.mockClear();
+    closeHardwareWalletsSpy.mockClear();
   });
 
   it('Test ConntectHardwareModal landing screen', async () => {
@@ -115,6 +123,22 @@ describe('HardwareWalletModalManager', () => {
       'Connect a Hardware Wallet',
     );
     expect(initialModalTitle).toBeInTheDocument();
+  });
+
+  it('Test close modal makes api request to close all connected hardware wallets', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <HardwareModalManager isOpen={true} closeModal={closeModalSpy} />
+      </WrappedInAppWrappers>,
+    );
+
+    const closeButton = await screen.findAllByRole('button');
+    fireEvent.click(closeButton[1]);
+
+    await waitFor(() => {
+      expect(closeModalSpy).toHaveBeenCalled();
+      expect(closeHardwareWalletsSpy).toHaveBeenCalled();
+    });
   });
 
   it('Test ConntectHardwareModal scan button opens loading state and lands on display wallets modal, displaying all found hardware wallets.', async () => {
@@ -199,6 +223,9 @@ describe('HardwareWalletModalManager', () => {
   });
 
   it('Test advance with unlocked wallet', async () => {
+    getConnectedHardwareWalletsSpy.mockResolvedValue({
+      wallets: [mockHWNoPinNoPassphraseNeeded],
+    });
     const screen = render(
       <WrappedInAppWrappers>
         <HardwareModalManager isOpen={true} closeModal={closeModalSpy} />
@@ -264,7 +291,7 @@ describe('HardwareWalletModalManager', () => {
           defaultNetwork: 'BITCOIN',
           defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: 'mockXpub',
+          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
           defaultMasterFingerprint: '00000000',
@@ -278,6 +305,9 @@ describe('HardwareWalletModalManager', () => {
   });
 
   it('Test advance with wallet needs passphrase', async () => {
+    getConnectedHardwareWalletsSpy.mockResolvedValue({
+      wallets: [mockHWPassphraseNeeded],
+    });
     const screen = render(
       <WrappedInAppWrappers>
         <HardwareModalManager isOpen={true} closeModal={closeModalSpy} />
@@ -295,12 +325,12 @@ describe('HardwareWalletModalManager', () => {
       'passphrase required',
     );
     const passphraseInput =
-      await screen.findAllByPlaceholderText('Enter passphrase');
+      await screen.findByPlaceholderText('Enter passphrase');
 
     expect(walletUnLockedAndNeedsPassphraseTitle).toBeInTheDocument();
     expect(passphraseRequiredText).toBeInTheDocument();
 
-    fireEvent.input(passphraseInput[2], {
+    fireEvent.input(passphraseInput, {
       target: { value: 'mockPassphrase' },
     });
 
@@ -322,10 +352,10 @@ describe('HardwareWalletModalManager', () => {
     fireEvent.click(unlockedWalletCheckbox);
 
     // set derivation
-    const showDerivationButton = await screen.findAllByRole('button', {
+    const showDerivationButton = await screen.findByRole('button', {
       name: 'Show derivation',
     });
-    fireEvent.click(showDerivationButton[1]);
+    fireEvent.click(showDerivationButton);
     const derivationInput = await screen.findByTestId(
       `derivation-path-${mockHWPassphraseNeeded.id}`,
     );
@@ -335,8 +365,8 @@ describe('HardwareWalletModalManager', () => {
     fireEvent.input(derivationInput, { target: { value: "m/86'/0'/0'" } });
 
     // set account number
-    const accountOptionOne = await screen.findAllByText('Account #1');
-    fireEvent.click(accountOptionOne[1]);
+    const accountOptionOne = await screen.findByText('Account #1');
+    fireEvent.click(accountOptionOne);
     // set network
     const bitcoinNetwork = await screen.findByText('BITCOIN');
     fireEvent.click(bitcoinNetwork);
@@ -365,7 +395,7 @@ describe('HardwareWalletModalManager', () => {
           defaultNetwork: 'BITCOIN',
           defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: 'mockXpub',
+          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
           defaultMasterFingerprint: '00000000',
@@ -379,6 +409,9 @@ describe('HardwareWalletModalManager', () => {
   });
 
   it('Test advance with locked wallet(needs pin), doesnt need passphrase', async () => {
+    getConnectedHardwareWalletsSpy.mockResolvedValue({
+      wallets: [mockHWPinNeeded],
+    });
     const screen = render(
       <WrappedInAppWrappers>
         <HardwareModalManager isOpen={true} closeModal={closeModalSpy} />
@@ -401,8 +434,8 @@ describe('HardwareWalletModalManager', () => {
       expect(promptToUnlockWalletSpy).toHaveBeenCalledWith(mockHWPinNeeded.id);
     });
 
-    const pinInput = await screen.findAllByPlaceholderText('Enter pin');
-    fireEvent.input(pinInput[1], { target: { value: '1234' } });
+    const pinInput = await screen.findByPlaceholderText('Enter pin');
+    fireEvent.input(pinInput, { target: { value: '1234' } });
 
     const enterPinButton = await screen.findByRole('button', {
       name: /Enter Pin/i,
@@ -420,10 +453,10 @@ describe('HardwareWalletModalManager', () => {
     fireEvent.click(unlockedWalletCheckbox);
 
     // set derivation
-    const showDerivationButton = await screen.findAllByRole('button', {
+    const showDerivationButton = await screen.findByRole('button', {
       name: 'Show derivation',
     });
-    fireEvent.click(showDerivationButton[1]);
+    fireEvent.click(showDerivationButton);
     const derivationInput = await screen.findByTestId(
       `derivation-path-${mockHWPinNeeded.id}`,
     );
@@ -433,8 +466,8 @@ describe('HardwareWalletModalManager', () => {
     fireEvent.input(derivationInput, { target: { value: "m/86'/0'/0'" } });
 
     // set account number
-    const accountOptionOne = await screen.findAllByText('Account #1');
-    fireEvent.click(accountOptionOne[1]);
+    const accountOptionOne = await screen.findByText('Account #1');
+    fireEvent.click(accountOptionOne);
     // set network
     const bitcoinNetwork = await screen.findByText('BITCOIN');
     fireEvent.click(bitcoinNetwork);
@@ -463,7 +496,7 @@ describe('HardwareWalletModalManager', () => {
           defaultNetwork: 'BITCOIN',
           defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: 'mockXpub',
+          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
           defaultMasterFingerprint: '00000000',
@@ -475,5 +508,152 @@ describe('HardwareWalletModalManager', () => {
       },
     });
   });
-  // TODO test trezor keypad enter pin
+
+  it('Test trezor needs pin and passphrase flow using the keypay.', async () => {
+    getConnectedHardwareWalletsSpy.mockResolvedValue({
+      wallets: [mockTrezorPinAndPassNeeded],
+    });
+    const screen = render(
+      <WrappedInAppWrappers>
+        <HardwareModalManager isOpen={true} closeModal={closeModalSpy} />
+      </WrappedInAppWrappers>,
+    );
+
+    const scanButton = await screen.findByRole('button', { name: 'scan' });
+
+    fireEvent.click(scanButton);
+
+    // needs pin wallet
+    const walletNeedsPinSet = await screen.findByText('Mock model trezor');
+    expect(walletNeedsPinSet).toBeInTheDocument();
+
+    const walletUnlockButton = await screen.findByRole('button', {
+      name: 'Unlock',
+    });
+    fireEvent.click(walletUnlockButton);
+    await waitFor(() => {
+      expect(promptToUnlockWalletSpy).toHaveBeenCalledWith(
+        mockTrezorPinAndPassNeeded.id,
+      );
+    });
+    const keyPadTopLeft = await screen.findByTestId('keypad-top-left');
+    const keyPadTopMiddle = await screen.findByTestId('keypad-top-middle');
+    const keyPadTopRight = await screen.findByTestId('keypad-top-right');
+    const keyPadMiddleLeft = await screen.findByTestId('keypad-middle-left');
+    const keyPadMiddleMiddle = await screen.findByTestId(
+      'keypad-middle-middle',
+    );
+    const keyPadMiddleRight = await screen.findByTestId('keypad-middle-right');
+    const keyPadBottomLeft = await screen.findByTestId('keypad-bottom-left');
+    const keyPadBottomMiddle = await screen.findByTestId(
+      'keypad-bottom-middle',
+    );
+    const keyPadBottomRight = await screen.findByTestId('keypad-bottom-right');
+    fireEvent.click(keyPadTopLeft);
+    fireEvent.click(keyPadTopMiddle);
+    fireEvent.click(keyPadTopRight);
+    fireEvent.click(keyPadMiddleLeft);
+    fireEvent.click(keyPadMiddleMiddle);
+    fireEvent.click(keyPadMiddleRight);
+    fireEvent.click(keyPadBottomLeft);
+    fireEvent.click(keyPadBottomMiddle);
+    fireEvent.click(keyPadBottomRight);
+
+    const enterPinButton = await screen.findByRole('button', {
+      name: /Enter Pin/i,
+    });
+    expect(enterPinButton).toBeEnabled();
+    fireEvent.click(enterPinButton);
+
+    await waitFor(() =>
+      expect(unlockWalletSpy).toHaveBeenCalledWith(
+        mockTrezorPinAndPassNeeded.id,
+        '789456123',
+      ),
+    );
+
+    const passphraseRequiredText = await screen.findByText(
+      'passphrase required',
+    );
+    expect(passphraseRequiredText).toBeInTheDocument();
+    const passphraseInput =
+      await screen.findByPlaceholderText('Enter passphrase');
+
+    fireEvent.input(passphraseInput, {
+      target: { value: 'mockPassphrase' },
+    });
+
+    const sendPassphraseButton = await screen.findByRole('button', {
+      name: 'Send',
+    });
+    fireEvent.click(sendPassphraseButton);
+
+    await waitFor(() =>
+      expect(setWalletPassphraseSpy).toHaveBeenCalledWith(
+        mockTrezorPinAndPassNeeded.id,
+        'mockPassphrase',
+      ),
+    );
+
+    const unlockedWalletCheckbox = await screen.findByTestId(
+      `hardware-walletcheckbox-${mockTrezorPinAndPassNeeded.id}`,
+    );
+    fireEvent.click(unlockedWalletCheckbox);
+
+    // set derivation
+    const showDerivationButton = await screen.findByRole('button', {
+      name: 'Show derivation',
+    });
+    fireEvent.click(showDerivationButton);
+    const derivationInput = await screen.findByTestId(
+      `derivation-path-${mockTrezorPinAndPassNeeded.id}`,
+    );
+    await waitFor(() => {
+      expect(derivationInput).toBeVisible();
+    });
+    fireEvent.input(derivationInput, { target: { value: "m/44'/0'/0'" } });
+
+    // set account number
+    const accountOptionOne = await screen.findByText('Account #2');
+    fireEvent.click(accountOptionOne);
+    // set network
+    const bitcoinNetwork = await screen.findByText('BITCOIN');
+    fireEvent.click(bitcoinNetwork);
+
+    // select unlocked wallet
+    // hit advance button
+    const advanceButton = await screen.findByRole('button', {
+      name: 'Advance',
+    });
+    expect(advanceButton).toBeEnabled();
+
+    fireEvent.click(advanceButton);
+
+    await waitFor(() =>
+      expect(getXpubFromDeviceSpy).toHaveBeenCalledWith(
+        mockTrezorPinAndPassNeeded.id,
+        '2',
+        "m/44'/0'/0'",
+        'BITCOIN',
+      ),
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
+      state: {
+        walletData: {
+          defaultNetwork: 'BITCOIN',
+          defaultDerivationPath: "m/44'/0'/0'",
+          defaultScriptType: ScriptTypes.P2PKH,
+          defaultXpub: mockXpub,
+          defaultDescriptor: '',
+          defaultElectrumServerUrl: '',
+          defaultMasterFingerprint: '00000000',
+          backendServerBaseUrl: '',
+          isUsingPublicServer: false,
+          privateElectrumUrl: '',
+          publicElectrumUrl: '',
+        },
+      },
+    });
+  });
 });

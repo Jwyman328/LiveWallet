@@ -445,4 +445,7 @@ describe('WalletSignIn', () => {
     )) as HTMLInputElement;
     expect(derivationTaproot).toBeInTheDocument();
   });
+
+  // todo add test for when location.state.walletData exists
+  // test that it loads everything properly
 });
