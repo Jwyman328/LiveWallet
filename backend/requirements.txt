@@ -14,3 +14,5 @@ aiohttp===3.9.5
 pyinstaller===6.8.0
 chardet
 charset-normalizer==2.1.0
+hwi===3.0.0
+cryptography==42.0.8

@@ -2,7 +2,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useCreateWallet } from '../hooks/wallet';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Network } from '../types/network';
-import { Affix, Loader, Notification, Tooltip } from '@mantine/core';
+import {
+  Affix,
+  Loader,
+  Notification,
+  NumberInput,
+  Tooltip,
+} from '@mantine/core';
 
 import {
   NetworkTypeOption,
@@ -31,7 +37,10 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { scriptTypeToDescriptorMap } from '../types/scriptTypes';
+import {
+  getDerivationPathFromScriptType,
+  scriptTypeToDescriptorMap,
+} from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
@@ -57,6 +66,8 @@ export const WalletSignIn = () => {
   const [activeTab, setActiveTab] = useState<string | null>(
     isUsingPublicServer ? 'public' : 'private',
   );
+
+  const [activeConfigTab, setActiveConfigTab] = useState<string>('base');
 
   useEffect(() => {
     if (location?.state?.walletData) {
@@ -191,6 +202,10 @@ export const WalletSignIn = () => {
     setDerivationPath(e.target.value);
   };
 
+  const derivationPathPlaceHolder = getDerivationPathFromScriptType(
+    scriptType.value,
+  );
+
   const [xpub, setXpub] = useState<string>(configs.defaultXpub);
   const handleXpubChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setXpub(e.target.value);
@@ -201,6 +216,12 @@ export const WalletSignIn = () => {
   );
   const handleMasterFingerPrint = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMasterFingerPrint(e.target.value);
+  };
+
+  const [gapLimit, setGapLimit] = useState<string | number>(100);
+
+  const onSetGapLimit = (limit: string | number) => {
+    setGapLimit(limit);
   };
 
   const generateDescriptor = () => {
@@ -220,6 +241,7 @@ export const WalletSignIn = () => {
   const initiateWalletRequest = useCreateWallet(
     network.value as Network,
     electrumUrl,
+    Number(gapLimit),
     handleWalletInitiated,
     handleWalletError,
   );
@@ -337,7 +359,7 @@ export const WalletSignIn = () => {
         ></Button>
       </Affix>
 
-      <div className="px-4 flex-1 w-1/2 flex flex-col items-center justify-center h-screen">
+      <div className="px-4 flex-1 w-1/2 flex flex-col items-center h-screen">
         {displayInitiateWalletError && (
           <Notification
             withCloseButton={true}
@@ -352,157 +374,204 @@ export const WalletSignIn = () => {
           </Notification>
         )}
         <h1
-          className={`text-4xl font-semibold mb-8 ${labelWidth} text-blue-500`}
+          className={`text-4xl font-semibold mb-1 mt-8 ${labelWidth} text-blue-500`}
         >
           Watch Only Wallet
         </h1>
 
-        <InputLabel className={`mt-0 mb-2 ${labelWidth}`}>Network</InputLabel>
-        <Select
-          allowDeselect={false}
-          className={formItemWidth}
-          data={networkOptions}
-          value={network.value}
-          onChange={(_value, option) => {
-            if (option) {
-              setNetwork(option as NetworkTypeOption);
-            }
-          }}
-        />
-
-        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-          Script type
-        </InputLabel>
-        <Select
-          allowDeselect={false}
-          className={`mb-4 ${formItemWidth}`}
-          data={scriptTypeOptions}
-          value={scriptType ? scriptType.value : null}
-          onChange={(_value, option) => {
-            if (option) {
-              setScriptType(option as ScriptTypeOption);
-            }
-          }}
-        />
-
-        <div className={`flex flex-row ${labelWidth} mb-2 items-center`}>
-          <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
-          <Tooltip
-            withArrow
-            w={300}
-            multiline
-            label="The master fingerprint uniquely identifies this keystore using the first 4 bytes of the master public key hash. It is safe to use any valid value (00000000) for watch only wallets"
+        <div className="px-4 flex-1 w-1/2 flex flex-col items-center h-[90%]">
+          <Tabs
+            className={`${formItemWidth} mt-8`}
+            value={activeConfigTab}
+            onChange={setActiveConfigTab}
           >
-            <IconInfoCircle style={{ width: '14px', height: '14px' }} />
-          </Tooltip>
-        </div>
-        <Input
-          className={`${formItemWidth}`}
-          placeholder="00000000"
-          value={masterFingerPrint}
-          onInput={handleMasterFingerPrint}
-        />
-        <div className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}>
-          <InputLabel className="mr-1">Derivation path</InputLabel>
-          <Tooltip
-            withArrow
-            label="The derivation path to the xpub from the master private key."
-          >
-            <IconInfoCircle style={{ width: '14px', height: '14px' }} />
-          </Tooltip>
-        </div>
-        <Input
-          data-testid="derivation-path"
-          className={`${formItemWidth}`}
-          placeholder="m/49'/0'/0'"
-          value={derivationPath}
-          onInput={handleDerivationPathChange}
-        />
+            <Tabs.List>
+              <Tabs.Tab className="w-1/2" value="base">
+                Basic
+              </Tabs.Tab>
+              <Tabs.Tab className="w-1/2" value="advanced">
+                Advanced
+              </Tabs.Tab>
+            </Tabs.List>
 
-        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>xpub</InputLabel>
-        <Textarea
-          className={`${formItemWidth}`}
-          styles={{ input: { minHeight: '6.3rem' } }}
-          placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
-          onInput={handleXpubChange}
-          value={xpub}
-        />
+            <Tabs.Panel value="base">
+              <>
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  Network
+                </InputLabel>
+                <Select
+                  allowDeselect={false}
+                  className={formItemWidth}
+                  data={networkOptions}
+                  value={network.value}
+                  onChange={(_value, option) => {
+                    if (option) {
+                      setNetwork(option as NetworkTypeOption);
+                    }
+                  }}
+                />
 
-        <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-          Server type
-        </InputLabel>
-        <Stack className={labelWidth}>
-          <Radio
-            checked={isUsingPublicServer}
-            onClick={(e) => {
-              const isSelected = e.currentTarget.value === 'on';
-              setIsUsingPublicServer(isSelected);
-            }}
-            label="Public electrum server"
-          />
-          <Radio
-            checked={!isUsingPublicServer}
-            onClick={(e) => {
-              const isSelected = e.currentTarget.value === 'on';
-              setIsUsingPublicServer(!isSelected);
-            }}
-            label="Private electrum server"
-          />
-        </Stack>
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  Script type
+                </InputLabel>
+                <Select
+                  data-testid="script-type-select"
+                  allowDeselect={false}
+                  className={`mb-4 ${formItemWidth}`}
+                  data={scriptTypeOptions}
+                  value={scriptType ? scriptType.value : null}
+                  onChange={(_value, option) => {
+                    if (option) {
+                      setScriptType(option as ScriptTypeOption);
+                    }
+                  }}
+                />
 
-        <InputLabel className={`mt-4 mb-0 ${labelWidth}`}>
-          Electrum url
-        </InputLabel>
-        <Tabs
-          className={formItemWidth}
-          value={activeTab}
-          onChange={setActiveTab}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="public">Public electrum</Tabs.Tab>
-            <Tabs.Tab value="private">Private electrum</Tabs.Tab>
-          </Tabs.List>
+                <div
+                  className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}
+                >
+                  <InputLabel className="mr-1">Derivation path</InputLabel>
+                  <Tooltip
+                    withArrow
+                    label="The derivation path to the xpub from the master private key."
+                  >
+                    <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+                  </Tooltip>
+                </div>
+                <Input
+                  data-testid="derivation-path"
+                  className={`${formItemWidth}`}
+                  placeholder={derivationPathPlaceHolder}
+                  value={derivationPath}
+                  onInput={handleDerivationPathChange}
+                />
 
-          <Tabs.Panel value="public">
-            <Select
-              placeholder="Enter public electrum url"
-              allowDeselect={false}
-              disabled={!isUsingPublicServer}
-              data={publicElectrumOptions}
-              value={selectedPublicServer ? selectedPublicServer.value : null}
-              onChange={(_value, option) => {
-                if (option) {
-                  setSelectedPublicServer(option);
-                }
-              }}
-              className={formItemWidth}
-            />
-          </Tabs.Panel>
-          <Tabs.Panel value="private">
-            <Input
-              disabled={isUsingPublicServer}
-              type="text"
-              placeholder="Enter electrum url"
-              onInput={handlePrivateElectrumInput}
-              value={privateElectrumUrl}
-              className="mt-2 w-80"
-            />
-          </Tabs.Panel>
-        </Tabs>
-        <div className={formItemWidth}>
-          <Button
-            disabled={!isLoginEnabled}
-            className="mt-4"
-            fullWidth
-            type="button"
-            onClick={signIn}
-          >
-            {initiateWalletRequest.isLoading ? (
-              <Loader size={20} color="white" />
-            ) : (
-              'Connect'
-            )}
-          </Button>
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  xpub
+                </InputLabel>
+                <Textarea
+                  className={`${formItemWidth}`}
+                  styles={{ input: { minHeight: '6.3rem' } }}
+                  placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
+                  onInput={handleXpubChange}
+                  value={xpub}
+                />
+
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  Server type
+                </InputLabel>
+                <Stack className={labelWidth}>
+                  <Radio
+                    checked={isUsingPublicServer}
+                    onClick={(e) => {
+                      const isSelected = e.currentTarget.value === 'on';
+                      setIsUsingPublicServer(isSelected);
+                    }}
+                    label="Public electrum server"
+                  />
+                  <Radio
+                    checked={!isUsingPublicServer}
+                    onClick={(e) => {
+                      const isSelected = e.currentTarget.value === 'on';
+                      setIsUsingPublicServer(!isSelected);
+                    }}
+                    label="Private electrum server"
+                  />
+                </Stack>
+
+                <InputLabel className={`mt-4 mb-0 ${labelWidth}`}>
+                  Electrum url
+                </InputLabel>
+                <Tabs
+                  className={formItemWidth}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value="public">Public electrum</Tabs.Tab>
+                    <Tabs.Tab value="private">Private electrum</Tabs.Tab>
+                  </Tabs.List>
+
+                  <Tabs.Panel value="public">
+                    <Select
+                      placeholder="Enter public electrum url"
+                      allowDeselect={false}
+                      disabled={!isUsingPublicServer}
+                      data={publicElectrumOptions}
+                      value={
+                        selectedPublicServer ? selectedPublicServer.value : null
+                      }
+                      onChange={(_value, option) => {
+                        if (option) {
+                          setSelectedPublicServer(option);
+                        }
+                      }}
+                      className={formItemWidth}
+                    />
+                  </Tabs.Panel>
+                  <Tabs.Panel value="private">
+                    <Input
+                      disabled={isUsingPublicServer}
+                      type="text"
+                      placeholder="Enter electrum url"
+                      onInput={handlePrivateElectrumInput}
+                      value={privateElectrumUrl}
+                      className="mt-2 w-80"
+                    />
+                  </Tabs.Panel>
+                </Tabs>
+
+                <div className={formItemWidth}>
+                  <Button
+                    disabled={!isLoginEnabled}
+                    className="mt-8"
+                    fullWidth
+                    type="button"
+                    onClick={signIn}
+                  >
+                    {initiateWalletRequest.isLoading ? (
+                      <Loader size={20} color="white" />
+                    ) : (
+                      'Connect'
+                    )}
+                  </Button>
+                </div>
+              </>
+            </Tabs.Panel>
+            <Tabs.Panel value="advanced">
+              <>
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  Gap limit
+                </InputLabel>
+                <NumberInput
+                  className={`mb-4 ${formItemWidth}`}
+                  allowNegative={false}
+                  value={gapLimit}
+                  onChange={onSetGapLimit}
+                  min={1}
+                />
+                <div
+                  className={`flex flex-row ${labelWidth} mb-2 items-center`}
+                >
+                  <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
+                  <Tooltip
+                    withArrow
+                    w={300}
+                    multiline
+                    label="The master fingerprint uniquely identifies this keystore using the first 4 bytes of the master public key hash. It is safe to use any valid value (00000000) for watch only wallets"
+                  >
+                    <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+                  </Tooltip>
+                </div>
+                <Input
+                  className={`${formItemWidth}`}
+                  placeholder="00000000"
+                  value={masterFingerPrint}
+                  onInput={handleMasterFingerPrint}
+                />
+              </>
+            </Tabs.Panel>
+          </Tabs>
         </div>
       </div>
 

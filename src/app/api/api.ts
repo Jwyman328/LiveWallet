@@ -8,6 +8,12 @@ import {
   InitiateWalletResponseType,
   CreateMockWalletResponseType,
   DeleteCurrentWalletResponseType,
+  HardwareWalletsResponseType,
+  HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletUnlockResponseType,
+  HardwareWalletXpubResponseType,
+  HardwareWalletSetPassphraseResponseType,
+  HardwareWalletCloseAndRemoveResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -73,11 +79,12 @@ export class ApiClient {
     walletDescriptor: string,
     network: Network,
     electrumUrl: string,
+    gapLimit: number,
   ) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/wallet`,
       'POST',
-      { descriptor: walletDescriptor, electrumUrl, network },
+      { descriptor: walletDescriptor, electrumUrl, network, gapLimit },
     );
 
     const data = await response.json();
@@ -127,6 +134,81 @@ export class ApiClient {
     );
 
     const data = (await response.json()) as DeleteCurrentWalletResponseType;
+    return data;
+  }
+
+  static async getConnectedHardwareWallets() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets`,
+      'GET',
+    );
+
+    const data = (await response.json()) as HardwareWalletsResponseType;
+    return data;
+  }
+
+  static async promptToUnlockWallet(walletUuid: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/prompt`,
+      'POST',
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletPromptToUnlockResponseType;
+    return data;
+  }
+
+  static async unlockWallet(walletUuid: string, pin: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/pin`,
+      'POST',
+      { pin },
+    );
+
+    const data = (await response.json()) as HardwareWalletUnlockResponseType;
+    return data;
+  }
+
+  static async getXpubFromDevice(
+    walletUuid: string,
+    accountNumber: string,
+    derivationPath: string,
+    network: Network,
+  ) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/xpub`,
+      'POST',
+      {
+        account_number: accountNumber,
+        derivation_path: derivationPath,
+        network,
+      },
+    );
+
+    const data = (await response.json()) as HardwareWalletXpubResponseType;
+    return data;
+  }
+
+  static async setWalletPassphrase(walletUuid: string, passphrase: string) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/unlock/${walletUuid}/passphrase`,
+      'POST',
+      { passphrase },
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletSetPassphraseResponseType;
+    return data;
+  }
+
+  static async closeAndRemoveHardwareWallets() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/hardware-wallets/close`,
+      'DELETE',
+    );
+
+    const data =
+      (await response.json()) as HardwareWalletCloseAndRemoveResponseType;
     return data;
   }
 }

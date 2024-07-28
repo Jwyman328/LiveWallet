@@ -39,7 +39,8 @@
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest --watch"
+    "test": "jest ",
+    "test:dev": "jest --watch"
   },
   "browserslist": [],
   "prettier": {
@@ -96,6 +97,8 @@
     "@emotion/styled": "^11.11.0",
     "@mantine/core": "^7.6.1",
     "@mantine/hooks": "^7.6.1",
+    "@mantine/modals": "^7.11.2",
+    "@mantine/notifications": "^7.11.2",
     "@mui/material": "^5.15.12",
     "@tabler/icons-react": "^3.1.0",
     "child_process": "^1.0.2",

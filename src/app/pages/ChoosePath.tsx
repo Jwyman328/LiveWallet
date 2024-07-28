@@ -3,8 +3,10 @@ import { Button, Loader, Notification } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { Wallet } from '../types/wallet';
 
+import { IconUsb, IconKeyboard, IconFolder } from '@tabler/icons-react';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
+import { HardwareModalManager } from '../components/HardwareModalManager';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -15,6 +17,14 @@ export const ChoosePath = () => {
 
   const handleImportedWallet = (walletData: Wallet) => {
     navigate('/sign-in', { state: { walletData } });
+  };
+
+  const [isHWWModalOpen, setIsHWWModalOpen] = React.useState(false);
+  const closeModal = () => {
+    setIsHWWModalOpen(false);
+  };
+  const openModal = () => {
+    setIsHWWModalOpen(true);
   };
 
   const serverHealthStatusQuery = useGetServerHealthStatus();
@@ -37,27 +47,62 @@ export const ChoosePath = () => {
             Live Wallet
           </h1>
         </div>
-        <Button
-          variant="outline"
-          size="xl"
-          style={{ width: '16rem', height: '16rem' }}
-          className="mt-12"
-          onClick={handleImport}
-        >
-          Import wallet
-        </Button>
-        <Button
-          variant="filled"
-          className="ml-14 mt-12"
-          size="xl"
-          style={{ width: '16rem', height: '16rem' }}
-          onClick={() => {
-            navigate('/sign-in');
-          }}
-        >
-          Enter wallet
-        </Button>
+        <div className="flex flex-row mt-12">
+          <Button
+            variant="outline"
+            size="xl"
+            style={{ height: '12rem', width: '14rem' }}
+            onClick={handleImport}
+          >
+            <div className="flex flex-col justify-center items-center">
+              Import wallet
+              <IconFolder
+                className="mt-4"
+                style={{ width: '2rem', height: '2rem' }}
+              />
+            </div>
+          </Button>
+          <Button
+            variant="light"
+            className="ml-10"
+            size="xl"
+            style={{ height: '12rem', width: '14rem' }}
+            onClick={() => {
+              navigate('/sign-in');
+            }}
+          >
+            <div className="flex flex-col justify-center items-center">
+              Enter wallet
+              <IconKeyboard
+                className="mt-4"
+                style={{ width: '2rem', height: '2rem' }}
+              />
+            </div>
+          </Button>
+
+          <Button
+            variant="filled"
+            className="ml-10"
+            size="xl"
+            style={{ height: '12rem', width: '14rem' }}
+            onClick={() => {
+              openModal();
+            }}
+          >
+            <div className="flex flex-col justify-center items-center">
+              Hardware wallet
+              <IconUsb
+                className="mt-4"
+                style={{ width: '2rem', height: '2rem' }}
+              />
+            </div>
+          </Button>
+        </div>
       </div>
+      {/* The isHWWModalOpen check is needed in order to demount and remount the component, without it the modal state persists, which is not what we want, we want to have to scan for wallets each time the modal is opened  */}
+      {isHWWModalOpen && (
+        <HardwareModalManager isOpen={isHWWModalOpen} closeModal={closeModal} />
+      )}
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
     <div className="flex flex-row justify-center items-center h-screen w-screen">

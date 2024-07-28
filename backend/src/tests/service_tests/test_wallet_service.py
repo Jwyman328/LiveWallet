@@ -56,6 +56,7 @@ class TestWalletService(TestCase):
         wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
         wallet_details_mock.id = "mock_id"
+        wallet_details_mock.stop_gap = 100
 
         with (
             patch.object(
@@ -117,6 +118,7 @@ class TestWalletService(TestCase):
         wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
         wallet_details_mock.id = "mock_id"
+        wallet_details_mock.stop_gap = 100
 
         with (
             patch.object(bdk, "Wallet", return_value=wallet_mock) as bdk_wallet_patch,
@@ -149,6 +151,7 @@ class TestWalletService(TestCase):
         wallet_details_mock.descriptor = "mock_descriptor"
         wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
+        wallet_details_mock.stop_gap = 100
 
         with (
             patch.object(
@@ -216,6 +219,7 @@ class TestWalletService(TestCase):
         wallet_details_mock.descriptor = "mock_descriptor"
         wallet_details_mock.network = bdk.Network.TESTNET.value
         wallet_details_mock.electrum_url = "mock_url"
+        wallet_details_mock.stop_gap = 100
 
         with (
             patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
@@ -245,13 +249,17 @@ class TestWalletService(TestCase):
             descriptor = "mock descriptor"
             network = bdk.Network.TESTNET
             electrum_url = "mock electrum url"
+            stop_gap = 100
 
-            WalletService.create_wallet(descriptor, network, electrum_url)
+            WalletService.create_wallet(descriptor, network, electrum_url, stop_gap)
             wallet_model_patch.get_current_wallet.assert_called()
             remove_global_wallet_and_details_patch.assert_not_called()
 
             wallet_model_patch.assert_called_with(
-                descriptor=descriptor, network=network.value, electrum_url=electrum_url
+                descriptor=descriptor,
+                network=network.value,
+                electrum_url=electrum_url,
+                stop_gap=stop_gap,
             )
 
             db_patch.session.add.assert_called_with(mock_wallet)
@@ -277,13 +285,17 @@ class TestWalletService(TestCase):
             descriptor = "mock descriptor"
             network = bdk.Network.TESTNET
             electrum_url = "mock electrum url"
+            stop_gap = 100
 
-            WalletService.create_wallet(descriptor, network, electrum_url)
+            WalletService.create_wallet(descriptor, network, electrum_url, stop_gap)
             wallet_model_patch.get_current_wallet.assert_called()
             remove_global_wallet_and_details_patch.assert_called()
 
             wallet_model_patch.assert_called_with(
-                descriptor=descriptor, network=network.value, electrum_url=electrum_url
+                descriptor=descriptor,
+                network=network.value,
+                electrum_url=electrum_url,
+                stop_gap=stop_gap,
             )
 
             db_patch.session.add.assert_called_with(mock_wallet)

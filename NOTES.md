@@ -44,3 +44,12 @@
 
 - how to handle pyinstaller code signing (or lack there of)
   - https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
+
+
+# hwi
+- how do I get hardware wallet integration? 
+- python library https://pypi.org/project/hwi/ 
+  - dependencies
+    - brew install libusb
+      - would this be a dependency of the app then?
+      - what if a user didn't have this installed on macos

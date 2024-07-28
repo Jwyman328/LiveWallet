@@ -20,3 +20,41 @@ export const descriptorTypeToScriptType = {
   tr: ScriptTypes.P2TR,
   'sh(wpkh': ScriptTypes.P2WSH,
 };
+
+export const getScriptTypeFromDerivationPath = (derivationPath: string) => {
+  const pattern = /m\/(?<number>\d+)'\/?/;
+
+  const match = derivationPath.match(pattern);
+
+  if (match && match.groups) {
+    const scriptTypeNumber = match.groups['number'];
+
+    switch (scriptTypeNumber) {
+      case '44':
+        return ScriptTypes.P2PKH;
+      case '49':
+        return ScriptTypes.P2WSH;
+      case '84':
+        return ScriptTypes.P2WPKH;
+      case '86':
+        return ScriptTypes.P2TR;
+      default:
+        return null;
+    }
+  } else {
+    return null;
+  }
+};
+
+export const getDerivationPathFromScriptType = (scriptType: ScriptTypes) => {
+  switch (scriptType) {
+    case ScriptTypes.P2PKH:
+      return "m/44'/0'/0'";
+    case ScriptTypes.P2WSH:
+      return "m/49'/0'/0'";
+    case ScriptTypes.P2WPKH:
+      return "m/84'/0'/0'";
+    case ScriptTypes.P2TR:
+      return "m/86'/0'/0'";
+  }
+};

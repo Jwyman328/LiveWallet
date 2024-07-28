@@ -33,6 +33,9 @@ npm-debug.log.*
 *.sass.d.ts
 *.scss.d.ts
 
+# make sure environment.sh file not git ignored
+# it is needed in github actions
+!environment.sh
 
 # backend git ignores
 backend/.DS_Store

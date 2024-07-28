@@ -1,5 +1,6 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
+import '@mantine/notifications/styles.css';
 
 import '@mantine/core/styles.css';
 
@@ -10,6 +11,7 @@ import Home from '../app/pages/Home';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { GenerateWallet } from '../app/pages/GenerateWallet';
 import { ChoosePath } from '../app/pages/ChoosePath';
+import { Notifications } from '@mantine/notifications';
 
 const queryClient = new QueryClient();
 
@@ -21,6 +23,7 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
+        <Notifications position="top-right" />
         <Router>
           <Routes>
             <Route path="/sign-in" element={<WalletSignIn />} />
