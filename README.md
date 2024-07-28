@@ -19,6 +19,12 @@ https://github.com/user-attachments/assets/4439fbef-a55e-45dd-8a90-4cc1a60e1be3
 
 
 # Development
+## Prerequisits
+- For hardware wallet usb interactions, libusb is required.
+```bash
+$ brew install libusb
+```
+
 ## How to create build
 - in a single script you can package the backend and the frontend into a single executable by running
 ```bash
