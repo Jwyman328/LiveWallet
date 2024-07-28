@@ -8,7 +8,6 @@
   // - ReadyForPin
   // - ReadyForPassphrase
   // - available
-- changing the address type should change the derivation path placeholder values
 - use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - improve the readme.md
