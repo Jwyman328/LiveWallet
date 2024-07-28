@@ -264,6 +264,7 @@ export const WalletSignIn = () => {
     !!network.value &&
     !!electrumUrl;
 
+
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
