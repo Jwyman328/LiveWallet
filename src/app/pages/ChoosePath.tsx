@@ -22,7 +22,6 @@ export const ChoosePath = () => {
   const [isHWWModalOpen, setIsHWWModalOpen] = React.useState(false);
   const closeModal = () => {
     setIsHWWModalOpen(false);
-    // make request to backend to close all connected hardware wallets
   };
   const openModal = () => {
     setIsHWWModalOpen(true);
