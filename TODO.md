@@ -19,7 +19,6 @@
 - Also set the default custom fee rate to the current rate 
 
 # TODOs build
-- add ci, trying this
 - use a random port to run the backend on 
 - build for not just macOS? 
   - https://github.com/pyinstaller/pyinstaller/wiki/FAQ#features
