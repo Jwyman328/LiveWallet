@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_dynamic_libs
 from PyInstaller.utils.hooks import collect_submodules
 
-binaries = []
+binaries = [('./libusb-1.0.dylib', '.')]
 hiddenimports = ['configparser', 'six', 'dependency_injector.errors', 'hwilib.devices.trezor', 'hwilib.devices.ledger', 'hwilib.devices.keepkey', 'hwilib.devices.digitalbitbox', 'hwilib.devices.coldcard', 'hwilib.devices.bitbox02', 'hwilib.devices.jade']
 binaries += collect_dynamic_libs('bdkpython')
 binaries += collect_dynamic_libs('hwi')
