@@ -264,7 +264,6 @@ export const WalletSignIn = () => {
     !!network.value &&
     !!electrumUrl;
 
-
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
@@ -422,7 +421,6 @@ export const WalletSignIn = () => {
                   data={scriptTypeOptions}
                   value={scriptType ? scriptType.value : null}
                   onChange={(_value, option) => {
-                    console.log('in onchagne', _value, option);
                     if (option) {
                       setScriptType(option as ScriptTypeOption);
                     }
