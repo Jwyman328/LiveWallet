@@ -10,6 +10,7 @@ import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
 import Home from './Home';
 import {
+  mockGetBtcPriceResponse,
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
@@ -75,18 +76,7 @@ describe('Home', () => {
     });
 
     getBtcPriceSpy = jest.spyOn(ApiClient, 'getCurrentBtcPrice');
-    getBtcPriceSpy.mockResolvedValue({
-      time: 1703252411,
-      USD: 100000,
-      EUR: 40545,
-      GBP: 37528,
-      CAD: 58123,
-      CHF: 37438,
-      AUD: 64499,
-      JPY: 6218915,
-    });
-
-    getBtcPriceSpy;
+    getBtcPriceSpy.mockResolvedValue(mockGetBtcPriceResponse);
   });
 
   afterEach(() => {
@@ -98,6 +88,7 @@ describe('Home', () => {
     deleteCurrentWalletSpy.mockClear();
     getCurrentFeesSpy.mockClear();
     createTxFeeEstimateSpy.mockClear();
+    getBtcPriceSpy.mockClear();
   });
 
   it('Home screen shows correct data by default', async () => {
@@ -126,6 +117,9 @@ describe('Home', () => {
     const title = await screen.findByText('Custom Fee Environment (sat/vB)');
     const feeTitle = await screen.findByText('Current fees');
 
+    const btcPriceTitle = await screen.findByText('BTC Price');
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+
     const lowFeeTitle = await screen.findByText('Low');
     const mediumFeeTitle = await screen.findByText('Medium');
     const highFeeTitle = await screen.findByText('High');
@@ -143,8 +137,14 @@ describe('Home', () => {
     const utxoOneAmount = await screen.findByText('1.00000000');
     const utxoTwoAmount = await screen.findByText('2.00000000');
 
+    // since btc price is 100k and amount 1btc
+    const utxoOneAmountUSD = await screen.findByText('$100,000');
+    // since btc price is 100k and amount 2btc
+    const utxoTwoAmountUSD = await screen.findByText('$200,000');
+
     const utxoOneFeeEstimate = await screen.findByText('0.0020%');
     const utxoTwoFeeEstimate = await screen.findByText('0.0010%');
+    const utxoFeeUsd = await screen.findAllByText('$2');
     const utxoThreeFeeEstimate = await screen.findByText('200000.00%');
     const utxoThreeAmount = await screen.findByText('0.00000001');
     const spendableIcons = await screen.findAllByTestId('spendable-icon');
@@ -160,6 +160,10 @@ describe('Home', () => {
 
     expect(title).toBeInTheDocument();
     expect(feeTitle).toBeInTheDocument();
+    expect(btcPriceTitle).toBeInTheDocument();
+    expect(btcPriceInput).toHaveValue(
+      `$${mockGetBtcPriceResponse.USD.toLocaleString()}`,
+    );
     expect(lowFeeTitle).toBeInTheDocument();
     expect(mediumFeeTitle).toBeInTheDocument();
     expect(highFeeTitle).toBeInTheDocument();
@@ -173,9 +177,13 @@ describe('Home', () => {
     expect(utxoTxIdTwo).toBeInTheDocument();
     expect(utxoOneFeeEstimate).toBeInTheDocument();
     expect(utxoTwoFeeEstimate).toBeInTheDocument();
+    // a utxo fee usd for all three utxos
+    expect(utxoFeeUsd.length).toBe(3);
     expect(utxoThreeFeeEstimate).toBeInTheDocument();
     expect(utxoOneAmount).toBeInTheDocument();
     expect(utxoTwoAmount).toBeInTheDocument();
+    expect(utxoOneAmountUSD).toBeInTheDocument();
+    expect(utxoTwoAmountUSD).toBeInTheDocument();
     expect(utxoThreeAmount).toBeInTheDocument();
     expect(spendableIcons.length).toBe(2);
     expect(notSpendableIcons.length).toBe(1);
@@ -195,7 +203,7 @@ describe('Home', () => {
       //
       const higherFeeConfig = {
         ...mockImportedWalletData,
-        feeRate: '100',
+        feeRate: '500',
       };
       mockElectron.ipcRenderer.on.mockResolvedValue(higherFeeConfig);
       const handleWalletDataFunction =
@@ -206,20 +214,142 @@ describe('Home', () => {
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoOneAmount = await screen.findByText('1.00000000');
 
-    const customFeeRate = await screen.findByText('Fee rate: 100 sat/vB');
+    // since price is 100k and amount 1btc, new fee rate should not change the amount usd
+    const utxoOneAmountUSD = await screen.findByText('$100,000');
+    // since price is 100k and amount 2btc, new fee rate should not change the amount usd
+    const utxoTwoAmountUSD = await screen.findByText('$200,000');
 
-    // now a higher estimated rate to spend this utxo should now be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0200%');
+    const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
+
+    // now a higher estimated rate and usd value to spend this utxo should now be showing
+    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
+    const utxoFeeUsd = await screen.findAllByText('$100');
+
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoOneFeeEstimate).toBeInTheDocument();
     expect(utxoTxIdOne).toBeInTheDocument();
+    expect(utxoOneAmountUSD).toBeInTheDocument();
+    expect(utxoTwoAmountUSD).toBeInTheDocument();
     expect(customFeeRate).toBeInTheDocument();
+    expect(utxoFeeUsd.length).toBe(3);
 
     expect(utxoOneAmount).toBeInTheDocument();
   });
 
-  // test default settings slideout
+  it('Changing btc price changes the usd amount and usd fee estimation for each utxo', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+    let utxoOneAmount = await screen.findByText('1.00000000');
+    let utxoTwoAmount = await screen.findByText('2.00000000');
+
+    // since price is 100k and amount 1btc
+    let utxoOneAmountUSD = await screen.findByText('$100,000');
+    // since price is 100k and amount 2btc
+    let utxoTwoAmountUSD = await screen.findByText('$200,000');
+
+    let utxoOneFeeEstimate = await screen.findByText('0.0020%');
+    let utxoTwoFeeEstimate = await screen.findByText('0.0010%');
+    let utxoFeeUsd = await screen.findAllByText('$2');
+    let utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    let utxoThreeAmount = await screen.findByText('0.00000001');
+
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    expect(utxoOneAmountUSD).toBeInTheDocument();
+    expect(utxoTwoFeeEstimate).toBeInTheDocument();
+    expect(utxoThreeFeeEstimate).toBeInTheDocument();
+    expect(utxoThreeAmount).toBeInTheDocument();
+    expect(utxoTwoAmount).toBeInTheDocument();
+    expect(utxoTwoAmountUSD).toBeInTheDocument();
+    expect(utxoFeeUsd.length).toBe(3);
+
+    expect(utxoOneAmount).toBeInTheDocument();
+
+    // now change btc price and see the  difference
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+    // increase btc price by a factor of 10
+    fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
+
+    // no change in non usd values
+    utxoOneFeeEstimate = await screen.findByText('0.0020%');
+    utxoTwoFeeEstimate = await screen.findByText('0.0010%');
+    utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    utxoThreeAmount = await screen.findByText('0.00000001');
+    utxoOneAmount = await screen.findByText('1.00000000');
+    utxoTwoAmount = await screen.findByText('2.00000000');
+
+    // Fee usd should now be 10x higher
+    utxoFeeUsd = await screen.findAllByText('$20');
+    // since price is now 1M and amount 1btc
+    utxoOneAmountUSD = await screen.findByText('$1,000,000');
+    // since price is now 1M and amount 2btc
+    utxoTwoAmountUSD = await screen.findByText('$2,000,000');
+
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    expect(utxoOneAmountUSD).toBeInTheDocument();
+    expect(utxoTwoFeeEstimate).toBeInTheDocument();
+    expect(utxoThreeFeeEstimate).toBeInTheDocument();
+    expect(utxoThreeAmount).toBeInTheDocument();
+    expect(utxoTwoAmount).toBeInTheDocument();
+    expect(utxoTwoAmountUSD).toBeInTheDocument();
+    expect(utxoFeeUsd.length).toBe(3);
+
+    expect(utxoOneAmount).toBeInTheDocument();
+  });
+
+  it('Test changing btc price and fee rate', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+    act(() => {
+      // make sure the wallet-data callback runs
+      const higherFeeConfig = {
+        ...mockImportedWalletData,
+        feeRate: '500',
+      };
+      mockElectron.ipcRenderer.on.mockResolvedValue(higherFeeConfig);
+      const handleWalletDataFunction =
+        mockElectron.ipcRenderer.on.mock.calls[0][1];
+      handleWalletDataFunction(higherFeeConfig);
+    });
+
+    // now change btc price and see the  difference
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+    // increase btc price by a factor of 10
+    fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
+
+    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
+    const utxoOneAmount = await screen.findByText('1.00000000');
+
+    // since price is 1M and amount 1btc
+    const utxoOneAmountUSD = await screen.findByText('$1,000,000');
+    // since price is 1M and amount 2btc
+    const utxoTwoAmountUSD = await screen.findByText('$2,000,000');
+
+    const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
+
+    // now a higher estimated rate and usd value to spend this utxo should be showing
+    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
+    const utxoFeeUsd = await screen.findAllByText('$1,000');
+
+    expect(utxoTableTitle).toBeInTheDocument();
+    expect(utxoTableTitle).toBeInTheDocument();
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    expect(utxoTxIdOne).toBeInTheDocument();
+    expect(utxoOneAmountUSD).toBeInTheDocument();
+    expect(utxoTwoAmountUSD).toBeInTheDocument();
+    expect(customFeeRate).toBeInTheDocument();
+    expect(utxoFeeUsd.length).toBe(3);
+
+    expect(utxoOneAmount).toBeInTheDocument();
+  });
+
   it('Test default settings slideout', async () => {
     const screen = render(
       <WrappedInAppWrappers>
@@ -439,7 +569,7 @@ describe('Home', () => {
     const includeAllUtxosButton = txCheckBoxes[0];
     fireEvent.click(includeAllUtxosButton);
 
-    const estimateBatchTxButton = screen.getByRole('button', {
+    let estimateBatchTxButton = screen.getByRole('button', {
       name: 'Estimate batch',
     });
 
@@ -463,9 +593,28 @@ describe('Home', () => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10);
     });
 
-    const totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
-    const totalFeePct = await screen.findByText('(5.0003%)');
+    let totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
+    let totalFeeCost = await screen.findByText('Fee cost: $15,001');
+    let totalFeePct = await screen.findByText('(5.0003%)');
     expect(totalFees).toBeInTheDocument();
+    expect(totalFeeCost).toBeInTheDocument();
+    expect(totalFeePct).toBeInTheDocument();
+
+    // change btc price should change the usd fee cost of the batch tx
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+
+    // increase price by a factor of 10
+    fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
+
+    // should not change
+    totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
+    // should not change
+    totalFeePct = await screen.findByText('(5.0003%)');
+    // should be higher by around a factor of 10
+    totalFeeCost = await screen.findByText('Fee cost: $150,008');
+
+    expect(totalFees).toBeInTheDocument();
+    expect(totalFeeCost).toBeInTheDocument();
     expect(totalFeePct).toBeInTheDocument();
   });
 

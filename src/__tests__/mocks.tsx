@@ -1,3 +1,4 @@
+import { GetBTCPriceResponseType } from '../app/api/types';
 import { ScaleOption } from '../app/pages/Home';
 import { BtcMetric } from '../app/types/btcSatHandler';
 import { Network } from '../app/types/network';
@@ -83,4 +84,15 @@ export const mockHWPassphraseNeeded = {
   needs_pin_sent: false,
   needs_passphrase_sent: true,
   fingerprint: 'mock finger print3',
+};
+
+export const mockGetBtcPriceResponse: GetBTCPriceResponseType = {
+  time: 1703252411,
+  USD: 100000,
+  EUR: 40545,
+  GBP: 37528,
+  CAD: 58123,
+  CHF: 37438,
+  AUD: 64499,
+  JPY: 6218915,
 };

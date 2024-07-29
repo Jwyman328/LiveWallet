@@ -397,6 +397,7 @@ function Home() {
           <div className="ml-20">
             <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
             <NumberInput
+              data-testid="btc-price-input"
               className={`mb-4 w-40 mt-2`}
               prefix="$"
               allowNegative={false}

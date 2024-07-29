@@ -427,8 +427,8 @@ export const UtxosDisplay = ({
         <p>
           Fee cost: $
           {Number(feeUsdAmount).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
           })}{' '}
           <span className="ml-3">({percentOfTxFee}%)</span>
         </p>
