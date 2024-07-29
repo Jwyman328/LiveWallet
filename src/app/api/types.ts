@@ -91,3 +91,14 @@ export type HardwareWalletSetPassphraseResponseType = {
 export type HardwareWalletCloseAndRemoveResponseType = {
   was_close_and_remove_successful: boolean;
 };
+
+export type GetBTCPriceResponseType = {
+  time: number;
+  USD: number;
+  EUR: number;
+  GBP: number;
+  CAD: number;
+  CHF: number;
+  AUD: number;
+  JPY: number;
+};

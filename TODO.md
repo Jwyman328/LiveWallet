@@ -24,15 +24,17 @@
 - build for not just macOS? 
   - https://github.com/pyinstaller/pyinstaller/wiki/FAQ#features
   - "Since pyinstaller is not a cross-compiler (which means with pyinstaller you cannot create an executable for any other system than the one you are on), you will have to look for other tools."
-- use wine?
+  - use wine?
 - Analyze the build size and try to make it smaller
-- set up github test runner on commit
 
 # TODOS hosting site
 - make website to host bundle and allow download
 
 
 # Feature Ideas
+- usd cost of a transaction.
+    - allow ability to choose the price of bitcoin for this calculation
+    - also get current price via some api.
 - add ability to select how many outputs to use in the fee estimation
   - resource:
     - https://jlopp.github.io/bitcoin-transaction-size-calculator/
@@ -60,9 +62,6 @@
           - Taproot's script includes a 32-byte key (the Taproot internal public key) and, if there are complex conditions, a script path which might be much larger, but this is rarely used. Typically, for basic use, Taproot outputs involve a 32-byte key and a 33-byte script length, summing to 65 bytes.
           - Thus, the total for a simple Taproot output is approximately:
           - 8 bytes (value) + 1 byte (length) + 32 bytes (key) + 2 bytes (additional script details) = 43 vbytes.
-- usd cost of a transaction.
-    - allow ability to choose the price of bitcoin for this calculation
-    - also get current price via some api.
 - a button that generates a summary of your wallet
     -  it will take into consideration the conditions you set and it will out put that there are like x number of utxos in the different fee ranges set by the user
     - maybe a score but probably not since that is subjective 
@@ -71,6 +70,8 @@
 - ability to just put in a utxo and test that instead of an entire wallet.
 - click on a utxo and get told when it is unspendable.
 - add how many outputs a tx would have and have it change the fee estimation.
+- send message to a nostr account when a utxo is at a dangerous level.
+  - if you have many wallets and many utxos like an exchange you probably want to know when one of them is in danger of becoming unspendable. but how do you do this anonymously?
 
 
 # TODO knowledge

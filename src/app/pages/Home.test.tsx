@@ -21,6 +21,7 @@ let getWalletType: jest.SpyInstance;
 let deleteCurrentWalletSpy: jest.SpyInstance;
 let getCurrentFeesSpy: jest.SpyInstance;
 let createTxFeeEstimateSpy: jest.SpyInstance;
+let getBtcPriceSpy: jest.SpyInstance;
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -72,6 +73,20 @@ describe('Home', () => {
       spendable: true,
       fee: '15000000',
     });
+
+    getBtcPriceSpy = jest.spyOn(ApiClient, 'getCurrentBtcPrice');
+    getBtcPriceSpy.mockResolvedValue({
+      time: 1703252411,
+      USD: 100000,
+      EUR: 40545,
+      GBP: 37528,
+      CAD: 58123,
+      CHF: 37438,
+      AUD: 64499,
+      JPY: 6218915,
+    });
+
+    getBtcPriceSpy;
   });
 
   afterEach(() => {
@@ -449,7 +464,7 @@ describe('Home', () => {
     });
 
     const totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
-    const totalFeePct = await screen.findByText('Fee pct: ~5.0003%');
+    const totalFeePct = await screen.findByText('(5.0003%)');
     expect(totalFees).toBeInTheDocument();
     expect(totalFeePct).toBeInTheDocument();
   });
