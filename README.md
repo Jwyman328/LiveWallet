@@ -25,6 +25,13 @@ https://github.com/user-attachments/assets/4439fbef-a55e-45dd-8a90-4cc1a60e1be3
 $ brew install libusb
 ```
 
+## How to create a new release 
+- Use the script update_app_version.sh, passing it a new version number and text to append to the change log file.
+- If a new version is successfully set then this script will build a new release by running the package_app.sh script.
+```bash
+$ bash update_app_version.sh "1.2.0" "I am adding another item to the change log"
+```
+
 ## How to create build
 - in a single script you can package the backend and the frontend into a single executable by running
 ```bash
