@@ -21,6 +21,7 @@ import {
   LoadingOverlay,
 } from '@mantine/core';
 import { WalletTypes } from '../types/scriptTypes';
+import Big from 'big.js';
 
 import {
   IconCopy,
@@ -42,6 +43,7 @@ type UtxosDisplayProps = {
   setCurrentBatchedTxData: React.Dispatch<
     React.SetStateAction<CreateTxFeeEstimationResponseType | undefined | null>
   >;
+  btcPrice: number;
 };
 
 export const UtxosDisplay = ({
@@ -54,6 +56,7 @@ export const UtxosDisplay = ({
   feeRateColorValues,
   currentBatchedTxData,
   setCurrentBatchedTxData,
+  btcPrice,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
@@ -71,9 +74,9 @@ export const UtxosDisplay = ({
 
   const avgInputCost = estimateVBtyePerInput * feeRate;
   const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
+  const totalCost = avgBaseCost + avgInputCost;
 
   const calculateFeePercent = (amount: number) => {
-    const totalCost = avgBaseCost + avgInputCost;
     const percentOfAmount = (totalCost / amount) * 100;
     const formatted =
       percentOfAmount > 1
@@ -142,8 +145,59 @@ export const UtxosDisplay = ({
         },
       },
       {
+        header: 'Amount',
+        accessorKey: 'amount',
+        size: 140,
+        Cell: ({ row }: { row: any }) => {
+          const amount = btcSatHandler(
+            Number(row.original.amount).toFixed(2).toLocaleString(),
+            btcMetric,
+          );
+          return (
+            <div>
+              <p>
+                {btcMetric === BtcMetric.BTC
+                  ? amount
+                  : Number(amount).toLocaleString()}
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        header: '$ Amount',
+        accessorKey: 'amountUSD',
+        size: 140,
+        Cell: ({ row }: { row: any }) => {
+          let amountUSD: string | undefined;
+
+          const btcAmount = btcSatHandler(
+            Number(row.original.amount).toLocaleString(),
+            BtcMetric.BTC,
+          );
+
+          try {
+            amountUSD = Big(btcPrice).times(btcAmount).toFixed(0, Big.ROUND_UP);
+          } catch (e) {
+            console.log('Error calculating amountUSD', e);
+          }
+          const amountUSDDisplay = amountUSD
+            ? `$${Number(amountUSD).toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}`
+            : '...';
+          return (
+            <div>
+              <p>{amountUSDDisplay}</p>
+            </div>
+          );
+        },
+      },
+      {
         header: '~ Fee %',
         accessorKey: 'selfCost',
+        size: 120,
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
             ? `${calculateFeePercent(row.original.amount)}%`
@@ -156,8 +210,42 @@ export const UtxosDisplay = ({
         },
       },
       {
+        header: '$ Fee',
+        accessorKey: 'feeUSD',
+        size: 120,
+        Cell: () => {
+          let amountUSD: number | string | undefined;
+
+          const btcAmount = btcSatHandler(
+            Number(totalCost).toLocaleString(),
+            BtcMetric.BTC,
+          );
+
+          try {
+            amountUSD = Big(btcPrice).times(btcAmount).toFixed(0, Big.ROUND_UP);
+          } catch (e) {
+            console.log('error', e);
+          }
+
+          amountUSD = Number(amountUSD) < 1 ? 1 : Number(amountUSD);
+
+          const amountUSDDisplay = amountUSD
+            ? `$${amountUSD.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}`
+            : '...';
+          return (
+            <div>
+              <p>{amountUSDDisplay}</p>
+            </div>
+          );
+        },
+      },
+      {
         header: 'Spendable',
         accessorKey: 'Spendable',
+        size: 40,
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
             ? calculateFeePercent(row.original.amount)
@@ -175,25 +263,8 @@ export const UtxosDisplay = ({
           );
         },
       },
-      {
-        header: 'Amount',
-        accessorKey: 'amount',
-        Cell: ({ row }: { row: any }) => {
-          return (
-            <div>
-              <p>
-                {' '}
-                {btcSatHandler(
-                  Number(row.original.amount).toLocaleString(),
-                  btcMetric,
-                )}
-              </p>
-            </div>
-          );
-        },
-      },
     ],
-    [avgBaseCost, avgInputCost, btcMetric],
+    [avgBaseCost, avgInputCost, btcMetric, btcPrice, totalCost],
   );
 
   const getSelectedUtxos = React.useCallback(
@@ -341,6 +412,9 @@ export const UtxosDisplay = ({
     const fee = Number(batchedTxData?.fee) + inputSigFees;
     const percentOfTxFee = (Number(fee / utxoInputTotal) * 100).toFixed(4);
 
+    const feeInBtc = btcSatHandler(Number(fee).toLocaleString(), BtcMetric.BTC);
+    const feeUsdAmount = Big(btcPrice).times(feeInBtc).toFixed(0, Big.ROUND_UP);
+
     const isSpendable = batchedTxData?.spendable;
     const bgColor = getFeeRateColor(Number(percentOfTxFee));
 
@@ -350,7 +424,14 @@ export const UtxosDisplay = ({
           Total fees: ~{btcSatHandler(fee.toLocaleString(), btcMetric)}
           {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
         </p>
-        <p>Fee pct: ~{percentOfTxFee}%</p>
+        <p>
+          Fee cost: $
+          {Number(feeUsdAmount).toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}{' '}
+          <span className="ml-3">({percentOfTxFee}%)</span>
+        </p>
       </div>
     ) : (
       <div

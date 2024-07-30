@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { CurrentFeeRates } from '../components/currentFeeRates';
 import { UtxosDisplay } from '../components/utxosDisplay';
 import { useGetBalance, useGetCurrentFees, useGetUtxos } from '../hooks/utxos';
+
+import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -12,6 +14,7 @@ import {
   Select,
   SegmentedControl,
   ActionIcon,
+  NumberInput,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
@@ -19,8 +22,12 @@ import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { SettingsSlideout } from '../components/SettingsSlideout';
 import { IconAdjustments } from '@tabler/icons-react';
 import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
-import { CreateTxFeeEstimationResponseType } from '../api/types';
+import {
+  CreateTxFeeEstimationResponseType,
+  GetBTCPriceResponseType,
+} from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
+import { useGetBtcPrice } from '../hooks/price';
 
 export type ScaleOption = {
   value: string;
@@ -42,6 +49,23 @@ function Home() {
     CreateTxFeeEstimationResponseType | undefined | null
   >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
+  const [btcPrice, setBtcPrice] = useState(0);
+
+  const handleGetBtcPrice = (data: GetBTCPriceResponseType) => {
+    const usdPrice = data.USD;
+    setBtcPrice(usdPrice);
+  };
+
+  const getBtcPriceResponse = useGetBtcPrice({
+    onSuccess: handleGetBtcPrice,
+    onError: () => {
+      notifications.show({
+        title: 'Fetching current btc price failed',
+        message: 'Please set the price manually.',
+        color: 'red',
+      });
+    },
+  });
 
   const queryClient = useQueryClient();
 
@@ -231,6 +255,10 @@ function Home() {
       : [];
 
   const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
+
+  const onBtcPriceChange = (netBtcPrice: string | number) => {
+    setBtcPrice(Number(netBtcPrice));
+  };
   return (
     <div className="h-full">
       <SettingsSlideout
@@ -328,37 +356,56 @@ function Home() {
         </Container>
       </header>
 
+      <div className="flex flex-row justify-evenly"></div>
       <div className="ml-4 flex flex-col items-center">
-        <h1 className="text-center font-bold text-xl mt-4">
-          Custom Fee Environment (sat/vB)
-        </h1>
-        <div className="mb-10">
-          <div className="flex flex-row items-center">
-            <div
-              style={{ width: '30rem' }}
-              className="ml-8 mr-8 relative top-4"
-            >
-              <Slider
-                marks={feeRateMarks}
-                defaultValue={parseInt(minFeeScale.value)}
-                min={parseInt(minFeeScale.value)}
-                max={parseInt(feeScale.value)}
-                step={10}
-                value={feeRate}
-                onChange={handleFeeRateChange}
-                label={`${feeRate.toLocaleString()} sat/vB`}
-                thumbSize={26}
-                styles={{
-                  track: { height: '16px' },
-                  markLabel: { marginTop: '16px' },
-                  mark: { height: '0px', display: 'none' },
-                }}
-              />
+        <div className="flex flex-row">
+          <div>
+            <h1 className="text-center font-bold text-xl mt-4">
+              Custom Fee Environment (sat/vB)
+            </h1>
+            <div className="mb-10">
+              <div className="flex flex-row items-center">
+                <div
+                  style={{ width: '30rem' }}
+                  className="ml-8 mr-8 relative top-4"
+                >
+                  <Slider
+                    marks={feeRateMarks}
+                    defaultValue={parseInt(minFeeScale.value)}
+                    min={parseInt(minFeeScale.value)}
+                    max={parseInt(feeScale.value)}
+                    step={10}
+                    value={feeRate}
+                    onChange={handleFeeRateChange}
+                    label={`${feeRate.toLocaleString()} sat/vB`}
+                    thumbSize={26}
+                    styles={{
+                      track: { height: '16px' },
+                      markLabel: { marginTop: '16px' },
+                      mark: { height: '0px', display: 'none' },
+                    }}
+                  />
 
-              <InputLabel className="text-center mt-6">
-                Fee rate: {feeRate.toLocaleString()} sat/vB
-              </InputLabel>
+                  <InputLabel className="text-center mt-6">
+                    Fee rate: {feeRate.toLocaleString()} sat/vB
+                  </InputLabel>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="ml-20">
+            <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
+            <NumberInput
+              data-testid="btc-price-input"
+              className={`mb-4 w-40 mt-2`}
+              prefix="$"
+              allowNegative={false}
+              value={btcPrice}
+              onChange={onBtcPriceChange}
+              thousandSeparator=","
+              min={1}
+            />
           </div>
         </div>
 
@@ -370,13 +417,15 @@ function Home() {
           walletType={getWalletTypeQueryRequest.data || 'P2WPKH'}
           isLoading={
             getUtxosQueryRequest.isLoading ||
-            getWalletTypeQueryRequest.isLoading
+            getWalletTypeQueryRequest.isLoading ||
+            getBtcPriceResponse.isLoading
           }
           isError={
             getUtxosQueryRequest.isError || getWalletTypeQueryRequest.isError
           }
           currentBatchedTxData={currentBatchedTxData}
           setCurrentBatchedTxData={setCurrentBatchedTxData}
+          btcPrice={btcPrice}
         />
       </div>
     </div>

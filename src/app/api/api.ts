@@ -14,6 +14,7 @@ import {
   HardwareWalletXpubResponseType,
   HardwareWalletSetPassphraseResponseType,
   HardwareWalletCloseAndRemoveResponseType,
+  GetBTCPriceResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -209,6 +210,15 @@ export class ApiClient {
 
     const data =
       (await response.json()) as HardwareWalletCloseAndRemoveResponseType;
+    return data;
+  }
+  static async getCurrentBtcPrice() {
+    const response = await fetchHandler(
+      'https://mempool.space/api/v1/prices',
+      'GET',
+    );
+
+    const data = (await response.json()) as GetBTCPriceResponseType;
     return data;
   }
 }
