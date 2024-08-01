@@ -8,7 +8,7 @@ import {
   MRT_RowSelectionState,
   useMaterialReactTable,
 } from 'material-react-table';
-
+import { notifications } from '@mantine/notifications';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
@@ -370,11 +370,20 @@ export const UtxosDisplay = ({
     return getSelectedUtxos(selectedTxs);
   }, [selectedTxs, getSelectedUtxos]);
 
+  const onCreateBatchTxError = () => {
+    notifications.show({
+      title: 'Error creating batch tx fee estimate.',
+      message: 'Please try again',
+      color: 'red',
+    });
+  };
+
   const {
     data: batchedTxData,
     mutateAsync,
     isLoading: batchIsLoading,
-  } = useCreateTxFeeEstimate(selectedUtxos, feeRate);
+    isError: isBatchTxRequestError,
+  } = useCreateTxFeeEstimate(selectedUtxos, feeRate, onCreateBatchTxError);
 
   useEffect(() => {
     setCurrentBatchedTxData(batchedTxData);
@@ -394,7 +403,12 @@ export const UtxosDisplay = ({
 
   const DisplayBatchTxData = () => {
     const borderClasses = 'rounded border-2 w-full ml-8 p-1.5';
-    if (!currentBatchedTxData || !selectedUtxos?.length || batchIsLoading) {
+    if (
+      !currentBatchedTxData ||
+      !selectedUtxos?.length ||
+      batchIsLoading ||
+      isBatchTxRequestError
+    ) {
       return (
         <div className={borderClasses}>
           <p>Total fees: ...</p>
@@ -409,11 +423,19 @@ export const UtxosDisplay = ({
 
     const inputSigFees = batchedSigInputEstimateFeeTotal * selectedUtxos.length;
 
-    const fee = Number(batchedTxData?.fee) + inputSigFees;
-    const percentOfTxFee = (Number(fee / utxoInputTotal) * 100).toFixed(4);
+    const fee = !isBatchTxRequestError
+      ? Number(batchedTxData?.fee) + inputSigFees
+      : undefined;
+    const percentOfTxFee = fee
+      ? (Number(fee / utxoInputTotal) * 100).toFixed(4)
+      : undefined;
 
-    const feeInBtc = btcSatHandler(Number(fee).toLocaleString(), BtcMetric.BTC);
-    const feeUsdAmount = Big(btcPrice).times(feeInBtc).toFixed(0, Big.ROUND_UP);
+    const feeInBtc = fee
+      ? btcSatHandler(Number(fee).toLocaleString(), BtcMetric.BTC)
+      : undefined;
+    const feeUsdAmount = feeInBtc
+      ? Big(btcPrice).times(feeInBtc).toFixed(0, Big.ROUND_UP)
+      : undefined;
 
     const isSpendable = batchedTxData?.spendable;
     const bgColor = getFeeRateColor(Number(percentOfTxFee));
