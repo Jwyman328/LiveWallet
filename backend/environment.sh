@@ -1,3 +1,11 @@
+# Check if the virtual environment directory exists
+if [ ! -d "venv" ]; then
+  echo "Creating virtual environment..."
+  virtualenv venv
+else
+  echo "Virtual environment already exists."
+fi
+
 source venv/bin/activate
 pip install -r requirements.txt
 
