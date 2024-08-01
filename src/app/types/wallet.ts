@@ -5,6 +5,7 @@ import { ScriptTypes } from './scriptTypes';
 
 export type Wallet = {
   defaultDescriptor: string;
+  defaultChangeDescriptor?: string;
   defaultMasterFingerprint: string;
   defaultDerivationPath: string;
   defaultXpub: string;
@@ -20,6 +21,7 @@ export type Wallet = {
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
   feeRate?: string | number;
+  type?: 'LIVE_WALLET' | 'UNCHAINED'; //TODO do I need this?
 };
 
 export type WalletConfigs = {
@@ -28,4 +30,35 @@ export type WalletConfigs = {
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
   feeRate?: string | number;
+};
+
+interface Quorum {
+  requiredSigners: number;
+  totalSigners: number;
+}
+
+interface UnchainedExtendedPublicKey {
+  name: string;
+  xpub: string;
+  bip32Path: string;
+  xfp: string;
+}
+
+interface UnchainedClient {
+  type: string;
+  url: string;
+  username: string;
+  walletName: string;
+}
+
+export type UnchainedWalletConfig = {
+  name: string;
+  uuid: string;
+  addressType: string;
+  network: string;
+  quorum: Quorum;
+  startingAddressIndex: number;
+  extendedPublicKeys: UnchainedExtendedPublicKey[];
+  client: UnchainedClient;
+  ledgerPolicyHmacs: any[];
 };

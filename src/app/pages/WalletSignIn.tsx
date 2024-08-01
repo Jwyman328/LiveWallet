@@ -44,7 +44,7 @@ import {
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
-import { Wallet } from '../types/wallet';
+import { UnchainedWalletConfig, Wallet } from '../types/wallet';
 
 type PublicElectrumUrl = {
   name: string;
@@ -66,6 +66,9 @@ export const WalletSignIn = () => {
   const [activeTab, setActiveTab] = useState<string | null>(
     isUsingPublicServer ? 'public' : 'private',
   );
+  // TODO remove this
+  const [isUnmodifiableImport, setIsUnmodifibleImport] = useState(false);
+  const [isShowDescriptorInput, setIsShowDescriptorInput] = useState(false);
 
   const [activeConfigTab, setActiveConfigTab] = useState<string>('base');
 
@@ -134,7 +137,8 @@ export const WalletSignIn = () => {
     // send wallet details to main process so that
     // the main process has the wallet details if they want to save them.
     saveWallet({
-      defaultDescriptor: generateDescriptor(),
+      defaultDescriptor: descriptor || generateDescriptor(),
+      defaultChangeDescriptor: changeDescriptor,
       defaultMasterFingerprint: masterFingerPrint,
       defaultDerivationPath: derivationPath,
       defaultXpub: xpub,
@@ -211,6 +215,15 @@ export const WalletSignIn = () => {
     setXpub(e.target.value);
   };
 
+  const [descriptor, setDescriptor] = useState<string>(
+    configs.defaultDescriptor,
+  );
+  const handleDescriptorChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    setDescriptor(e.target.value);
+  };
+
   const [masterFingerPrint, setMasterFingerPrint] = useState<string>(
     configs.defaultMasterFingerprint || '00000000',
   );
@@ -223,6 +236,10 @@ export const WalletSignIn = () => {
   const onSetGapLimit = (limit: string | number) => {
     setGapLimit(limit);
   };
+
+  const [changeDescriptor, setChangeDescriptor] = useState<undefined | string>(
+    undefined,
+  );
 
   const generateDescriptor = () => {
     // take the inputs from the various fields and create a descriptor
@@ -248,23 +265,19 @@ export const WalletSignIn = () => {
 
   const signIn = async () => {
     try {
-      //const fullDescriptor = generateDescriptor();
+      const fullDescriptor = descriptor || generateDescriptor();
+      const fullChangeDescriptor = changeDescriptor || undefined;
 
-      const multisig_descriptor_0 =
-        'sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/0/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/0/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/0/*))';
-
-      const multisig_descriptor_1 =
-        'sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/1/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/1/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/1/*))';
       await initiateWalletRequest.mutateAsync({
-        descriptor: multisig_descriptor_0,
-        changeDescriptor: multisig_descriptor_1,
+        descriptor: fullDescriptor,
+        changeDescriptor: fullChangeDescriptor,
       });
     } catch (e) {
       console.log('Error', e);
     }
   };
 
-  const isLoginEnabled =
+  const liveWalletLogin =
     !!xpub &&
     !!generateDescriptor() &&
     !!scriptType?.value &&
@@ -273,14 +286,133 @@ export const WalletSignIn = () => {
     !!network.value &&
     !!electrumUrl;
 
+  const unchainedWalletLogin =
+    !!xpub &&
+    !!descriptor &&
+    !!changeDescriptor &&
+    !!masterFingerPrint &&
+    !!electrumUrl;
+
+  const isLoginEnabled = unchainedWalletLogin || liveWalletLogin;
+
   const navigateToGenerateWallet = () => {
     navigate('/generate-wallet');
   };
 
-  const handleImportedWallet = (walletData: Wallet) => {
+  const handleImportedUnchainedWallet = (walletData: UnchainedWalletConfig) => {
+    const generateDescriptors = () => {
+      console.log('walletData', walletData);
+
+      const { quorum, extendedPublicKeys } = walletData;
+      const sortedMultiParts = extendedPublicKeys
+        .map((key) => {
+          return `[${key.xfp}${key.bip32Path}]${key.xpub}/0/*`.replace(
+            /m\//,
+            '/',
+          );
+        })
+        .reverse()
+        .join(',');
+
+      const sortedMultiPartsChange = extendedPublicKeys
+        .map((key) => {
+          return `[${key.xfp}${key.bip32Path}]${key.xpub}/1/*`.replace(
+            /m\//,
+            '/',
+          );
+        })
+        .reverse()
+        .join(',');
+
+      return {
+        unchainedDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiParts}))`,
+        unchainedChangeDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiPartsChange}))`,
+      };
+      // return {
+      //   unchainedDescriptor: multisig_descriptor_0,
+      //   unchainedChangeDescriptor: multisig_descriptor_1,
+      // };
+    };
+    setMasterFingerPrint('00000000');
+    // setDerivationPath(importedDefaultDerivationPath as string);
+    //setXpub(importedDefaultXpub as string);
+    //setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
+    //setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
+
+    // skip for now but TODO
+    // const importedNetwork = networkOptions.find(
+    //   (option) => option.value === importedDefaultNetwork,
+    // );
+
+    // if (importedNetwork) {
+    //   setNetwork(importedNetwork);
+    // }
+
+    // TODO
+    // const importedScriptType = scriptTypeOptions.find(
+    //   (option) => option.value === importedDefaultScriptType,
+    // );
+    // if (importedScriptType) {
+    //   setScriptType(importedScriptType);
+    // }
+    // const importedPublicServer = publicElectrumOptions.find(
+    //   (option) => option.value === importedPublicElectrumUrl,
+    // );
+
+    // if (importedPublicServer) {
+    //   setSelectedPublicServer(importedPublicServer);
+    // }
+
+    // const activeUrlTab = importedIsUsingPublicServer ? 'public' : 'private';
+    // setActiveTab(activeUrlTab);
+
+    // if imported in some type of unique wallet like unchained then
+    // don't allow the user to modify the fields
+    // if (importedType === 'UNCHAINED' || true) {
+
+    const descriptors = generateDescriptors();
+    console.log('setting is unmodifiable import to true');
+    setIsUnmodifibleImport(true);
+    // TODO actually derive the change descriptor from the descriptor?
+    setIsShowDescriptorInput(true);
+    setDescriptor(descriptors.unchainedDescriptor);
+    setChangeDescriptor(descriptors.unchainedChangeDescriptor);
+    // }
+  };
+
+  const handleImportedWallet = (walletData: Wallet | UnchainedWalletConfig) => {
+    const isUnchainedWallet = () => {
+      return (
+        (walletData as UnchainedWalletConfig).name !== undefined &&
+        (walletData as UnchainedWalletConfig).uuid !== undefined &&
+        (walletData as UnchainedWalletConfig).addressType !== undefined &&
+        (walletData as UnchainedWalletConfig).network !== undefined &&
+        (walletData as UnchainedWalletConfig).quorum !== undefined &&
+        (walletData as UnchainedWalletConfig).startingAddressIndex !==
+          undefined &&
+        (walletData as UnchainedWalletConfig).extendedPublicKeys !==
+          undefined &&
+        (walletData as UnchainedWalletConfig).client !== undefined &&
+        (walletData as UnchainedWalletConfig).ledgerPolicyHmacs !== undefined
+      );
+    };
+
+    if (isUnchainedWallet()) {
+      // Handle UnchainedWalletConfig
+      console.log('UnchainedWalletConfig:', walletData);
+      handleImportedUnchainedWallet(walletData as UnchainedWalletConfig);
+    } else {
+      // Handle Wallet
+      console.log('Wallet:', walletData);
+      handleImportedLiveWallet(walletData as Wallet);
+    }
+  };
+
+  const handleImportedLiveWallet = (walletData: Wallet) => {
     console.log('Received imported wallet data in signin page', walletData);
     const {
       defaultDescriptor: importedDefaultDescriptor,
+      defaultChangeDescriptor: importedChangeDescriptor,
       defaultMasterFingerprint: importedDefaultMasterFingerprint,
       defaultDerivationPath: importedDefaultDerivationPath,
       defaultXpub: importedDefaultXpub,
@@ -295,9 +427,11 @@ export const WalletSignIn = () => {
       feeScale: importedFeeScale,
       minFeeScale: importedMinFeeScale,
       feeRate: importedFeeRate,
+      type: importedType,
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
+    setChangeDescriptor(importedChangeDescriptor);
     setMasterFingerPrint(importedDefaultMasterFingerprint as string);
     setDerivationPath(importedDefaultDerivationPath as string);
     setXpub(importedDefaultXpub as string);
@@ -327,6 +461,25 @@ export const WalletSignIn = () => {
 
     const activeUrlTab = importedIsUsingPublicServer ? 'public' : 'private';
     setActiveTab(activeUrlTab);
+
+    if (importedDefaultDescriptor) {
+      setIsShowDescriptorInput(true);
+      setDescriptor(importedDefaultDescriptor);
+    }
+
+    setChangeDescriptor(changeDescriptor);
+
+    // if imported in some type of unique wallet like unchained then
+    // don't allow the user to modify the fields
+    // do i need this anymore?
+    if (importedType === 'UNCHAINED') {
+      console.log('setting is unmodifiable import to true');
+      setIsUnmodifibleImport(true);
+      // TODO actually derive the change descriptor from the descriptor?
+      setIsShowDescriptorInput(true);
+      setDescriptor(importedDefaultDescriptor);
+      setChangeDescriptor(changeDescriptor);
+    }
 
     const walletConfigs = {
       btcMetric: importedBtcMetric,
@@ -405,66 +558,90 @@ export const WalletSignIn = () => {
 
             <Tabs.Panel value="base">
               <>
-                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                  Network
-                </InputLabel>
-                <Select
-                  allowDeselect={false}
-                  className={formItemWidth}
-                  data={networkOptions}
-                  value={network.value}
-                  onChange={(_value, option) => {
-                    if (option) {
-                      setNetwork(option as NetworkTypeOption);
-                    }
-                  }}
-                />
+                {isShowDescriptorInput ? (
+                  <div>
+                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                      Descriptor
+                    </InputLabel>
+                    <Textarea
+                      className={`${formItemWidth}`}
+                      styles={{ input: { minHeight: '20.3rem' } }}
+                      placeholder="TODO add a mock desctiptor"
+                      disabled={isUnmodifiableImport}
+                      onInput={handleDescriptorChange}
+                      value={descriptor}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                      Network
+                    </InputLabel>
+                    <Select
+                      disabled={isUnmodifiableImport}
+                      allowDeselect={false}
+                      className={formItemWidth}
+                      data={networkOptions}
+                      value={network.value}
+                      onChange={(_value, option) => {
+                        if (option) {
+                          setNetwork(option as NetworkTypeOption);
+                        }
+                      }}
+                    />
 
-                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                  Script type
-                </InputLabel>
-                <Select
-                  data-testid="script-type-select"
-                  allowDeselect={false}
-                  className={`mb-4 ${formItemWidth}`}
-                  data={scriptTypeOptions}
-                  value={scriptType ? scriptType.value : null}
-                  onChange={(_value, option) => {
-                    if (option) {
-                      setScriptType(option as ScriptTypeOption);
-                    }
-                  }}
-                />
+                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                      Script type
+                    </InputLabel>
+                    <Select
+                      data-testid="script-type-select"
+                      disabled={isUnmodifiableImport}
+                      allowDeselect={false}
+                      className={`mb-4 ${formItemWidth}`}
+                      data={scriptTypeOptions}
+                      value={scriptType ? scriptType.value : null}
+                      onChange={(_value, option) => {
+                        if (option) {
+                          setScriptType(option as ScriptTypeOption);
+                        }
+                      }}
+                    />
 
-                <div
-                  className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}
-                >
-                  <InputLabel className="mr-1">Derivation path</InputLabel>
-                  <Tooltip
-                    withArrow
-                    label="The derivation path to the xpub from the master private key."
-                  >
-                    <IconInfoCircle style={{ width: '14px', height: '14px' }} />
-                  </Tooltip>
-                </div>
-                <Input
-                  data-testid="derivation-path"
-                  className={`${formItemWidth}`}
-                  placeholder={derivationPathPlaceHolder}
-                  value={derivationPath}
-                  onInput={handleDerivationPathChange}
-                />
+                    <div
+                      className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}
+                    >
+                      <InputLabel className="mr-1">Derivation path</InputLabel>
+                      <Tooltip
+                        withArrow
+                        label="The derivation path to the xpub from the master private key."
+                      >
+                        <IconInfoCircle
+                          style={{ width: '14px', height: '14px' }}
+                        />
+                      </Tooltip>
+                    </div>
+                    <Input
+                      data-testid="derivation-path"
+                      className={`${formItemWidth}`}
+                      disabled={isUnmodifiableImport}
+                      placeholder={derivationPathPlaceHolder}
+                      value={derivationPath}
+                      onInput={handleDerivationPathChange}
+                    />
 
-                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                  xpub
-                </InputLabel>
-                <Textarea
-                  className={`${formItemWidth}`}
-                  styles={{ input: { minHeight: '6.3rem' } }}
-                  placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
-                  onInput={handleXpubChange}
-                  value={xpub}
-                />
+                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                      xpub
+                    </InputLabel>
+                    <Textarea
+                      className={`${formItemWidth}`}
+                      styles={{ input: { minHeight: '6.3rem' } }}
+                      placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
+                      disabled={isUnmodifiableImport}
+                      onInput={handleXpubChange}
+                      value={xpub}
+                    />
+                  </>
+                )}
 
                 <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
                   Server type
@@ -573,6 +750,7 @@ export const WalletSignIn = () => {
                   </Tooltip>
                 </div>
                 <Input
+                  disabled={isUnmodifiableImport}
                   className={`${formItemWidth}`}
                   placeholder="00000000"
                   value={masterFingerPrint}

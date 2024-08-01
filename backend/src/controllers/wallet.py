@@ -25,7 +25,7 @@ LOGGER = structlog.get_logger()
 
 class CreateWalletRequestDto(BaseModel):
     descriptor: str
-    change_descriptor: Optional[str]
+    change_descriptor: Optional[str] = None
     network: Annotated[bdk.Network, str]
     electrumUrl: str
     gapLimit: Optional[int] = None
