@@ -67,8 +67,15 @@ class WalletService:
         """
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
+
+        multisig_descriptor_0 = "sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/0/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/0/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/0/*))"
+
+        multisig_descriptor_1 = "sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/1/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/1/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/1/*))"
+
+
         new_wallet = Wallet(
-            descriptor=descriptor,
+            descriptor=multisig_descriptor_0,
+            change_descriptor=multisig_descriptor_1,
             network=network.value,
             electrum_url=electrum_url,
             stop_gap=stop_gap,
@@ -116,6 +123,7 @@ class WalletService:
             raise Exception("No wallet details in the database")
 
         descriptor = wallet_details.descriptor
+        change_descriptor = wallet_details.change_descriptor
         network = wallet_details.network
         electrum_url = wallet_details.electrum_url
         stop_gap = wallet_details.stop_gap
@@ -123,6 +131,10 @@ class WalletService:
         wallet_descriptor = bdk.Descriptor(
             descriptor, bdk.Network._value2member_map_[network]
         )
+
+        wallet_change_descriptor = bdk.Descriptor(
+            change_descriptor, bdk.Network._value2member_map_[network]
+        ) if change_descriptor else None
 
         db_config = bdk.DatabaseConfig.MEMORY()
 
@@ -134,7 +146,7 @@ class WalletService:
 
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
-            change_descriptor=None,
+            change_descriptor=wallet_change_descriptor,
             network=bdk.Network._value2member_map_[network],
             database_config=db_config,
         )
