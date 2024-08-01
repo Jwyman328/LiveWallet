@@ -58,6 +58,7 @@ class WalletService:
     def create_wallet(
         cls,
         descriptor: str,
+        change_descriptor: Optional[str],
         network: bdk.Network,
         electrum_url: str,
         stop_gap: Optional[int] = 100,
@@ -68,14 +69,11 @@ class WalletService:
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
 
-        multisig_descriptor_0 = "sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/0/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/0/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/0/*))"
-
-        multisig_descriptor_1 = "sh(sortedmulti(2,[96cf6667/45h/1h/12h/2]tpubDEX9s9A6av9oHR89T9VArgrt4zg3zBGndMm6Q2LEaBiEF153K2yF2yewHWmfNicEUdBXzmaP7VBZvT5D3GG1m5cYy36qfsA9RQS1uYw3MGi/1/*,[611d202e/45h/1h/11h/2]tpubDEcXYgwH59Qbqs3qwFNkWLoWJ8zhJdY5bna4n5iUwWPouMuUXndbiFcf5X29Eq3SDBKc66mgACxDYMpjLPhucGLB33qdgCndKBGDmnZV9mU/1/*,[e0bbee43/0/0/0/0]tpubDEeGXbhQg9q8ZvPYs7GYiBXACgy4YYaew2CWSrs1u5auQwzuDhebd4m4ikBZ3KQKNvAtMhe5G6Nxek5QZw4gMqpywCuPvBHMrHPHBGgbDu7/1/*))"
 
 
         new_wallet = Wallet(
-            descriptor=multisig_descriptor_0,
-            change_descriptor=multisig_descriptor_1,
+            descriptor=descriptor,
+            change_descriptor=change_descriptor,
             network=network.value,
             electrum_url=electrum_url,
             stop_gap=stop_gap,
