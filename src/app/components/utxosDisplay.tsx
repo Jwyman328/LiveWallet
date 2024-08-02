@@ -44,6 +44,8 @@ type UtxosDisplayProps = {
     React.SetStateAction<CreateTxFeeEstimationResponseType | undefined | null>
   >;
   btcPrice: number;
+  signaturesNeeded: number;
+  numberOfXpubs: number;
 };
 
 export const UtxosDisplay = ({
@@ -57,13 +59,18 @@ export const UtxosDisplay = ({
   currentBatchedTxData,
   setCurrentBatchedTxData,
   btcPrice,
+  signaturesNeeded,
+  numberOfXpubs,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
   // for a batch tx that doesn't include the script sig.
+  const additionalMultiSigVBtyePerScriptSig = 73;
+  const additionalMultiSigVBtyePerPubKey = 45;
+  const multisigOverHead = 145;
   const estimateVBtyePerScriptSig: Record<WalletTypes, number> = {
     P2PKH: 107,
-    P2SH: 200, //not really sure on this one. there is a large range, if it is a multisig script hash it could be like 250. I'll use 200 for now.
+    P2SH: 250, //not really sure on this one. there is a large range, if it is a multisig script hash it could be like 250. I'll use 250 for now.
     P2WPKH: 27,
     // P2WSH2O3: 63,
     // P2TR: 16,
@@ -74,7 +81,23 @@ export const UtxosDisplay = ({
 
   const avgInputCost = estimateVBtyePerInput * feeRate;
   const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
-  const totalCost = avgBaseCost + avgInputCost;
+  const multiSigAdditionalSigCost =
+    numberOfXpubs > 1
+      ? additionalMultiSigVBtyePerScriptSig * signaturesNeeded * feeRate
+      : 0;
+  const multiSigAdditionalPubkeysCost =
+    numberOfXpubs > 1
+      ? additionalMultiSigVBtyePerPubKey * numberOfXpubs * feeRate
+      : 0;
+  const multisigOverHeadCost =
+    numberOfXpubs > 1 ? multisigOverHead * feeRate : 0;
+
+  const totalCost =
+    avgBaseCost +
+    avgInputCost +
+    multiSigAdditionalSigCost +
+    multiSigAdditionalPubkeysCost +
+    multisigOverHeadCost;
 
   const calculateFeePercent = (amount: number) => {
     const percentOfAmount = (totalCost / amount) * 100;

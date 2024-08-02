@@ -214,7 +214,7 @@ export const WalletSignIn = () => {
       privateElectrumUrl: privateElectrumUrl,
       publicElectrumUrl: selectedPublicServer.value,
     });
-    navigate('/home');
+    navigate('/home', { state: { numberOfXpubs, signaturesNeeded } });
   };
 
   const handleWalletError = () => {
