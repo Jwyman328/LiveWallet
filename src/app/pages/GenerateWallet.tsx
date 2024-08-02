@@ -13,6 +13,7 @@ import {
   ScriptTypes,
   WalletTypes,
   descriptorTypeToScriptType,
+  scriptTypeToDescriptorMap,
 } from '../types/scriptTypes';
 
 import { useState } from 'react';
@@ -22,7 +23,7 @@ import {
   NetworkTypeOption,
   ScriptTypeOption,
   networkOptions,
-  scriptTypeOptions,
+  singleSigScriptTypeOptions,
 } from '../components/formOptions';
 import { XIcon } from '../components/XIcon';
 import { CreateMockWalletResponseType } from '../api/types';
@@ -43,7 +44,7 @@ export const GenerateWallet = () => {
   const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
 
   const [scriptType, setScriptType] = useState<ScriptTypeOption>(
-    scriptTypeOptions[0],
+    singleSigScriptTypeOptions[0],
   );
 
   const [utxoCount, setUtxoCount] = useState<string | number>('1');
@@ -73,8 +74,7 @@ export const GenerateWallet = () => {
 
   const parseDescriptor = (descriptor: string) => {
     try {
-      let scriptType = descriptor.match(/^([^\(]*)/)[0];
-      scriptType = scriptType === 'sh' ? 'sh(wpkh' : scriptType;
+      let scriptTypeDescriptorMap = scriptTypeToDescriptorMap[scriptType.value];
 
       const fingerPrint = descriptor.match(/(?<=\[)([^\/]+)(?=\/)/)[0];
 
@@ -90,7 +90,13 @@ export const GenerateWallet = () => {
 
       const pubValueRegEx = new RegExp(`(?<=${pubType})[^\/]+`);
       const pubValue = descriptor.match(pubValueRegEx)[0];
-      return { scriptType, fingerPrint, derivationPath, pubType, pubValue };
+      return {
+        scriptType: scriptTypeDescriptorMap,
+        fingerPrint,
+        derivationPath,
+        pubType,
+        pubValue,
+      };
     } catch (e) {
       throw new Error('Invalid descriptor');
     }
@@ -166,7 +172,7 @@ export const GenerateWallet = () => {
       <Select
         allowDeselect={false}
         className={`mb-4 ${formItemWidth}`}
-        data={scriptTypeOptions}
+        data={singleSigScriptTypeOptions}
         value={scriptType ? scriptType.value : null}
         onChange={(_value, option) => setScriptType(option as ScriptTypeOption)}
       />

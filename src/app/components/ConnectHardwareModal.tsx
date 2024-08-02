@@ -17,7 +17,11 @@ import {
   HardwareWalletXpubResponseType,
 } from '../api/types';
 import { useMemo, useState } from 'react';
-import { NetworkTypeOption, networkOptions } from './formOptions';
+import {
+  NetworkTypeOption,
+  networkOptions,
+  policyTypeOptions,
+} from './formOptions';
 import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
@@ -117,14 +121,22 @@ export const ConnectHardwareModal = ({
     const derivationPath =
       selectedDerivationPaths[selectedHWId as string] || "m/84'/0'/0'";
     const wallet: Wallet = {
+      // single sig
+      policyType: policyTypeOptions[0],
       defaultNetwork: network.value,
-      defaultDerivationPath: derivationPath,
+      numberOfXpubs: 1,
+      signaturesNeeded: 1,
+      keyDetails: [
+        {
+          xpub: data.xpub,
+          derivationPath: derivationPath,
+          masterFingerprint: '00000000', // since this is a watch only wallet we don't need to send the master fingerprint
+        },
+      ],
       defaultScriptType: getScriptTypeFromDerivationPath(
         derivationPath,
       ) as ScriptTypes,
-      defaultXpub: data.xpub,
       defaultDescriptor: '', // since we are sending all the individual components of the descriptor, we don't need to send the full descriptor
-      defaultMasterFingerprint: '00000000', // since this is a watch only wallet we don't need to send the master fingerprint
       defaultElectrumServerUrl: '',
       backendServerBaseUrl: '',
       isUsingPublicServer: false,

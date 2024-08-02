@@ -8,13 +8,18 @@ import {
   Notification,
   NumberInput,
   Tooltip,
+  RangeSlider,
 } from '@mantine/core';
 
 import {
   NetworkTypeOption,
+  PolicyTypeOption,
   ScriptTypeOption,
+  multiSigScriptTypeOptions,
   networkOptions,
+  policyTypeOptions,
   scriptTypeOptions,
+  singleSigScriptTypeOptions,
 } from '../components/formOptions';
 
 let vaultImage: any;
@@ -31,8 +36,6 @@ import {
   InputLabel,
   Button,
   Tabs,
-  Radio,
-  Stack,
   Textarea,
 } from '@mantine/core';
 import { configs } from '../configs';
@@ -44,7 +47,12 @@ import {
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
-import { UnchainedWalletConfig, Wallet } from '../types/wallet';
+import {
+  MultiSigWalletData,
+  UnchainedWalletConfig,
+  Wallet,
+} from '../types/wallet';
+import { PolicyTypes } from '../types/policyTypes';
 
 type PublicElectrumUrl = {
   name: string;
@@ -63,12 +71,66 @@ export const WalletSignIn = () => {
 
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(false);
+  const [activePKTab, setActivePKTab] = useState<string>('0');
   const [activeTab, setActiveTab] = useState<string | null>(
     isUsingPublicServer ? 'public' : 'private',
   );
-  // TODO remove this
-  const [isUnmodifiableImport, setIsUnmodifibleImport] = useState(false);
   const [isShowDescriptorInput, setIsShowDescriptorInput] = useState(false);
+
+  const [policyType, setPolicyType] = useState<PolicyTypeOption>(
+    policyTypeOptions[0],
+  );
+
+  const [signaturesNeeded, setSignaturesNeeded] = useState(
+    policyType.value === PolicyTypes.SINGLE_SIGNATURE ? 1 : 2,
+  );
+  const [numberOfXpubs, setNumberOfXpubs] = useState(
+    policyType.value === PolicyTypes.SINGLE_SIGNATURE ? 1 : 3,
+  );
+
+  // TODO rename to just keyData?
+  const defaultMultiSigWalletData = {
+    masterFingerprint: configs.defaultMasterFingerprint,
+    xpub: configs.defaultXpub,
+    derivationPath: configs.defaultDerivationPath,
+  };
+
+  const [multisigWalletDetails, setMultisigWalletDetails] = useState<
+    MultiSigWalletData[]
+  >([{ ...defaultMultiSigWalletData }]);
+
+  const handleNofMChange = (value: any) => {
+    const currentAmount = numberOfXpubs;
+    const newAmount = value[1];
+    const howManyNewTabsToAdd = newAmount - currentAmount;
+
+    const M = value[0];
+    const N = value[1];
+
+    if (newAmount > currentAmount) {
+      // add new tabs
+      const repeatedMultiSigWalletDataArray = Array.from(
+        { length: howManyNewTabsToAdd },
+        () => {
+          return { ...defaultMultiSigWalletData };
+        },
+      );
+      setMultisigWalletDetails([
+        ...multisigWalletDetails,
+        ...repeatedMultiSigWalletDataArray,
+      ]);
+    } else {
+      const newSetOfDetails = multisigWalletDetails.slice(0, newAmount);
+      setMultisigWalletDetails([...newSetOfDetails]);
+
+      if (Number(activePKTab) + 1 > newAmount) {
+        setActivePKTab((newAmount - 1).toString());
+      }
+    }
+
+    setSignaturesNeeded(M);
+    setNumberOfXpubs(N);
+  };
 
   const [activeConfigTab, setActiveConfigTab] = useState<string>('base');
 
@@ -136,16 +198,18 @@ export const WalletSignIn = () => {
   const handleWalletInitiated = () => {
     // send wallet details to main process so that
     // the main process has the wallet details if they want to save them.
+    const defaultDescriptor = descriptor || generateDescriptor().descriptor;
     saveWallet({
-      defaultDescriptor: descriptor || generateDescriptor(),
+      defaultDescriptor: defaultDescriptor,
       defaultChangeDescriptor: changeDescriptor,
-      defaultMasterFingerprint: masterFingerPrint,
-      defaultDerivationPath: derivationPath,
-      defaultXpub: xpub,
+      keyDetails: multisigWalletDetails,
+      signaturesNeeded: signaturesNeeded,
+      numberOfXpubs: numberOfXpubs,
+      policyType: policyType,
+      defaultScriptType: scriptType.value,
       defaultElectrumServerUrl: electrumUrl,
       backendServerBaseUrl: 'http://localhost:5011',
       defaultNetwork: network.value,
-      defaultScriptType: scriptType.value,
       isUsingPublicServer: isUsingPublicServer,
       privateElectrumUrl: privateElectrumUrl,
       publicElectrumUrl: selectedPublicServer.value,
@@ -197,23 +261,9 @@ export const WalletSignIn = () => {
   const formItemWidth = 'w-80';
   const labelWidth = 'w-80';
 
-  const [derivationPath, setDerivationPath] = useState<string>(
-    configs.defaultDerivationPath,
-  );
-  const handleDerivationPathChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setDerivationPath(e.target.value);
-  };
-
   const derivationPathPlaceHolder = getDerivationPathFromScriptType(
     scriptType.value,
   );
-
-  const [xpub, setXpub] = useState<string>(configs.defaultXpub);
-  const handleXpubChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setXpub(e.target.value);
-  };
 
   const [descriptor, setDescriptor] = useState<string>(
     configs.defaultDescriptor,
@@ -222,13 +272,6 @@ export const WalletSignIn = () => {
     e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
     setDescriptor(e.target.value);
-  };
-
-  const [masterFingerPrint, setMasterFingerPrint] = useState<string>(
-    configs.defaultMasterFingerprint || '00000000',
-  );
-  const handleMasterFingerPrint = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMasterFingerPrint(e.target.value);
   };
 
   const [gapLimit, setGapLimit] = useState<string | number>(100);
@@ -246,13 +289,54 @@ export const WalletSignIn = () => {
     let scriptTypeDescription = scriptTypeToDescriptorMap[scriptType.value];
 
     const isNestedSegWit =
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2WSH;
+      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WPKH ||
+      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WSH;
     const closingParam = isNestedSegWit ? '))' : ')';
 
-    let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
+    if (policyType.value === PolicyTypes.SINGLE_SIGNATURE) {
+      const xpub = multisigWalletDetails[0].xpub;
+      const derivationPath = multisigWalletDetails[0].derivationPath;
+      const masterFingerPrint = multisigWalletDetails[0].masterFingerprint;
 
-    const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationWithoutPrefix}]${xpub}/0/*${closingParam}`;
-    return computedDescriptor;
+      let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
+
+      const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationWithoutPrefix}]${xpub}/0/*${closingParam}`;
+
+      return {
+        descriptor: computedDescriptor,
+        changeDescriptor: undefined,
+      };
+    }
+
+    if (policyType.value === PolicyTypes.MULTI_SIGNATURE) {
+      const sortedMultiParts = multisigWalletDetails
+        .map((key) => {
+          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/0/*`.replace(
+            /m\//,
+            '/',
+          );
+        })
+        .reverse()
+        .join(',');
+
+      const sortedMultiPartsChange = multisigWalletDetails
+        .map((key) => {
+          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/1/*`.replace(
+            /m\//,
+            '/',
+          );
+        })
+        .reverse()
+        .join(',');
+
+      const multisigDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiParts})${closingParam}`;
+      const multisigChangeDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiPartsChange})${closingParam}`;
+
+      return {
+        descriptor: multisigDescriptor,
+        changeDescriptor: multisigChangeDescriptor,
+      };
+    }
   };
 
   const initiateWalletRequest = useCreateWallet(
@@ -265,33 +349,45 @@ export const WalletSignIn = () => {
 
   const signIn = async () => {
     try {
-      const fullDescriptor = descriptor || generateDescriptor();
-      const fullChangeDescriptor = changeDescriptor || undefined;
+      const descriptors = generateDescriptor();
 
       await initiateWalletRequest.mutateAsync({
-        descriptor: fullDescriptor,
-        changeDescriptor: fullChangeDescriptor,
+        descriptor: descriptors.descriptor,
+        changeDescriptor: descriptors.changeDescriptor,
       });
     } catch (e) {
       console.log('Error', e);
     }
   };
 
+  const areXpubsValid = multisigWalletDetails.every(
+    (wallet) => wallet.xpub.length > 0,
+  );
+
+  const areAllDerivationPathsValid = multisigWalletDetails.every(
+    (wallet) => wallet.derivationPath.length > 0,
+  );
+
+  const areAllMasterFingerprintsValid = multisigWalletDetails.every(
+    (wallet) => wallet.masterFingerprint.length > 0,
+  );
+
   const liveWalletLogin =
-    !!xpub &&
+    areXpubsValid &&
     !!generateDescriptor() &&
     !!scriptType?.value &&
-    !!masterFingerPrint &&
-    !!derivationPath &&
+    areAllMasterFingerprintsValid &&
+    areAllDerivationPathsValid &&
     !!network.value &&
     !!electrumUrl;
 
   const unchainedWalletLogin =
-    !!xpub &&
-    !!descriptor &&
+    areXpubsValid &&
+    areAllDerivationPathsValid &&
     !!changeDescriptor &&
-    !!masterFingerPrint &&
-    !!electrumUrl;
+    areAllMasterFingerprintsValid &&
+    !!electrumUrl &&
+    !!network.value;
 
   const isLoginEnabled = unchainedWalletLogin || liveWalletLogin;
 
@@ -328,55 +424,40 @@ export const WalletSignIn = () => {
         unchainedDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiParts}))`,
         unchainedChangeDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiPartsChange}))`,
       };
-      // return {
-      //   unchainedDescriptor: multisig_descriptor_0,
-      //   unchainedChangeDescriptor: multisig_descriptor_1,
-      // };
     };
-    setMasterFingerPrint('00000000');
-    // setDerivationPath(importedDefaultDerivationPath as string);
-    //setXpub(importedDefaultXpub as string);
-    //setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
-    //setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
 
-    // skip for now but TODO
-    // const importedNetwork = networkOptions.find(
-    //   (option) => option.value === importedDefaultNetwork,
-    // );
+    const importedNetwork = networkOptions.find(
+      (option) => option.value === walletData.network.toUpperCase(),
+    );
 
-    // if (importedNetwork) {
-    //   setNetwork(importedNetwork);
-    // }
+    if (importedNetwork) {
+      setNetwork(importedNetwork);
+    }
 
-    // TODO
-    // const importedScriptType = scriptTypeOptions.find(
-    //   (option) => option.value === importedDefaultScriptType,
-    // );
-    // if (importedScriptType) {
-    //   setScriptType(importedScriptType);
-    // }
-    // const importedPublicServer = publicElectrumOptions.find(
-    //   (option) => option.value === importedPublicElectrumUrl,
-    // );
-
-    // if (importedPublicServer) {
-    //   setSelectedPublicServer(importedPublicServer);
-    // }
-
-    // const activeUrlTab = importedIsUsingPublicServer ? 'public' : 'private';
-    // setActiveTab(activeUrlTab);
-
-    // if imported in some type of unique wallet like unchained then
-    // don't allow the user to modify the fields
-    // if (importedType === 'UNCHAINED' || true) {
+    const importedScriptType = scriptTypeOptions.find(
+      (option) => option.value === walletData.addressType,
+    );
+    if (importedScriptType) {
+      setScriptType(importedScriptType);
+    }
 
     const descriptors = generateDescriptors();
-    console.log('setting is unmodifiable import to true');
-    setIsUnmodifibleImport(true);
-    // TODO actually derive the change descriptor from the descriptor?
-    setIsShowDescriptorInput(true);
-    setDescriptor(descriptors.unchainedDescriptor);
     setChangeDescriptor(descriptors.unchainedChangeDescriptor);
+    // multisig option
+    setPolicyType(policyTypeOptions[1]);
+    setSignaturesNeeded(walletData.quorum.requiredSigners);
+    setNumberOfXpubs(walletData.extendedPublicKeys.length);
+
+    const unchainedMultisigWalletData = walletData.extendedPublicKeys.map(
+      (keyData) => {
+        return {
+          masterFingerprint: keyData.xfp,
+          xpub: keyData.xpub,
+          derivationPath: keyData.bip32Path,
+        };
+      },
+    );
+    setMultisigWalletDetails(unchainedMultisigWalletData);
     // }
   };
 
@@ -413,9 +494,10 @@ export const WalletSignIn = () => {
     const {
       defaultDescriptor: importedDefaultDescriptor,
       defaultChangeDescriptor: importedChangeDescriptor,
-      defaultMasterFingerprint: importedDefaultMasterFingerprint,
-      defaultDerivationPath: importedDefaultDerivationPath,
-      defaultXpub: importedDefaultXpub,
+      keyDetails: importedMultiSigWalletData,
+      policyType: importedPolicyType,
+      signaturesNeeded: importedSignaturesNeeded,
+      numberOfXpubs: importedNumberOfXpubs,
       defaultNetwork: importedDefaultNetwork,
       defaultScriptType: importedDefaultScriptType,
       publicElectrumUrl: importedPublicElectrumUrl,
@@ -427,14 +509,11 @@ export const WalletSignIn = () => {
       feeScale: importedFeeScale,
       minFeeScale: importedMinFeeScale,
       feeRate: importedFeeRate,
-      type: importedType,
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
+    setMultisigWalletDetails(importedMultiSigWalletData);
     setChangeDescriptor(importedChangeDescriptor);
-    setMasterFingerPrint(importedDefaultMasterFingerprint as string);
-    setDerivationPath(importedDefaultDerivationPath as string);
-    setXpub(importedDefaultXpub as string);
     setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
     setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
 
@@ -462,24 +541,11 @@ export const WalletSignIn = () => {
     const activeUrlTab = importedIsUsingPublicServer ? 'public' : 'private';
     setActiveTab(activeUrlTab);
 
-    if (importedDefaultDescriptor) {
-      setIsShowDescriptorInput(true);
-      setDescriptor(importedDefaultDescriptor);
-    }
-
     setChangeDescriptor(changeDescriptor);
 
-    // if imported in some type of unique wallet like unchained then
-    // don't allow the user to modify the fields
-    // do i need this anymore?
-    if (importedType === 'UNCHAINED') {
-      console.log('setting is unmodifiable import to true');
-      setIsUnmodifibleImport(true);
-      // TODO actually derive the change descriptor from the descriptor?
-      setIsShowDescriptorInput(true);
-      setDescriptor(importedDefaultDescriptor);
-      setChangeDescriptor(changeDescriptor);
-    }
+    setPolicyType(importedPolicyType);
+    setSignaturesNeeded(importedSignaturesNeeded);
+    setNumberOfXpubs(importedNumberOfXpubs);
 
     const walletConfigs = {
       btcMetric: importedBtcMetric,
@@ -505,6 +571,86 @@ export const WalletSignIn = () => {
 
     window.electron.ipcRenderer.sendMessage('current-route', '/signin');
   }, []);
+
+  const createKeyInformationTabs = () => {
+    return multisigWalletDetails.map((wallet, index) => {
+      return (
+        <Tabs.Panel key={index} value={index.toString()}>
+          <div className="mt-4">
+            <div className={`flex flex-row ${labelWidth} items-center`}>
+              <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
+              <Tooltip
+                withArrow
+                w={300}
+                multiline
+                label="The master fingerprint uniquely identifies this keystore using the first 4 bytes of the master public key hash. It is safe to use any valid value (00000000) for watch only wallets"
+              >
+                <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+              </Tooltip>
+            </div>
+
+            <Input
+              className={`${formItemWidth}`}
+              placeholder="00000000"
+              value={wallet.masterFingerprint || '00000000'}
+              onInput={(event) => {
+                const existingWalletDetails = multisigWalletDetails;
+                existingWalletDetails[index].masterFingerprint =
+                  //@ts-ignore
+                  event.target.value;
+                setMultisigWalletDetails([...existingWalletDetails]);
+              }}
+            />
+            <div className={`flex flex-row w-72 mb-2 mt-4 items-center`}>
+              <InputLabel className="mr-1">Derivation path</InputLabel>
+              <Tooltip
+                withArrow
+                label="The derivation path to the xpub from the master private key."
+              >
+                <IconInfoCircle style={{ width: '14px', height: '14px' }} />
+              </Tooltip>
+            </div>
+            <Input
+              data-testid="derivation-path"
+              className={`w-72`}
+              placeholder={derivationPathPlaceHolder}
+              value={wallet.derivationPath}
+              onInput={() => {
+                const existingWalletDetails = multisigWalletDetails;
+                existingWalletDetails[index].derivationPath =
+                  //@ts-ignore
+                  event.target.value;
+                setMultisigWalletDetails([...existingWalletDetails]);
+              }}
+            />
+
+            <InputLabel className={`mt-4 mb-2 w-72`}>xpub</InputLabel>
+            <Textarea
+              className={`w-72`}
+              styles={{ input: { minHeight: '6.3rem' } }}
+              placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
+              onInput={(event) => {
+                const existingWalletDetails = multisigWalletDetails;
+                //@ts-ignore
+                existingWalletDetails[index].xpub = event.target.value;
+                setMultisigWalletDetails([...existingWalletDetails]);
+              }}
+              value={wallet.xpub}
+            />
+          </div>
+        </Tabs.Panel>
+      );
+    });
+  };
+
+  const createWalletTabList = () => {
+    const innerTabs = multisigWalletDetails.map((wallet, index) => {
+      const xpubLabel =
+        multisigWalletDetails.length === 1 ? 'xpub' : `xpub ${index + 1}`;
+      return <Tabs.Tab value={index.toString()}>{xpubLabel}</Tabs.Tab>;
+    });
+    return innerTabs;
+  };
 
   return isServerAvailableAndHealthy ? (
     <div className="flex flex-row w-screen h-screen overflow-scroll">
@@ -535,11 +681,6 @@ export const WalletSignIn = () => {
             Error initiating wallet
           </Notification>
         )}
-        <h1
-          className={`text-4xl font-semibold mb-1 mt-8 ${labelWidth} text-blue-500`}
-        >
-          Watch Only Wallet
-        </h1>
 
         <div className="px-4 flex-1 w-1/2 flex flex-col items-center h-[90%]">
           <Tabs
@@ -567,7 +708,6 @@ export const WalletSignIn = () => {
                       className={`${formItemWidth}`}
                       styles={{ input: { minHeight: '20.3rem' } }}
                       placeholder="TODO add a mock desctiptor"
-                      disabled={isUnmodifiableImport}
                       onInput={handleDescriptorChange}
                       value={descriptor}
                     />
@@ -575,30 +715,60 @@ export const WalletSignIn = () => {
                 ) : (
                   <>
                     <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                      Network
+                      Policy type
                     </InputLabel>
                     <Select
-                      disabled={isUnmodifiableImport}
                       allowDeselect={false}
                       className={formItemWidth}
-                      data={networkOptions}
-                      value={network.value}
+                      data={policyTypeOptions}
+                      value={policyType.value}
                       onChange={(_value, option) => {
                         if (option) {
-                          setNetwork(option as NetworkTypeOption);
+                          // If going from multi to single signature
+                          if (
+                            option.value === PolicyTypes.SINGLE_SIGNATURE &&
+                            policyType.value === PolicyTypes.MULTI_SIGNATURE
+                          ) {
+                            setSignaturesNeeded(1);
+                            setNumberOfXpubs(1);
+                            setMultisigWalletDetails([
+                              { ...defaultMultiSigWalletData },
+                            ]);
+                            setActivePKTab('0');
+                            setScriptType(singleSigScriptTypeOptions[2]);
+                          }
+
+                          // If going from single to multi signature
+                          if (
+                            option.value === PolicyTypes.MULTI_SIGNATURE &&
+                            policyType.value === PolicyTypes.SINGLE_SIGNATURE
+                          ) {
+                            setSignaturesNeeded(2);
+                            setNumberOfXpubs(3);
+                            setMultisigWalletDetails([
+                              { ...defaultMultiSigWalletData },
+                              { ...defaultMultiSigWalletData },
+                              { ...defaultMultiSigWalletData },
+                            ]);
+
+                            setScriptType(multiSigScriptTypeOptions[2]);
+                          }
+
+                          setPolicyType(option as PolicyTypeOption);
                         }
                       }}
                     />
 
-                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                      Script type
-                    </InputLabel>
+                    <InputLabel className={`mt-4 w-70`}>Script type</InputLabel>
                     <Select
                       data-testid="script-type-select"
-                      disabled={isUnmodifiableImport}
                       allowDeselect={false}
-                      className={`mb-4 ${formItemWidth}`}
-                      data={scriptTypeOptions}
+                      className={`mb-0 w-72`}
+                      data={
+                        signaturesNeeded === 1 && numberOfXpubs === 1
+                          ? singleSigScriptTypeOptions
+                          : multiSigScriptTypeOptions
+                      }
                       value={scriptType ? scriptType.value : null}
                       onChange={(_value, option) => {
                         if (option) {
@@ -607,75 +777,83 @@ export const WalletSignIn = () => {
                       }}
                     />
 
-                    <div
-                      className={`flex flex-row ${labelWidth} mb-2 mt-6 items-center`}
-                    >
-                      <InputLabel className="mr-1">Derivation path</InputLabel>
-                      <Tooltip
-                        withArrow
-                        label="The derivation path to the xpub from the master private key."
-                      >
-                        <IconInfoCircle
-                          style={{ width: '14px', height: '14px' }}
-                        />
-                      </Tooltip>
-                    </div>
-                    <Input
-                      data-testid="derivation-path"
-                      className={`${formItemWidth}`}
-                      disabled={isUnmodifiableImport}
-                      placeholder={derivationPathPlaceHolder}
-                      value={derivationPath}
-                      onInput={handleDerivationPathChange}
-                    />
+                    {policyType.value === PolicyTypes.MULTI_SIGNATURE && (
+                      <>
+                        <div
+                          className={`flex flex-row items-center ${labelWidth} mb-2 mt-4`}
+                        >
+                          <InputLabel className={`mr-1`}>M of N</InputLabel>
 
-                    <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                      xpub
-                    </InputLabel>
-                    <Textarea
-                      className={`${formItemWidth}`}
-                      styles={{ input: { minHeight: '6.3rem' } }}
-                      placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
-                      disabled={isUnmodifiableImport}
-                      onInput={handleXpubChange}
-                      value={xpub}
-                    />
+                          <Tooltip
+                            withArrow
+                            w={300}
+                            multiline
+                            label="M is the number of signers and N is the number of xpubs. M must be less than or equal to N."
+                          >
+                            <IconInfoCircle
+                              style={{ width: '14px', height: '14px' }}
+                            />
+                          </Tooltip>
+                        </div>
+                        <RangeSlider
+                          className="mt-0 mb-4"
+                          style={{ marginBottom: '2rem' }}
+                          minRange={0.2}
+                          min={1}
+                          max={9}
+                          step={1}
+                          marks={[
+                            { value: 1, label: '1' },
+                            { value: 2, label: '2' },
+                            { value: 3, label: '3' },
+                            { value: 4, label: '4' },
+                            { value: 5, label: '5' },
+                            { value: 6, label: '6' },
+                            { value: 7, label: '7' },
+                            { value: 8, label: '8' },
+                            { value: 9, label: '9' },
+                          ]}
+                          defaultValue={[signaturesNeeded, numberOfXpubs]}
+                          onChange={handleNofMChange}
+                          label={null}
+                        />
+                      </>
+                    )}
+
+                    <Tabs
+                      className={`mt-6`}
+                      value={activePKTab}
+                      onChange={setActivePKTab}
+                    >
+                      <Tabs.List>{createWalletTabList()}</Tabs.List>
+                      {createKeyInformationTabs()}
+                      <Tabs.Panel value="two">
+                        <div>two</div>
+                      </Tabs.Panel>
+                    </Tabs>
                   </>
                 )}
 
                 <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
-                  Server type
-                </InputLabel>
-                <Stack className={labelWidth}>
-                  <Radio
-                    checked={isUsingPublicServer}
-                    onClick={(e) => {
-                      const isSelected = e.currentTarget.value === 'on';
-                      setIsUsingPublicServer(isSelected);
-                    }}
-                    label="Public electrum server"
-                  />
-                  <Radio
-                    checked={!isUsingPublicServer}
-                    onClick={(e) => {
-                      const isSelected = e.currentTarget.value === 'on';
-                      setIsUsingPublicServer(!isSelected);
-                    }}
-                    label="Private electrum server"
-                  />
-                </Stack>
-
-                <InputLabel className={`mt-4 mb-0 ${labelWidth}`}>
                   Electrum url
                 </InputLabel>
                 <Tabs
-                  className={formItemWidth}
+                  color="green"
+                  variant="pills"
+                  className={`${formItemWidth} flex flex-row`}
                   value={activeTab}
-                  onChange={setActiveTab}
+                  onChange={(value: 'public' | 'private') => {
+                    setActiveTab(value);
+                    setIsUsingPublicServer(value === 'public');
+                  }}
                 >
-                  <Tabs.List>
-                    <Tabs.Tab value="public">Public electrum</Tabs.Tab>
-                    <Tabs.Tab value="private">Private electrum</Tabs.Tab>
+                  <Tabs.List justify="space-between" grow>
+                    <Tabs.Tab value="public" className="flex-1">
+                      Public electrum
+                    </Tabs.Tab>
+                    <Tabs.Tab className="flex-1" value="private">
+                      Private electrum
+                    </Tabs.Tab>
                   </Tabs.List>
 
                   <Tabs.Panel value="public">
@@ -692,7 +870,7 @@ export const WalletSignIn = () => {
                           setSelectedPublicServer(option);
                         }
                       }}
-                      className={formItemWidth}
+                      className={`mt-2 ${formItemWidth}`}
                     />
                   </Tabs.Panel>
                   <Tabs.Panel value="private">
@@ -702,7 +880,8 @@ export const WalletSignIn = () => {
                       placeholder="Enter electrum url"
                       onInput={handlePrivateElectrumInput}
                       value={privateElectrumUrl}
-                      className="mt-2 w-80"
+                      className={`${formItemWidth}`}
+                      style={{ marginTop: '.5rem' }}
                     />
                   </Tabs.Panel>
                 </Tabs>
@@ -727,6 +906,20 @@ export const WalletSignIn = () => {
             <Tabs.Panel value="advanced">
               <>
                 <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
+                  Network
+                </InputLabel>
+                <Select
+                  allowDeselect={false}
+                  className={formItemWidth}
+                  data={networkOptions}
+                  value={network.value}
+                  onChange={(_value, option) => {
+                    if (option) {
+                      setNetwork(option as NetworkTypeOption);
+                    }
+                  }}
+                />
+                <InputLabel className={`mt-4 mb-2 ${labelWidth}`}>
                   Gap limit
                 </InputLabel>
                 <NumberInput
@@ -735,26 +928,6 @@ export const WalletSignIn = () => {
                   value={gapLimit}
                   onChange={onSetGapLimit}
                   min={1}
-                />
-                <div
-                  className={`flex flex-row ${labelWidth} mb-2 items-center`}
-                >
-                  <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
-                  <Tooltip
-                    withArrow
-                    w={300}
-                    multiline
-                    label="The master fingerprint uniquely identifies this keystore using the first 4 bytes of the master public key hash. It is safe to use any valid value (00000000) for watch only wallets"
-                  >
-                    <IconInfoCircle style={{ width: '14px', height: '14px' }} />
-                  </Tooltip>
-                </div>
-                <Input
-                  disabled={isUnmodifiableImport}
-                  className={`${formItemWidth}`}
-                  placeholder="00000000"
-                  value={masterFingerPrint}
-                  onInput={handleMasterFingerPrint}
                 />
               </>
             </Tabs.Panel>

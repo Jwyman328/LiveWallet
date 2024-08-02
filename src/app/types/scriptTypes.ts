@@ -1,24 +1,45 @@
 export type WalletTypes = 'P2WPKH' | 'P2SH' | 'P2PKH';
 
-export enum ScriptTypes {
+export enum SingleSigScriptTypes {
   P2WPKH = 'P2WPKH',
   P2PKH = 'P2PKH',
-  P2WSH = 'P2WSH',
+  P2SHP2WPKH = 'P2SHP2WPKH',
   P2TR = 'P2TR',
 }
 
+export enum MultiSigScriptTypes {
+  P2SH = 'P2SH',
+  P2WSH = 'P2WSH',
+  P2SHP2WSH = 'P2SHP2WSH',
+}
+export enum ScriptTypes {
+  P2WPKH = 'P2WPKH',
+  P2PKH = 'P2PKH',
+  P2SHP2WPKH = 'P2SHP2WPKH',
+  P2TR = 'P2TR',
+  P2SH = 'P2SH',
+  P2WSH = 'P2WSH',
+  P2SHP2WSH = 'P2SHP2WSH',
+}
+
 export const scriptTypeToDescriptorMap = {
-  P2WPKH: 'wpkh',
   P2PKH: 'pkh',
+  P2SHP2WPKH: 'sh(wpkh',
+  P2WPKH: 'wpkh',
   P2TR: 'tr',
-  P2WSH: 'sh(wpkh',
+  P2SH: 'sh',
+  P2SHP2WSH: 'sh(wsh',
+  P2WSH: 'wsh',
 };
 
 export const descriptorTypeToScriptType = {
   wpkh: ScriptTypes.P2WPKH,
   pkh: ScriptTypes.P2PKH,
   tr: ScriptTypes.P2TR,
-  'sh(wpkh': ScriptTypes.P2WSH,
+  'sh(wpkh': ScriptTypes.P2SHP2WPKH,
+  sh: ScriptTypes.P2SH,
+  wsh: ScriptTypes.P2WSH,
+  'sh(wsh': ScriptTypes.P2SHP2WSH,
 };
 
 export const getScriptTypeFromDerivationPath = (derivationPath: string) => {
@@ -56,5 +77,7 @@ export const getDerivationPathFromScriptType = (scriptType: ScriptTypes) => {
       return "m/84'/0'/0'";
     case ScriptTypes.P2TR:
       return "m/86'/0'/0'";
+    case ScriptTypes.P2SH:
+      return "m/49'/0'/0'";
   }
 };
