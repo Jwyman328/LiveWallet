@@ -646,20 +646,22 @@ export const WalletSignIn = () => {
   const createWalletTabList = () => {
     const innerTabs = multisigWalletDetails.map((wallet, index) => {
       const xpubLabel =
-        multisigWalletDetails.length === 1 ? 'xpub' : `xpub ${index + 1}`;
+        multisigWalletDetails.length === 1
+          ? 'Keystore'
+          : `Keystore ${index + 1}`;
       return <Tabs.Tab value={index.toString()}>{xpubLabel}</Tabs.Tab>;
     });
     return innerTabs;
   };
 
   return isServerAvailableAndHealthy ? (
-    <div className="flex flex-row w-screen h-screen overflow-scroll">
+    <div className="flex flex-row w-screen overflow-scroll min-h-screen">
       {isDevelopment ? (
         <Affix position={{ top: 20, right: 20 }}>
           <Button onClick={navigateToGenerateWallet}>Create dev mocks</Button>
         </Affix>
       ) : null}
-      <Affix position={{ top: 20, left: 20 }}>
+      <Affix style={{ position: 'absolute' }} position={{ top: 20, left: 20 }}>
         <Button
           leftSection={<IconArrowLeft />}
           variant="transparent"
@@ -667,7 +669,7 @@ export const WalletSignIn = () => {
         ></Button>
       </Affix>
 
-      <div className="px-4 flex-1 w-1/2 flex flex-col items-center h-screen">
+      <div className="px-4 flex-1 w-1/2 flex flex-col items-center pb-6">
         {displayInitiateWalletError && (
           <Notification
             withCloseButton={true}
@@ -718,6 +720,7 @@ export const WalletSignIn = () => {
                       Policy type
                     </InputLabel>
                     <Select
+                      placeholder="Select policy type"
                       allowDeselect={false}
                       className={formItemWidth}
                       data={policyTypeOptions}
@@ -936,8 +939,10 @@ export const WalletSignIn = () => {
           </Tabs>
         </div>
       </div>
-
-      <img src={vaultImage} className=" w-1/2 min-h-screen" />
+      <img
+        src={vaultImage}
+        className="w-1/2 flex-1  flex-grow object-fill min-h-screen h-auto"
+      />
     </div>
   ) : serverHealthStatusQuery.isLoading ? (
     <div className="flex flex-row justify-center items-center h-screen w-screen">

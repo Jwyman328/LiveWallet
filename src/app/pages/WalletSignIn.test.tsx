@@ -54,6 +54,11 @@ describe('WalletSignIn', () => {
     );
 
     const basicTab = await screen.findByText('Basic');
+    const policyTypeLabel = screen.getByText('Policy type');
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
+    const policyTypeSingleOption = screen.getByText('Single signature');
+    const policyTypeMultiOption = screen.getByText('Multi signature');
     const networkLabel = screen.getByText('Network');
     const networkSelected = screen.getByText('REGTEST');
     const scriptTypeLabel = screen.getByText('Script type');
@@ -64,17 +69,14 @@ describe('WalletSignIn', () => {
       "m/84'/0'/0'",
     ) as HTMLInputElement;
 
-    const xpubLabel = await screen.findByLabelText('xpub');
+    const keyStoreLabel = await screen.findByText('Keystore');
+    const xpubLabel = await screen.findByText('xpub');
     const xpubInput = screen.getByPlaceholderText(
       'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
     ) as HTMLInputElement;
 
-    const privateElectrumServer = screen.getByLabelText(
-      'Private electrum',
-    );
-    const publicElectrumServer = screen.getByLabelText(
-      'Public electrum',
-    );
+    const privateElectrumServer = screen.getByLabelText('Private electrum');
+    const publicElectrumServer = screen.getByLabelText('Public electrum');
 
     const privateElectrumUrl = screen.getByPlaceholderText(
       'Enter electrum url',
@@ -95,6 +97,10 @@ describe('WalletSignIn', () => {
     const gapLimit = await screen.findByDisplayValue('100');
 
     expect(basicTab).toBeInTheDocument();
+    expect(policyTypeLabel).toBeInTheDocument();
+    expect(policyTypeSingleOption).toBeInTheDocument();
+    expect(policyTypeMultiOption).toBeInTheDocument();
+    expect(policyTypeSelect).toHaveValue('Single signature');
     expect(networkLabel).toBeInTheDocument();
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeLabel).toBeInTheDocument();
@@ -103,6 +109,7 @@ describe('WalletSignIn', () => {
     expect(masterFingerPrintSelected.value).toBe('00000000');
     expect(derivationPathLabel).toBeInTheDocument();
     expect(derivationPathInput.value).toBe('');
+    expect(keyStoreLabel).toBeInTheDocument();
     expect(xpubLabel).toBeInTheDocument();
     expect(xpubInput.value).toBe('');
     expect(privateElectrumServer).toBeInTheDocument();
@@ -251,6 +258,10 @@ describe('WalletSignIn', () => {
     const networkSelected = screen.getByText(
       mockImportedWalletData.defaultNetwork,
     );
+
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
+
     const scriptTypeSelected = screen.getByText('Taproot (P2TR)');
     const masterFingerPrintSelected = (await screen.findByPlaceholderText(
       '00000000',
@@ -275,6 +286,9 @@ describe('WalletSignIn', () => {
       'Enter public electrum url',
     ) as HTMLInputElement;
 
+    expect(policyTypeSelect).toHaveValue(
+      mockImportedWalletData.policyType.value,
+    );
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeSelected).toBeInTheDocument();
     expect(masterFingerPrintSelected.value).toBe(
@@ -349,6 +363,8 @@ describe('WalletSignIn', () => {
 
     // Now confirm loaded wallet data is displayed
 
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
     const networkSelected = screen.getByText(
       walletDataFromHwWallet.defaultNetwork,
     );
@@ -376,6 +392,9 @@ describe('WalletSignIn', () => {
       'Enter public electrum url',
     ) as HTMLInputElement;
 
+    expect(policyTypeSelect).toHaveValue(
+      walletDataFromHwWallet.policyType.value,
+    );
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeSelected).toBeInTheDocument();
     expect(masterFingerPrintSelected.value).toBe(
@@ -559,7 +578,4 @@ describe('WalletSignIn', () => {
     )) as HTMLInputElement;
     expect(derivationTaproot).toBeInTheDocument();
   });
-
-  // todo add test for when location.state.walletData exists
-  // test that it loads everything properly
 });
