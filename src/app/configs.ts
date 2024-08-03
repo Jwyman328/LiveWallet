@@ -2,8 +2,7 @@ import { Network } from './types/network';
 import { ScriptTypes } from './types/scriptTypes';
 
 // treat test environment like production
-const isProduction =
-  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
 export const configs = {
   defaultDescriptor: isProduction
     ? ''

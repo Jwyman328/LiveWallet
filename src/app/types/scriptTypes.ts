@@ -79,5 +79,7 @@ export const getDerivationPathFromScriptType = (scriptType: ScriptTypes) => {
       return "m/86'/0'/0'";
     case ScriptTypes.P2SH:
       return "m/49'/0'/0'";
+    case ScriptTypes.P2SHP2WPKH:
+      return "m/49'/1'/0'";
   }
 };

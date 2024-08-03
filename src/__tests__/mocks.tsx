@@ -1,4 +1,5 @@
 import { GetBTCPriceResponseType } from '../app/api/types';
+import { policyTypeOptions } from '../app/components/formOptions';
 import { ScaleOption } from '../app/pages/Home';
 import { BtcMetric } from '../app/types/btcSatHandler';
 import { Network } from '../app/types/network';
@@ -10,11 +11,18 @@ describe('Mocks', () => {
     expect(true).toBeTruthy();
   });
 });
+const signleSigKeyDetailsMock = {
+  xpub: 'mockXpub',
+  derivationPath: "m/44'/0'/0'",
+  masterFingerprint: '11111111',
+};
 export const mockImportedWalletData: Wallet = {
+  //single sig
+  policyType: policyTypeOptions[0],
+  signaturesNeeded: 1,
+  numberOfXpubs: 1,
   defaultDescriptor: 'mockDefaultDescriptor',
-  defaultMasterFingerprint: '11111111',
-  defaultDerivationPath: "m/44'/0'/0'",
-  defaultXpub: 'mockXpub',
+  keyDetails: [signleSigKeyDetailsMock],
   defaultElectrumServerUrl: 'mockElectrumServer',
   backendServerBaseUrl: 'mockBackendServer',
   defaultNetwork: Network.BITCOIN,

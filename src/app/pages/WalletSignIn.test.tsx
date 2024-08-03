@@ -10,6 +10,7 @@ import {
 import { Wallet } from '../types/wallet';
 import { ScriptTypes } from '../types/scriptTypes';
 import { Network } from '../types/network';
+import { policyTypeOptions } from '../components/formOptions';
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 const mockNavigate = jest.fn();
@@ -52,7 +53,7 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Watch Only Wallet');
+    const basicTab = await screen.findByText('Basic');
     const networkLabel = screen.getByText('Network');
     const networkSelected = screen.getByText('REGTEST');
     const scriptTypeLabel = screen.getByText('Script type');
@@ -63,17 +64,16 @@ describe('WalletSignIn', () => {
       "m/84'/0'/0'",
     ) as HTMLInputElement;
 
-    const xpubLabel = screen.getByText('xpub');
+    const xpubLabel = await screen.findByLabelText('xpub');
     const xpubInput = screen.getByPlaceholderText(
       'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
     ) as HTMLInputElement;
 
-    const serverTypeLabel = screen.getByText('Server type');
     const privateElectrumServer = screen.getByLabelText(
-      'Private electrum server',
+      'Private electrum',
     );
     const publicElectrumServer = screen.getByLabelText(
-      'Public electrum server',
+      'Public electrum',
     );
 
     const privateElectrumUrl = screen.getByPlaceholderText(
@@ -94,7 +94,7 @@ describe('WalletSignIn', () => {
     const gapLimitLabel = await screen.findByText('Gap limit');
     const gapLimit = await screen.findByDisplayValue('100');
 
-    expect(title).toBeInTheDocument();
+    expect(basicTab).toBeInTheDocument();
     expect(networkLabel).toBeInTheDocument();
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeLabel).toBeInTheDocument();
@@ -105,9 +105,8 @@ describe('WalletSignIn', () => {
     expect(derivationPathInput.value).toBe('');
     expect(xpubLabel).toBeInTheDocument();
     expect(xpubInput.value).toBe('');
-    expect(serverTypeLabel).toBeInTheDocument();
-    expect(privateElectrumServer).toBeChecked();
-    expect(publicElectrumServer).not.toBeChecked();
+    expect(privateElectrumServer).toBeInTheDocument();
+    expect(publicElectrumServer).toBeInTheDocument();
     expect(privateElectrumUrl.value).toBe('127.0.0.1:50000');
     expect(gapLimitLabel).toBeInTheDocument();
     expect(gapLimit).toBeInTheDocument();
@@ -121,9 +120,9 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Watch Only Wallet');
+    const basicTab = await screen.findByText('Basic');
 
-    expect(title).toBeInTheDocument();
+    expect(basicTab).toBeInTheDocument();
     let setupButton = screen.getByRole('button', { name: 'Connect' });
 
     expect(setupButton).toBeDisabled();
@@ -163,37 +162,47 @@ describe('WalletSignIn', () => {
         'REGTEST',
         defaultElectrumUrl,
         100,
+        undefined,
       );
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/home');
+    expect(mockNavigate).toHaveBeenCalledWith('/home', {
+      state: { signaturesNeeded: 1, numberOfXpubs: 1 },
+    });
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
       'save-wallet',
       {
+        policyType: policyTypeOptions[0],
+        signaturesNeeded: 1,
+        numberOfXpubs: 1,
+        keyDetails: [
+          {
+            xpub: mockXpub,
+            derivationPath: derivationPath,
+            masterFingerprint: '00000000',
+          },
+        ],
         backendServerBaseUrl: 'http://localhost:5011',
-        defaultDerivationPath: derivationPath,
         defaultDescriptor: createdDescriptor,
         defaultElectrumServerUrl: defaultElectrumUrl,
-        defaultMasterFingerprint: '00000000',
         defaultNetwork: 'REGTEST',
         defaultScriptType: 'P2WPKH',
-        defaultXpub: mockXpub,
         isUsingPublicServer: false,
         privateElectrumUrl: defaultElectrumUrl,
         publicElectrumUrl: 'electrum.blockstream.info',
       },
     );
   });
-  test('Test initial ipcRenderer messages', async () => {
+  it('Test initial ipcRenderer messages', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <WalletSignIn />
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Watch Only Wallet');
+    const basicTab = await screen.findByText('Basic');
 
-    expect(title).toBeInTheDocument();
+    expect(basicTab).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
       'current-route',
@@ -206,7 +215,7 @@ describe('WalletSignIn', () => {
     );
   });
 
-  test('Importing wallet via the json-wallet ipcRenderer on works successfully by setting the walletData', async () => {
+  it('Importing wallet via the json-wallet ipcRenderer on works successfully by setting the walletData', async () => {
     mockElectron.ipcRenderer.on.mockResolvedValue(mockImportedWalletData);
 
     const screen = render(
@@ -255,12 +264,8 @@ describe('WalletSignIn', () => {
       'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
     ) as HTMLInputElement;
 
-    const privateElectrumServer = screen.getByLabelText(
-      'Private electrum server',
-    );
-    const publicElectrumServer = screen.getByLabelText(
-      'Public electrum server',
-    );
+    const privateElectrumServer = screen.getByLabelText('Private electrum');
+    const publicElectrumServer = screen.getByLabelText('Public electrum');
 
     const privateElectrumUrl = screen.getByPlaceholderText(
       'Enter electrum url',
@@ -273,14 +278,14 @@ describe('WalletSignIn', () => {
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeSelected).toBeInTheDocument();
     expect(masterFingerPrintSelected.value).toBe(
-      mockImportedWalletData.defaultMasterFingerprint,
+      mockImportedWalletData.keyDetails[0].masterFingerprint,
     );
     expect(derivationPathInput.value).toBe(
-      mockImportedWalletData.defaultDerivationPath,
+      mockImportedWalletData.keyDetails[0].derivationPath,
     );
-    expect(xpubInput.value).toBe(mockImportedWalletData.defaultXpub);
-    expect(publicElectrumServer).toBeChecked();
-    expect(privateElectrumServer).not.toBeChecked();
+    expect(xpubInput.value).toBe(mockImportedWalletData.keyDetails[0].xpub);
+    expect(publicElectrumServer).toBeInTheDocument();
+    expect(privateElectrumServer).toBeInTheDocument();
     expect(privateElectrumUrl.value).toBe(
       mockImportedWalletData.privateElectrumUrl,
     );
@@ -300,18 +305,26 @@ describe('WalletSignIn', () => {
         mockImportedWalletData.defaultNetwork,
         `${mockImportedWalletData.publicElectrumUrl}:50001`,
         100,
+        undefined,
       );
     });
   });
 
   it('Importing wallet via navigation state props works.', async () => {
     const walletDataFromHwWallet: Wallet = {
+      policyType: policyTypeOptions[0],
+      signaturesNeeded: 1,
+      numberOfXpubs: 1,
+      keyDetails: [
+        {
+          xpub: 'mockXpub',
+          derivationPath: "m/84'/0'/0'",
+          masterFingerprint: '00000000',
+        },
+      ],
       defaultNetwork: Network.BITCOIN,
-      defaultDerivationPath: "m/84'/0'/0'",
-      defaultScriptType: ScriptTypes.P2WSH,
-      defaultXpub: 'mockXpub',
+      defaultScriptType: ScriptTypes.P2SHP2WPKH,
       defaultDescriptor: '',
-      defaultMasterFingerprint: '00000000',
       defaultElectrumServerUrl: 'electrum.blockstream.info',
       backendServerBaseUrl: '',
       isUsingPublicServer: true,
@@ -328,7 +341,6 @@ describe('WalletSignIn', () => {
         <WalletSignIn />
       </WrappedInAppWrappers>,
     );
-
 
     await waitFor(() => {
       const setupButton = screen.getByRole('button', { name: 'Connect' });
@@ -353,12 +365,8 @@ describe('WalletSignIn', () => {
       'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
     ) as HTMLInputElement;
 
-    const privateElectrumServer = screen.getByLabelText(
-      'Private electrum server',
-    );
-    const publicElectrumServer = screen.getByLabelText(
-      'Public electrum server',
-    );
+    const privateElectrumServer = screen.getByLabelText('Private electrum');
+    const publicElectrumServer = screen.getByLabelText('Public electrum');
 
     const privateElectrumUrl = screen.getByPlaceholderText(
       'Enter electrum url',
@@ -371,14 +379,14 @@ describe('WalletSignIn', () => {
     expect(networkSelected).toBeInTheDocument();
     expect(scriptTypeSelected).toBeInTheDocument();
     expect(masterFingerPrintSelected.value).toBe(
-      walletDataFromHwWallet.defaultMasterFingerprint,
+      walletDataFromHwWallet.keyDetails[0].masterFingerprint,
     );
     expect(derivationPathInput.value).toBe(
-      walletDataFromHwWallet.defaultDerivationPath,
+      walletDataFromHwWallet.keyDetails[0].derivationPath,
     );
-    expect(xpubInput.value).toBe(walletDataFromHwWallet.defaultXpub);
-    expect(publicElectrumServer).toBeChecked();
-    expect(privateElectrumServer).not.toBeChecked();
+    expect(xpubInput.value).toBe(walletDataFromHwWallet.keyDetails[0].xpub);
+    expect(publicElectrumServer).toBeInTheDocument();
+    expect(privateElectrumServer).toBeInTheDocument();
     expect(privateElectrumUrl.value).toBe(
       walletDataFromHwWallet.privateElectrumUrl,
     );
@@ -398,6 +406,7 @@ describe('WalletSignIn', () => {
         walletDataFromHwWallet.defaultNetwork,
         `${walletDataFromHwWallet.publicElectrumUrl}:50001`,
         100,
+        undefined,
       );
     });
   });
@@ -436,6 +445,7 @@ describe('WalletSignIn', () => {
         mockImportedWalletDataWithoutConfigs.defaultNetwork,
         `${mockImportedWalletDataWithoutConfigs.publicElectrumUrl}:50001`,
         100,
+        undefined,
       );
     });
     // get error toast
@@ -489,8 +499,8 @@ describe('WalletSignIn', () => {
     );
 
     await waitFor(() => {
-      const title = screen.getByText('Watch Only Wallet');
-      expect(title).toBeInTheDocument();
+      const basicTab = screen.getByText('Basic');
+      expect(basicTab).toBeInTheDocument();
 
       const createMockButton = screen.queryByRole('button', {
         name: 'Create dev mocks',
@@ -506,13 +516,13 @@ describe('WalletSignIn', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Watch Only Wallet');
+    const basicTab = await screen.findByText('Basic');
     let scriptTypeSelect = screen.getByTestId('script-type-select');
     let scriptTypeSelected = screen.getByText('Native Segwit (P2WPKH)');
     let derivationPathSegwit = screen.getByPlaceholderText(
       "m/84'/0'/0'",
     ) as HTMLInputElement;
-    expect(title).toBeInTheDocument();
+    expect(basicTab).toBeInTheDocument();
     expect(scriptTypeSelected).toBeInTheDocument();
     expect(derivationPathSegwit).toBeInTheDocument();
 
@@ -534,7 +544,7 @@ describe('WalletSignIn', () => {
     });
     fireEvent.click(option);
     let derivationWrappedSegit = (await screen.findByPlaceholderText(
-      "m/49'/0'/0'",
+      "m/49'/1'/0'",
     )) as HTMLInputElement;
     expect(derivationWrappedSegit).toBeInTheDocument();
 

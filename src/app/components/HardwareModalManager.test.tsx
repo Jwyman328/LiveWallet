@@ -10,6 +10,7 @@ import {
   mockTrezorPinAndPassNeeded,
 } from '../../__tests__/mocks';
 import { ScriptTypes } from '../types/scriptTypes';
+import { policyTypeOptions } from './formOptions';
 
 const mockNavigate = jest.fn();
 const closeModalSpy = jest.fn();
@@ -288,13 +289,20 @@ describe('HardwareWalletModalManager', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
       state: {
         walletData: {
+          policyType: policyTypeOptions[0],
+          signaturesNeeded: 1,
+          numberOfXpubs: 1,
+          keyDetails: [
+            {
+              derivationPath: "m/86'/0'/0'",
+              xpub: mockXpub,
+              masterFingerprint: '00000000',
+            },
+          ],
           defaultNetwork: 'BITCOIN',
-          defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
-          defaultMasterFingerprint: '00000000',
           backendServerBaseUrl: '',
           isUsingPublicServer: false,
           privateElectrumUrl: '',
@@ -392,13 +400,20 @@ describe('HardwareWalletModalManager', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
       state: {
         walletData: {
+          policyType: policyTypeOptions[0],
+          signaturesNeeded: 1,
+          numberOfXpubs: 1,
+          keyDetails: [
+            {
+              derivationPath: "m/86'/0'/0'",
+              xpub: mockXpub,
+              masterFingerprint: '00000000',
+            },
+          ],
           defaultNetwork: 'BITCOIN',
-          defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
-          defaultMasterFingerprint: '00000000',
           backendServerBaseUrl: '',
           isUsingPublicServer: false,
           privateElectrumUrl: '',
@@ -493,13 +508,20 @@ describe('HardwareWalletModalManager', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
       state: {
         walletData: {
+          policyType: policyTypeOptions[0],
+          signaturesNeeded: 1,
+          numberOfXpubs: 1,
+          keyDetails: [
+            {
+              derivationPath: "m/86'/0'/0'",
+              xpub: mockXpub,
+              masterFingerprint: '00000000',
+            },
+          ],
           defaultNetwork: 'BITCOIN',
-          defaultDerivationPath: "m/86'/0'/0'",
           defaultScriptType: ScriptTypes.P2TR,
-          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
-          defaultMasterFingerprint: '00000000',
           backendServerBaseUrl: '',
           isUsingPublicServer: false,
           privateElectrumUrl: '',
@@ -641,13 +663,20 @@ describe('HardwareWalletModalManager', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
       state: {
         walletData: {
+          policyType: policyTypeOptions[0],
+          signaturesNeeded: 1,
+          numberOfXpubs: 1,
+          keyDetails: [
+            {
+              derivationPath: "m/44'/0'/0'",
+              xpub: mockXpub,
+              masterFingerprint: '00000000',
+            },
+          ],
           defaultNetwork: 'BITCOIN',
-          defaultDerivationPath: "m/44'/0'/0'",
           defaultScriptType: ScriptTypes.P2PKH,
-          defaultXpub: mockXpub,
           defaultDescriptor: '',
           defaultElectrumServerUrl: '',
-          defaultMasterFingerprint: '00000000',
           backendServerBaseUrl: '',
           isUsingPublicServer: false,
           privateElectrumUrl: '',

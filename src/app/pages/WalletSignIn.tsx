@@ -612,7 +612,7 @@ export const WalletSignIn = () => {
             </div>
             <Input
               data-testid="derivation-path"
-              className={`w-72`}
+              className={`${formItemWidth}`}
               placeholder={derivationPathPlaceHolder}
               value={wallet.derivationPath}
               onInput={() => {
@@ -626,7 +626,7 @@ export const WalletSignIn = () => {
 
             <InputLabel className={`mt-4 mb-2 w-72`}>xpub</InputLabel>
             <Textarea
-              className={`w-72`}
+              className={`${formItemWidth}`}
               styles={{ input: { minHeight: '6.3rem' } }}
               placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
               onInput={(event) => {
@@ -759,11 +759,13 @@ export const WalletSignIn = () => {
                       }}
                     />
 
-                    <InputLabel className={`mt-4 w-70`}>Script type</InputLabel>
+                    <InputLabel className={`mt-4 ${labelWidth}`}>
+                      Script type
+                    </InputLabel>
                     <Select
                       data-testid="script-type-select"
                       allowDeselect={false}
-                      className={`mb-0 w-72`}
+                      className={`mb-0 ${formItemWidth}`}
                       data={
                         signaturesNeeded === 1 && numberOfXpubs === 1
                           ? singleSigScriptTypeOptions

@@ -23,10 +23,12 @@ let deleteCurrentWalletSpy: jest.SpyInstance;
 let getCurrentFeesSpy: jest.SpyInstance;
 let createTxFeeEstimateSpy: jest.SpyInstance;
 let getBtcPriceSpy: jest.SpyInstance;
+let mockUseLocation = {};
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
+  useLocation: () => mockUseLocation,
 }));
 
 const mockUtXos = [
@@ -77,6 +79,12 @@ describe('Home', () => {
 
     getBtcPriceSpy = jest.spyOn(ApiClient, 'getCurrentBtcPrice');
     getBtcPriceSpy.mockResolvedValue(mockGetBtcPriceResponse);
+    mockUseLocation = {
+      state: {
+        numberOfXpubs: 1,
+        signaturesNeeded: 1,
+      },
+    };
   });
 
   afterEach(() => {
@@ -89,6 +97,7 @@ describe('Home', () => {
     getCurrentFeesSpy.mockClear();
     createTxFeeEstimateSpy.mockClear();
     getBtcPriceSpy.mockClear();
+    mockUseLocation = {};
   });
 
   it('Home screen shows correct data by default', async () => {
