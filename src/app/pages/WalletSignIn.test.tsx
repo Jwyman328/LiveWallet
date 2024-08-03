@@ -166,7 +166,7 @@ describe('WalletSignIn', () => {
       fireEvent.click(setupButton);
       expect(initiateWalletSpy).toHaveBeenCalledWith(
         createdDescriptor,
-        'REGTEST',
+        'BITCOIN',
         defaultElectrumUrl,
         100,
         undefined,
@@ -192,10 +192,148 @@ describe('WalletSignIn', () => {
         backendServerBaseUrl: 'http://localhost:5011',
         defaultDescriptor: createdDescriptor,
         defaultElectrumServerUrl: defaultElectrumUrl,
-        defaultNetwork: 'REGTEST',
+        defaultNetwork: 'BITCOIN',
         defaultScriptType: 'P2WPKH',
         isUsingPublicServer: false,
         privateElectrumUrl: defaultElectrumUrl,
+        publicElectrumUrl: 'electrum.blockstream.info',
+      },
+    );
+  });
+
+  it('Test multisig policy type selection works correctly', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    const policyTypeMultiOption = await screen.findByText('Multi signature');
+    fireEvent.click(policyTypeMultiOption);
+
+    // multisig script types
+    const scriptTypeLegacy = screen.getByText('Legacy (P2SH)');
+    const scriptTypeNested = screen.getByText('Nested Segwit (P2SH-P2WSH)');
+    const scriptTypeNative = screen.getByText('Native Segwit (P2WSH)');
+    expect(scriptTypeLegacy).toBeInTheDocument();
+    expect(scriptTypeNested).toBeInTheDocument();
+    expect(scriptTypeNative).toBeInTheDocument();
+
+    const scriptTypeSelected = screen.getByTestId('script-type-select');
+    expect(scriptTypeSelected).toHaveValue('Native Segwit (P2WSH)');
+
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
+    expect(policyTypeSelect).toHaveValue('Multi signature');
+
+    // M of N label and range slider should now be showing
+    const mOfNLabel = screen.getByText('M of N');
+    expect(mOfNLabel).toBeInTheDocument();
+    const mOfNSlider = screen.getByTestId('m-of-n-slider');
+    console.log('mOfNSlider', mOfNSlider);
+    // test default 2 of 3 another way
+    expect(mOfNSlider).toBeInTheDocument();
+
+    const keyStoreOne = screen.getByText('Keystore 1');
+    const keyStoreTwo = screen.getByText('Keystore 2');
+    const keyStoreThree = screen.getByText('Keystore 3');
+    expect(keyStoreOne).toBeInTheDocument();
+    expect(keyStoreTwo).toBeInTheDocument();
+    expect(keyStoreThree).toBeInTheDocument();
+
+    // fill out all three forms
+
+
+    // now inputs for all three key stores should be showing
+    const derivationPathInputs = screen.getAllByPlaceholderText(
+      "m/49'/0'/0'",
+    ) as HTMLInputElement[];
+    expect(derivationPathInputs.length).toBe(3);
+
+    const xpubInputs = screen.getAllByPlaceholderText(
+      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+    ) as HTMLInputElement[];
+    expect(xpubInputs.length).toBe(3);
+
+    const masterFingerPrintInputs = screen.getAllByPlaceholderText(
+      '00000000',
+    ) as HTMLInputElement[];
+
+    expect(masterFingerPrintInputs.length).toBe(3);
+
+
+    //TODO make all the entered values and there use in the expect calls below reusable not always hard coded
+
+    // fill out all three Keystores
+    for (let i = 0; i < 3; i++) {
+      fireEvent.input(derivationPathInputs[i], {
+        target: { value: `m/49'/${i}'/0'` },
+      });
+      fireEvent.input(xpubInputs[i], {
+        target: { value: `mockXpub${i}` },
+      });
+      fireEvent.input(masterFingerPrintInputs[i], {
+        target: { value: `0000000${i}` },
+      });
+    }
+
+    let setupButton;
+    await waitFor(() => {
+      setupButton = screen.getByRole('button', { name: 'Connect' });
+      expect(setupButton).toBeEnabled();
+    });
+
+    fireEvent.click(setupButton);
+    await waitFor(() => {
+      console.log('initiateWalletSpy calls', initiateWalletSpy.mock.calls[0]);
+      expect(initiateWalletSpy).toHaveBeenCalledWith(
+        "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/0/*,[00000001/49'/1'/0']mockXpub1/0/*,[00000000/49'/0'/0']mockXpub0/0/*))",
+        'BITCOIN',
+        `127.0.0.1:50000`,
+        100,
+        "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/1/*,[00000001/49'/1'/0']mockXpub1/1/*,[00000000/49'/0'/0']mockXpub0/1/*))",
+      );
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/home', {
+      state: { signaturesNeeded: 2, numberOfXpubs: 3 },
+    });
+
+    expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+      'save-wallet',
+      {
+        policyType: policyTypeOptions[1],
+        signaturesNeeded: 2,
+        numberOfXpubs: 3,
+        keyDetails: [
+          {
+            xpub: 'mockXpub0',
+            derivationPath: "m/49'/0'/0'",
+            masterFingerprint: '00000000',
+          },
+
+          {
+            xpub: 'mockXpub1',
+            derivationPath: "m/49'/1'/0'",
+            masterFingerprint: '00000001',
+          },
+          {
+            xpub: 'mockXpub2',
+            derivationPath: "m/49'/2'/0'",
+            masterFingerprint: '00000002',
+          },
+        ],
+        defaultChangeDescriptor:
+          "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/1/*,[00000001/49'/1'/0']mockXpub1/1/*,[00000000/49'/0'/0']mockXpub0/1/*))",
+
+        backendServerBaseUrl: 'http://localhost:5011',
+        defaultDescriptor:
+          "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/0/*,[00000001/49'/1'/0']mockXpub1/0/*,[00000000/49'/0'/0']mockXpub0/0/*))",
+        defaultElectrumServerUrl: '127.0.0.1:50000',
+        defaultNetwork: 'BITCOIN',
+        defaultScriptType: 'P2WSH',
+        isUsingPublicServer: false,
+        privateElectrumUrl: '127.0.0.1:50000',
         publicElectrumUrl: 'electrum.blockstream.info',
       },
     );

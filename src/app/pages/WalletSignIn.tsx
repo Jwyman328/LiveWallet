@@ -199,9 +199,12 @@ export const WalletSignIn = () => {
     // send wallet details to main process so that
     // the main process has the wallet details if they want to save them.
     const defaultDescriptor = descriptor || generateDescriptor().descriptor;
+
+    const defaultChangeDescriptor =
+      changeDescriptor || generateDescriptor().changeDescriptor;
     saveWallet({
       defaultDescriptor: defaultDescriptor,
-      defaultChangeDescriptor: changeDescriptor,
+      defaultChangeDescriptor: defaultChangeDescriptor,
       keyDetails: multisigWalletDetails,
       signaturesNeeded: signaturesNeeded,
       numberOfXpubs: numberOfXpubs,
@@ -334,6 +337,7 @@ export const WalletSignIn = () => {
 
       return {
         descriptor: multisigDescriptor,
+        // TODO should multisigs always return a change descriptor?
         changeDescriptor: multisigChangeDescriptor,
       };
     }
@@ -801,6 +805,7 @@ export const WalletSignIn = () => {
                           </Tooltip>
                         </div>
                         <RangeSlider
+                          data-testid="m-of-n-slider"
                           className="mt-0 mb-4"
                           style={{ marginBottom: '2rem' }}
                           minRange={0.2}

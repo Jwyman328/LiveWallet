@@ -2,7 +2,8 @@ import { Network } from './types/network';
 import { ScriptTypes } from './types/scriptTypes';
 
 // treat test environment like production
-const isProduction = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
+const isProduction =
+  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test';
 export const configs = {
   defaultDescriptor: isProduction
     ? ''
@@ -16,6 +17,6 @@ export const configs = {
     ? '127.0.0.1:50000'
     : '127.0.0.1:50000',
   backendServerBaseUrl: 'http://localhost:5011',
-  defaultNetwork: Network.REGTEST,
+  defaultNetwork: isProduction ? Network.BITCOIN : Network.REGTEST,
   defaultScriptType: ScriptTypes.P2WPKH,
 };
