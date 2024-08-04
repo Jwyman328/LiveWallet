@@ -223,12 +223,6 @@ class TestWalletService(TestCase):
     def test_connect_wallet_without_wallet_in_db(
         self,
     ):
-        descriptor_mock = MagicMock(spec=bdk.Descriptor)
-
-        memory_mock = MagicMock()
-        block_chain_config_mock = MagicMock(spec=bdk.BlockchainConfig)
-        electrum_config_mock = MagicMock(spec=bdk.ElectrumConfig)
-        block_chain_mock = MagicMock(spec=bdk.Blockchain)
         wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
         wallet_sync_mock = MagicMock()
         wallet_mock.sync = wallet_sync_mock
@@ -266,6 +260,46 @@ class TestWalletService(TestCase):
 
             descriptor = "mock descriptor"
             change_descriptor = "mock change descriptor"
+            network = bdk.Network.TESTNET
+            electrum_url = "mock electrum url"
+            stop_gap = 100
+
+            WalletService.create_wallet(
+                descriptor, change_descriptor, network, electrum_url, stop_gap
+            )
+            wallet_model_patch.get_current_wallet.assert_called()
+            remove_global_wallet_and_details_patch.assert_not_called()
+
+            wallet_model_patch.assert_called_with(
+                descriptor=descriptor,
+                change_descriptor=change_descriptor,
+                network=network.value,
+                electrum_url=electrum_url,
+                stop_gap=stop_gap,
+            )
+
+            db_patch.session.add.assert_called_with(mock_wallet)
+            db_patch.session.commit.assert_called()
+
+    def test_create_wallet_with_no_change_descriptor(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch("src.services.wallet.wallet.DB") as db_patch,
+            patch.object(
+                WalletService, "remove_global_wallet_and_details"
+            ) as remove_global_wallet_and_details_patch,
+        ):
+            mock_wallet = MagicMock()
+            wallet_model_patch.return_value = mock_wallet
+            wallet_model_patch.get_current_wallet = MagicMock(return_value=None)
+
+            add_mock = MagicMock()
+            commit_mock = MagicMock()
+            db_patch.session.add = add_mock
+            db_patch.session.commit = commit_mock
+
+            descriptor = "mock descriptor"
+            change_descriptor = None
             network = bdk.Network.TESTNET
             electrum_url = "mock electrum url"
             stop_gap = 100
