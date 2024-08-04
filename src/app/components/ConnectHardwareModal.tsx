@@ -26,7 +26,7 @@ import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
 import { notifications } from '@mantine/notifications';
-import { Wallet } from '../types/wallet';
+import { MultiSigWalletData, Wallet } from '../types/wallet';
 import {
   getScriptTypeFromDerivationPath,
   ScriptTypes,
@@ -46,11 +46,15 @@ type ConnectHardwareModalProps = {
   isOpen: boolean;
   closeModal: () => void;
   nextModal: () => void;
+  onGetXpubFromHardwareWalletSuccess?: (
+    keyDetails: MultiSigWalletData,
+  ) => void;
 };
 export const ConnectHardwareModal = ({
   isOpen,
   closeModal,
   nextModal,
+  onGetXpubFromHardwareWalletSuccess,
 }: ConnectHardwareModalProps) => {
   const getConnectedHardwareWalletsQuery = useGetConnectedHardwareWallets();
   const navigate = useNavigate();
@@ -144,9 +148,13 @@ export const ConnectHardwareModal = ({
       publicElectrumUrl: '',
     };
 
-    navigate('/sign-in', {
-      state: { walletData: wallet },
-    });
+    if (onGetXpubFromHardwareWalletSuccess) {
+      onGetXpubFromHardwareWalletSuccess(wallet.keyDetails[0]);
+    } else {
+      navigate('/sign-in', {
+        state: { walletData: wallet },
+      });
+    }
   };
   const handleGetXpubFromHardwareWalletError = () => {
     notifications.show({

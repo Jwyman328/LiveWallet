@@ -53,6 +53,7 @@ import {
   Wallet,
 } from '../types/wallet';
 import { PolicyTypes } from '../types/policyTypes';
+import { HardwareModalManager } from '../components/HardwareModalManager';
 
 type PublicElectrumUrl = {
   name: string;
@@ -69,6 +70,7 @@ export const WalletSignIn = () => {
     serverHealthStatusQuery.data.status === 'good' &&
     !serverHealthStatusQuery.isLoading;
 
+  const [isHWWModalOpen, setIsHWWModalOpen] = useState(false);
   const [privateElectrumUrl, setPrivateElectrumUrl] = useState(mockElectrumUrl);
   const [isUsingPublicServer, setIsUsingPublicServer] = useState(false);
   const [activePKTab, setActivePKTab] = useState<string>('0');
@@ -259,6 +261,15 @@ export const WalletSignIn = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setPrivateElectrumUrl(e.target.value);
+  };
+
+  const handleXpubImportedFromHardwareWallet = (
+    keyDetails: MultiSigWalletData,
+  ) => {
+    const newWalletDetails = [...multisigWalletDetails];
+    newWalletDetails[activePKTab] = keyDetails;
+    setMultisigWalletDetails(newWalletDetails);
+    setIsHWWModalOpen(false);
   };
 
   const formItemWidth = 'w-96';
@@ -580,7 +591,15 @@ export const WalletSignIn = () => {
     return multisigWalletDetails.map((wallet, index) => {
       return (
         <Tabs.Panel key={index} value={index.toString()}>
-          <div className="mt-4">
+          <Button
+            styles={{ root: { paddingLeft: '0px' } }}
+            className="ml-0"
+            variant="transparent"
+            onClick={() => setIsHWWModalOpen(true)}
+          >
+            Import from hardware
+          </Button>
+          <div className="mt-0">
             <div className={`flex flex-row ${labelWidth} items-center`}>
               <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
               <Tooltip
@@ -915,6 +934,17 @@ export const WalletSignIn = () => {
                     )}
                   </Button>
                 </div>
+
+                {/* The isHWWModalOpen check is needed in order to demount and remount the component, without it the modal state persists, which is not what we want, we want to have to scan for wallets each time the modal is opened  */}
+                {isHWWModalOpen && (
+                  <HardwareModalManager
+                    isOpen={isHWWModalOpen}
+                    closeModal={() => setIsHWWModalOpen(false)}
+                    onGetXpubFromHardwareWalletSuccess={
+                      handleXpubImportedFromHardwareWallet
+                    }
+                  />
+                )}
               </>
             </Tabs.Panel>
             <Tabs.Panel value="advanced">
