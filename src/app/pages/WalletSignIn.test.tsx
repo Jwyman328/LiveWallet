@@ -24,6 +24,9 @@ jest.mock('react-router-dom', () => ({
   useLocation: () => mockUseLocation,
 }));
 
+const xpubPlaceholder =
+  'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt';
+
 describe('WalletSignIn', () => {
   beforeEach(() => {
     initiateWalletSpy = jest.spyOn(ApiClient, 'initiateWallet');
@@ -72,7 +75,7 @@ describe('WalletSignIn', () => {
     const keyStoreLabel = await screen.findByText('Keystore');
     const xpubLabel = await screen.findByText('xpub');
     const xpubInput = screen.getByPlaceholderText(
-      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+      xpubPlaceholder,
     ) as HTMLInputElement;
 
     const privateElectrumServer = screen.getByLabelText('Private electrum');
@@ -142,7 +145,7 @@ describe('WalletSignIn', () => {
     fireEvent.input(derivationPathInput, { target: { value: derivationPath } });
 
     const xpubInput = screen.getByPlaceholderText(
-      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+      xpubPlaceholder,
     ) as HTMLInputElement;
 
     const mockXpub =
@@ -230,8 +233,6 @@ describe('WalletSignIn', () => {
     const mOfNLabel = screen.getByText('M of N');
     expect(mOfNLabel).toBeInTheDocument();
     const mOfNSlider = screen.getByTestId('m-of-n-slider');
-    console.log('mOfNSlider', mOfNSlider);
-    // test default 2 of 3 another way
     expect(mOfNSlider).toBeInTheDocument();
 
     const keyStoreOne = screen.getByText('Keystore 1');
@@ -241,9 +242,6 @@ describe('WalletSignIn', () => {
     expect(keyStoreTwo).toBeInTheDocument();
     expect(keyStoreThree).toBeInTheDocument();
 
-    // fill out all three forms
-
-
     // now inputs for all three key stores should be showing
     const derivationPathInputs = screen.getAllByPlaceholderText(
       "m/49'/0'/0'",
@@ -251,29 +249,34 @@ describe('WalletSignIn', () => {
     expect(derivationPathInputs.length).toBe(3);
 
     const xpubInputs = screen.getAllByPlaceholderText(
-      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+      xpubPlaceholder,
     ) as HTMLInputElement[];
     expect(xpubInputs.length).toBe(3);
 
     const masterFingerPrintInputs = screen.getAllByPlaceholderText(
       '00000000',
     ) as HTMLInputElement[];
-
     expect(masterFingerPrintInputs.length).toBe(3);
 
-
-    //TODO make all the entered values and there use in the expect calls below reusable not always hard coded
+    const createMockKeyStore = (i: number) => {
+      return {
+        derivation: `m/49'/${i}'/0'`,
+        xpub: `mockXpub${i}`,
+        masterFingerprint: `0000000${i}`,
+      };
+    };
 
     // fill out all three Keystores
     for (let i = 0; i < 3; i++) {
+      const mockKeystore = createMockKeyStore(i);
       fireEvent.input(derivationPathInputs[i], {
-        target: { value: `m/49'/${i}'/0'` },
+        target: { value: mockKeystore.derivation },
       });
       fireEvent.input(xpubInputs[i], {
-        target: { value: `mockXpub${i}` },
+        target: { value: mockKeystore.xpub },
       });
       fireEvent.input(masterFingerPrintInputs[i], {
-        target: { value: `0000000${i}` },
+        target: { value: mockKeystore.masterFingerprint },
       });
     }
 
@@ -284,14 +287,43 @@ describe('WalletSignIn', () => {
     });
 
     fireEvent.click(setupButton);
+    const mockKeyStoreOne = createMockKeyStore(0);
+    const mockKeyStoreTwo = createMockKeyStore(1);
+    const mockKeyStoreThree = createMockKeyStore(2);
+    const mockDescriptor = `wsh(sortedmulti(2,[${
+      mockKeyStoreThree.masterFingerprint
+    }${mockKeyStoreThree.derivation.replace('m', '')}]${
+      mockKeyStoreThree.xpub
+    }/0/*,[${
+      mockKeyStoreTwo.masterFingerprint
+    }${mockKeyStoreTwo.derivation.replace('m', '')}]${
+      mockKeyStoreTwo.xpub
+    }/0/*,[${
+      mockKeyStoreOne.masterFingerprint
+    }${mockKeyStoreOne.derivation.replace('m', '')}]${
+      mockKeyStoreOne.xpub
+    }/0/*))`;
+    const mockChangeDescriptor = `wsh(sortedmulti(2,[${
+      mockKeyStoreThree.masterFingerprint
+    }${mockKeyStoreThree.derivation.replace('m', '')}]${
+      mockKeyStoreThree.xpub
+    }/1/*,[${
+      mockKeyStoreTwo.masterFingerprint
+    }${mockKeyStoreTwo.derivation.replace('m', '')}]${
+      mockKeyStoreTwo.xpub
+    }/1/*,[${
+      mockKeyStoreOne.masterFingerprint
+    }${mockKeyStoreOne.derivation.replace('m', '')}]${
+      mockKeyStoreOne.xpub
+    }/1/*))`;
+
     await waitFor(() => {
-      console.log('initiateWalletSpy calls', initiateWalletSpy.mock.calls[0]);
       expect(initiateWalletSpy).toHaveBeenCalledWith(
-        "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/0/*,[00000001/49'/1'/0']mockXpub1/0/*,[00000000/49'/0'/0']mockXpub0/0/*))",
+        mockDescriptor,
         'BITCOIN',
         `127.0.0.1:50000`,
         100,
-        "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/1/*,[00000001/49'/1'/0']mockXpub1/1/*,[00000000/49'/0'/0']mockXpub0/1/*))",
+        mockChangeDescriptor,
       );
     });
 
@@ -307,28 +339,26 @@ describe('WalletSignIn', () => {
         numberOfXpubs: 3,
         keyDetails: [
           {
-            xpub: 'mockXpub0',
-            derivationPath: "m/49'/0'/0'",
-            masterFingerprint: '00000000',
+            xpub: mockKeyStoreOne.xpub,
+            derivationPath: mockKeyStoreOne.derivation,
+            masterFingerprint: mockKeyStoreOne.masterFingerprint,
           },
 
           {
-            xpub: 'mockXpub1',
-            derivationPath: "m/49'/1'/0'",
-            masterFingerprint: '00000001',
+            xpub: mockKeyStoreTwo.xpub,
+            derivationPath: mockKeyStoreTwo.derivation,
+            masterFingerprint: mockKeyStoreTwo.masterFingerprint,
           },
           {
-            xpub: 'mockXpub2',
-            derivationPath: "m/49'/2'/0'",
-            masterFingerprint: '00000002',
+            xpub: mockKeyStoreThree.xpub,
+            derivationPath: mockKeyStoreThree.derivation,
+            masterFingerprint: mockKeyStoreThree.masterFingerprint,
           },
         ],
-        defaultChangeDescriptor:
-          "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/1/*,[00000001/49'/1'/0']mockXpub1/1/*,[00000000/49'/0'/0']mockXpub0/1/*))",
+        defaultChangeDescriptor: mockChangeDescriptor,
 
         backendServerBaseUrl: 'http://localhost:5011',
-        defaultDescriptor:
-          "wsh(sortedmulti(2,[00000002/49'/2'/0']mockXpub2/0/*,[00000001/49'/1'/0']mockXpub1/0/*,[00000000/49'/0'/0']mockXpub0/0/*))",
+        defaultDescriptor: mockDescriptor,
         defaultElectrumServerUrl: '127.0.0.1:50000',
         defaultNetwork: 'BITCOIN',
         defaultScriptType: 'P2WSH',
@@ -338,6 +368,7 @@ describe('WalletSignIn', () => {
       },
     );
   });
+
   it('Test initial ipcRenderer messages', async () => {
     const screen = render(
       <WrappedInAppWrappers>
@@ -410,7 +441,7 @@ describe('WalletSignIn', () => {
     ) as HTMLInputElement;
 
     const xpubInput = screen.getByPlaceholderText(
-      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+      xpubPlaceholder,
     ) as HTMLInputElement;
 
     const privateElectrumServer = screen.getByLabelText('Private electrum');
@@ -516,7 +547,7 @@ describe('WalletSignIn', () => {
     )) as HTMLInputElement;
 
     const xpubInput = screen.getByPlaceholderText(
-      'xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt',
+      xpubPlaceholder,
     ) as HTMLInputElement;
 
     const privateElectrumServer = screen.getByLabelText('Private electrum');
