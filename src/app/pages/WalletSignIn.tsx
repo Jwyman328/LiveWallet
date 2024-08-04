@@ -613,7 +613,8 @@ export const WalletSignIn = () => {
             <Input
               className={`${formItemWidth}`}
               placeholder="00000000"
-              value={wallet.masterFingerprint || '00000000'}
+              value={wallet.masterFingerprint}
+              defaultValue={'00000000'}
               onInput={(event) => {
                 const existingWalletDetails = multisigWalletDetails;
                 existingWalletDetails[index].masterFingerprint =
