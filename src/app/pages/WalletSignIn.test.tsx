@@ -4,8 +4,10 @@ import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
 import {
+  fiveMultiSigKeyDetailsMock,
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
+  unchainedConfigFileMock,
 } from '../../__tests__/mocks';
 import { Wallet } from '../types/wallet';
 import { ScriptTypes } from '../types/scriptTypes';
@@ -303,6 +305,7 @@ describe('WalletSignIn', () => {
     }${mockKeyStoreOne.derivation.replace('m', '')}]${
       mockKeyStoreOne.xpub
     }/0/*))`;
+
     const mockChangeDescriptor = `wsh(sortedmulti(2,[${
       mockKeyStoreThree.masterFingerprint
     }${mockKeyStoreThree.derivation.replace('m', '')}]${
@@ -367,6 +370,64 @@ describe('WalletSignIn', () => {
         publicElectrumUrl: 'electrum.blockstream.info',
       },
     );
+  });
+
+  it('Test multisig import wallet', async () => {
+    const multiSigWallet3Of5 = { ...mockImportedWalletData };
+    multiSigWallet3Of5.policyType = policyTypeOptions[1];
+    multiSigWallet3Of5.signaturesNeeded = 3;
+    multiSigWallet3Of5.numberOfXpubs = 5;
+    multiSigWallet3Of5.keyDetails = fiveMultiSigKeyDetailsMock;
+
+    mockElectron.ipcRenderer.on.mockResolvedValue(multiSigWallet3Of5);
+
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
+    act(() => {
+      mockElectron.ipcRenderer.on.mock.calls[0][1](multiSigWallet3Of5);
+    });
+
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
+
+    // 5 key stores should now be showing
+    const keyStoreOne = await screen.findByText('Keystore 1');
+    const keyStoreTwo = await screen.findByText('Keystore 2');
+    const keyStoreThree = await screen.findByText('Keystore 3');
+    const keyStoreFour = await screen.findByText('Keystore 4');
+    const keyStoreFive = await screen.findByText('Keystore 5');
+    expect(keyStoreOne).toBeInTheDocument();
+    expect(keyStoreTwo).toBeInTheDocument();
+    expect(keyStoreThree).toBeInTheDocument();
+    expect(keyStoreFour).toBeInTheDocument();
+    expect(keyStoreFive).toBeInTheDocument();
+    expect(policyTypeSelect).toHaveValue('Multi signature');
+
+    // All key stores should be filled out
+    for (let i = 0; i < 5; i++) {
+      const xpub = await screen.findByText(fiveMultiSigKeyDetailsMock[i].xpub);
+
+      const derivationPathInputs = screen.getAllByPlaceholderText(
+        "m/86'/0'/0'",
+      ) as HTMLInputElement[];
+      const masterFingerPrintInputs = (await screen.findAllByPlaceholderText(
+        '00000000',
+      )) as HTMLInputElement[];
+
+      expect(xpub).toBeInTheDocument();
+      expect(derivationPathInputs[i]).toHaveValue(
+        fiveMultiSigKeyDetailsMock[i].derivationPath,
+      );
+
+      expect(masterFingerPrintInputs[i]).toHaveValue(
+        fiveMultiSigKeyDetailsMock[i].masterFingerprint,
+      );
+    }
   });
 
   it('Test initial ipcRenderer messages', async () => {
@@ -489,6 +550,132 @@ describe('WalletSignIn', () => {
         `${mockImportedWalletData.publicElectrumUrl}:50001`,
         100,
         undefined,
+      );
+    });
+  });
+
+  it('Importing unchained config file works successfully', async () => {
+    mockElectron.ipcRenderer.on.mockResolvedValue(unchainedConfigFileMock);
+
+    const screen = render(
+      <WrappedInAppWrappers>
+        <WalletSignIn />
+      </WrappedInAppWrappers>,
+    );
+
+    // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
+    act(() => {
+      mockElectron.ipcRenderer.on.mock.calls[0][1](unchainedConfigFileMock);
+    });
+
+    await waitFor(() => {
+      const setupButton = screen.getByRole('button', { name: 'Connect' });
+      expect(setupButton).toBeEnabled();
+    });
+
+    // Now confirm loaded wallet data is displayed
+
+    const networkSelected = screen.getByText(
+      unchainedConfigFileMock.network.toUpperCase(),
+    );
+
+    const policyTypeSelect =
+      await screen.findByPlaceholderText('Select policy type');
+
+    const scriptTypeSelected = screen.getByText('Legacy (P2SH)');
+
+    const privateElectrumServer = screen.getByLabelText('Private electrum');
+    const publicElectrumServer = screen.getByLabelText('Public electrum');
+
+    const privateElectrumUrl = screen.getByPlaceholderText(
+      'Enter electrum url',
+    ) as HTMLInputElement;
+
+    const publicElectrumUrl = screen.getByPlaceholderText(
+      'Enter public electrum url',
+    ) as HTMLInputElement;
+
+    const keyStoreOne = screen.getByText('Keystore 1');
+    const keyStoreTwo = screen.getByText('Keystore 2');
+    const keyStoreThree = screen.getByText('Keystore 3');
+
+    expect(policyTypeSelect).toHaveValue('Multi signature');
+
+    expect(keyStoreOne).toBeInTheDocument();
+    expect(keyStoreTwo).toBeInTheDocument();
+    expect(keyStoreThree).toBeInTheDocument();
+    expect(networkSelected).toBeInTheDocument();
+    expect(scriptTypeSelected).toBeInTheDocument();
+
+    for (let i = 0; i < 3; i++) {
+      const xpub = await screen.findByText(
+        unchainedConfigFileMock.extendedPublicKeys[i].xpub,
+      );
+
+      const derivationPathInputs = screen.getAllByPlaceholderText(
+        "m/49'/0'/0'",
+      ) as HTMLInputElement[];
+      const masterFingerPrintInputs = (await screen.findAllByPlaceholderText(
+        '00000000',
+      )) as HTMLInputElement[];
+
+      expect(xpub).toBeInTheDocument();
+      expect(derivationPathInputs[i]).toHaveValue(
+        unchainedConfigFileMock.extendedPublicKeys[i].bip32Path,
+      );
+
+      expect(masterFingerPrintInputs[i]).toHaveValue(
+        unchainedConfigFileMock.extendedPublicKeys[i].xfp,
+      );
+    }
+    expect(publicElectrumServer).toBeInTheDocument();
+    expect(privateElectrumServer).toBeInTheDocument();
+    expect(privateElectrumUrl.value).toBe('127.0.0.1:50000');
+    expect(publicElectrumUrl.value).toBe('electrum.blockstream.info');
+
+    let setupButton = screen.getByRole('button', { name: 'Connect' });
+    expect(setupButton).toBeEnabled();
+
+    const mockKeyStoreOne = unchainedConfigFileMock.extendedPublicKeys[0];
+    const mockKeyStoreTwo = unchainedConfigFileMock.extendedPublicKeys[1];
+    const mockKeyStoreThree = unchainedConfigFileMock.extendedPublicKeys[2];
+
+    const mockDescriptor = `sh(sortedmulti(2,[${
+      mockKeyStoreThree.xfp
+    }${mockKeyStoreThree.bip32Path.replace('m', '')}]${
+      mockKeyStoreThree.xpub
+    }/0/*,[${mockKeyStoreTwo.xfp}${mockKeyStoreTwo.bip32Path.replace(
+      'm',
+      '',
+    )}]${mockKeyStoreTwo.xpub}/0/*,[${
+      mockKeyStoreOne.xfp
+    }${mockKeyStoreOne.bip32Path.replace('m', '')}]${
+      mockKeyStoreOne.xpub
+    }/0/*))`;
+
+    const mockChangeDescriptor = `sh(sortedmulti(2,[${
+      mockKeyStoreThree.xfp
+    }${mockKeyStoreThree.bip32Path.replace('m', '')}]${
+      mockKeyStoreThree.xpub
+    }/1/*,[${mockKeyStoreTwo.xfp}${mockKeyStoreTwo.bip32Path.replace(
+      'm',
+      '',
+    )}]${mockKeyStoreTwo.xpub}/1/*,[${
+      mockKeyStoreOne.xfp
+    }${mockKeyStoreOne.bip32Path.replace('m', '')}]${
+      mockKeyStoreOne.xpub
+    }/1/*))`;
+
+    fireEvent.click(setupButton);
+
+    // Confirm loaded wallet data is sent to the backend
+    await waitFor(() => {
+      expect(initiateWalletSpy).toHaveBeenCalledWith(
+        mockDescriptor,
+        unchainedConfigFileMock.network.toUpperCase(),
+        `127.0.0.1:50000`,
+        100,
+        mockChangeDescriptor,
       );
     });
   });

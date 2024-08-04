@@ -261,8 +261,8 @@ export const WalletSignIn = () => {
     setPrivateElectrumUrl(e.target.value);
   };
 
-  const formItemWidth = 'w-80';
-  const labelWidth = 'w-80';
+  const formItemWidth = 'w-96';
+  const labelWidth = 'w-96';
 
   const derivationPathPlaceHolder = getDerivationPathFromScriptType(
     scriptType.value,
@@ -631,7 +631,7 @@ export const WalletSignIn = () => {
             <InputLabel className={`mt-4 mb-2 w-72`}>xpub</InputLabel>
             <Textarea
               className={`${formItemWidth}`}
-              styles={{ input: { minHeight: '6.3rem' } }}
+              styles={{ input: { minHeight: '5rem' } }}
               placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
               onInput={(event) => {
                 const existingWalletDetails = multisigWalletDetails;
@@ -831,7 +831,11 @@ export const WalletSignIn = () => {
                     )}
 
                     <Tabs
-                      className={`mt-6`}
+                      className={
+                        policyType.value === PolicyTypes.MULTI_SIGNATURE
+                          ? `mt-6`
+                          : 'mt-2'
+                      }
                       value={activePKTab}
                       onChange={setActivePKTab}
                     >
@@ -899,7 +903,7 @@ export const WalletSignIn = () => {
                 <div className={formItemWidth}>
                   <Button
                     disabled={!isLoginEnabled}
-                    className="mt-8"
+                    className="mt-6"
                     fullWidth
                     type="button"
                     onClick={signIn}
