@@ -5,6 +5,7 @@ import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
 import {
   fiveMultiSigKeyDetailsMock,
+  mockHWNoPinNoPassphraseNeeded,
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
   unchainedConfigFileMock,
@@ -934,4 +935,216 @@ describe('WalletSignIn', () => {
     )) as HTMLInputElement;
     expect(derivationTaproot).toBeInTheDocument();
   });
+
+  describe('Test loading wallet data from hardware wallet from keystore tabs', () => {
+    // hardware wallet modal spys
+    const closeModalSpy = jest.fn();
+    let getConnectedHardwareWalletsSpy: jest.SpyInstance;
+    let getXpubFromDeviceSpy: jest.SpyInstance;
+    let setWalletPassphraseSpy: jest.SpyInstance;
+    let unlockWalletSpy: jest.SpyInstance;
+    let promptToUnlockWalletSpy: jest.SpyInstance;
+    let closeHardwareWalletsSpy: jest.SpyInstance;
+    const mockXpub = 'mockXpub';
+
+    beforeEach(() => {
+      // hardware wallet modal mocks
+
+      getConnectedHardwareWalletsSpy = jest.spyOn(
+        ApiClient,
+        'getConnectedHardwareWallets',
+      );
+
+      getXpubFromDeviceSpy = jest.spyOn(ApiClient, 'getXpubFromDevice');
+      getXpubFromDeviceSpy.mockResolvedValue({ xpub: mockXpub });
+
+      setWalletPassphraseSpy = jest.spyOn(ApiClient, 'setWalletPassphrase');
+      setWalletPassphraseSpy.mockResolvedValue({ was_passphrase_set: true });
+      unlockWalletSpy = jest.spyOn(ApiClient, 'unlockWallet');
+      unlockWalletSpy.mockResolvedValue({ was_unlock_successful: true });
+
+      promptToUnlockWalletSpy = jest.spyOn(ApiClient, 'promptToUnlockWallet');
+      promptToUnlockWalletSpy.mockResolvedValue({
+        was_prompt_successful: true,
+      });
+      closeHardwareWalletsSpy = jest.spyOn(
+        ApiClient,
+        'closeAndRemoveHardwareWallets',
+      );
+
+      getConnectedHardwareWalletsSpy.mockResolvedValue({
+        wallets: [mockHWNoPinNoPassphraseNeeded],
+      });
+    });
+
+    afterEach(() => {
+      getConnectedHardwareWalletsSpy.mockClear();
+      getXpubFromDeviceSpy.mockClear();
+      setWalletPassphraseSpy.mockClear();
+      unlockWalletSpy.mockClear();
+      promptToUnlockWalletSpy.mockClear();
+      closeHardwareWalletsSpy.mockClear();
+      closeModalSpy.mockClear();
+    });
+
+    it('Test loading wallet data from hardware wallet modal for two different keystores of a multisig policy', async () => {
+      // start with a multisig policy wallet that is not filled out
+      const multiSigWallet3Of5 = { ...mockImportedWalletData };
+      multiSigWallet3Of5.policyType = policyTypeOptions[1];
+      multiSigWallet3Of5.signaturesNeeded = 3;
+      multiSigWallet3Of5.numberOfXpubs = 5;
+      // empty key details so we can load them from a hardware wallet
+      const emptyKeyDetail = {
+        xpub: '',
+        derivationPath: '',
+        masterFingerprint: '',
+      };
+      multiSigWallet3Of5.keyDetails = [
+        { ...emptyKeyDetail },
+        { ...emptyKeyDetail },
+        emptyKeyDetail,
+      ];
+
+      mockElectron.ipcRenderer.on.mockResolvedValue(multiSigWallet3Of5);
+
+      const screen = render(
+        <WrappedInAppWrappers>
+          <WalletSignIn />
+        </WrappedInAppWrappers>,
+      );
+
+      // simulate ipcRenderer.on sending the imported wallet to the WalletSignIn component
+      act(() => {
+        mockElectron.ipcRenderer.on.mock.calls[0][1](multiSigWallet3Of5);
+      });
+
+      let hardwareWalletButton = await screen.findByRole('button', {
+        name: 'Import from hardware',
+      });
+      fireEvent.click(hardwareWalletButton);
+
+      await fillOutHardwareWalletModal(
+        screen,
+        mockHWNoPinNoPassphraseNeeded.id,
+        "m/49'/0'/0'",
+      );
+
+      // The hardware wallet modal should no longer be showing
+      await waitFor(() => {
+        let advanceButton = screen.queryByRole('button', {
+          name: 'Advance',
+        });
+        expect(advanceButton).not.toBeInTheDocument();
+      });
+
+      // now all this data from the hardware wallet key should be showing in the form
+      let derivationPathInputs = (await screen.findAllByPlaceholderText(
+        "m/86'/0'/0'",
+      )) as HTMLInputElement[];
+
+      let masterFingerPrintSelected = (await screen.findAllByPlaceholderText(
+        '00000000',
+      )) as HTMLInputElement[];
+
+      let xpubInput = screen.getAllByPlaceholderText(
+        xpubPlaceholder,
+      ) as HTMLInputElement[];
+      // use 0 since we only did the hardware flow for the first keystore
+      expect(derivationPathInputs[0].value).toBe("m/49'/0'/0'");
+      expect(masterFingerPrintSelected[0].value).toBe('00000000');
+      expect(xpubInput[0].value).toBe(mockXpub);
+
+      // now click on the second keystore tab
+      const keystoreTwo = await screen.findByText(/Keystore 2/);
+      fireEvent.click(keystoreTwo);
+      // Make sure we are starting with am empty xpub for the second keystore
+      xpubInput = screen.getAllByPlaceholderText(
+        xpubPlaceholder,
+      ) as HTMLInputElement[];
+      expect(xpubInput[1].value).toBe('');
+      expect(xpubInput[1]).toBeVisible();
+      // check that the first key store isn't visible anymore now that the second keystore tab is showing.
+      expect(xpubInput[0]).not.toBeVisible();
+
+      // mock that a different xpub and id will be returned
+      // when we go through the hardware modal flow.
+      getXpubFromDeviceSpy.mockResolvedValue({ xpub: 'mockXpub2' });
+      getConnectedHardwareWalletsSpy.mockResolvedValue({
+        wallets: [{ ...mockHWNoPinNoPassphraseNeeded, id: 'differentId' }],
+      });
+
+      // open the hardware wallet modal again
+      hardwareWalletButton = await screen.findByRole('button', {
+        name: 'Import from hardware',
+      });
+      fireEvent.click(hardwareWalletButton);
+
+      await fillOutHardwareWalletModal(screen, 'differentId', "m/49'/1'/1'");
+
+      // now all this data for this hardware wallet key should be showing in the form
+      derivationPathInputs = (await screen.findAllByPlaceholderText(
+        "m/86'/0'/0'",
+      )) as HTMLInputElement[];
+
+      masterFingerPrintSelected = (await screen.findAllByPlaceholderText(
+        '00000000',
+      )) as HTMLInputElement[];
+
+      xpubInput = screen.getAllByPlaceholderText(
+        xpubPlaceholder,
+      ) as HTMLInputElement[];
+      // use index 2 since we just did the hardware flow for the second keystore
+      expect(derivationPathInputs[1].value).toBe("m/49'/1'/1'");
+      expect(masterFingerPrintSelected[1].value).toBe('00000000');
+      expect(xpubInput[1].value).toBe('mockXpub2');
+    });
+  });
 });
+
+const fillOutHardwareWalletModal = async (
+  screen: any,
+  hwwId: string,
+  derivationPath: string,
+) => {
+  const scanButton = await screen.findByRole('button', { name: 'scan' });
+
+  fireEvent.click(scanButton);
+
+  // unlocked wallet
+  const walletUnlockedTitle = await screen.findByText('Mock model');
+  const selectedAccountNumber = await screen.findByText('Account #0');
+
+  expect(walletUnlockedTitle).toBeInTheDocument();
+  expect(selectedAccountNumber).toBeInTheDocument();
+  const unlockedWalletCheckbox = await screen.findByTestId(
+    `hardware-walletcheckbox-${hwwId}`,
+  );
+  fireEvent.click(unlockedWalletCheckbox);
+
+  // set derivation
+  const showDerivationButton = await screen.findByRole('button', {
+    name: 'Show derivation',
+  });
+  fireEvent.click(showDerivationButton);
+  const derivationInput = await screen.findByTestId(`derivation-path-${hwwId}`);
+  await waitFor(() => {
+    expect(derivationInput).toBeVisible();
+  });
+  fireEvent.input(derivationInput, { target: { value: derivationPath } });
+
+  // set account number
+  const accountOptionOne = await screen.findByText('Account #1');
+  fireEvent.click(accountOptionOne);
+  // set network,2 of them one from modal one from form
+  const bitcoinNetworks = await screen.findAllByText('BITCOIN');
+  fireEvent.click(bitcoinNetworks[0]);
+
+  // select unlocked wallet
+  // hit advance button
+  let advanceButton = await screen.findByRole('button', {
+    name: 'Advance',
+  });
+  expect(advanceButton).toBeEnabled();
+
+  fireEvent.click(advanceButton);
+};

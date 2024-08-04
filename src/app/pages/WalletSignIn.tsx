@@ -412,8 +412,6 @@ export const WalletSignIn = () => {
 
   const handleImportedUnchainedWallet = (walletData: UnchainedWalletConfig) => {
     const generateDescriptors = () => {
-      console.log('walletData', walletData);
-
       const { quorum, extendedPublicKeys } = walletData;
       const sortedMultiParts = extendedPublicKeys
         .map((key) => {
