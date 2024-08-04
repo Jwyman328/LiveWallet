@@ -590,14 +590,14 @@ export const WalletSignIn = () => {
       return (
         <Tabs.Panel key={index} value={index.toString()}>
           <Button
-            styles={{ root: { paddingLeft: '0px' } }}
+            styles={{ root: { paddingLeft: '0px', fontSize: '12px' } }}
             className="ml-0"
             variant="transparent"
             onClick={() => setIsHWWModalOpen(true)}
           >
             Import from hardware
           </Button>
-          <div className="mt-0">
+          <div className="mt-1">
             <div className={`flex flex-row ${labelWidth} items-center`}>
               <InputLabel className={`mr-1`}>Master fingerprint</InputLabel>
               <Tooltip
@@ -869,8 +869,6 @@ export const WalletSignIn = () => {
                   Electrum url
                 </InputLabel>
                 <Tabs
-                  color="green"
-                  variant="pills"
                   className={`${formItemWidth} flex flex-row`}
                   value={activeTab}
                   onChange={(value: 'public' | 'private') => {
@@ -901,7 +899,7 @@ export const WalletSignIn = () => {
                           setSelectedPublicServer(option);
                         }
                       }}
-                      className={`mt-2 ${formItemWidth}`}
+                      className={` ${formItemWidth}`}
                     />
                   </Tabs.Panel>
                   <Tabs.Panel value="private">
@@ -912,7 +910,7 @@ export const WalletSignIn = () => {
                       onInput={handlePrivateElectrumInput}
                       value={privateElectrumUrl}
                       className={`${formItemWidth}`}
-                      style={{ marginTop: '.5rem' }}
+                      style={{ marginTop: '0rem' }}
                     />
                   </Tabs.Panel>
                 </Tabs>
