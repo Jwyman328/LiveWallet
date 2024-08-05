@@ -16,8 +16,14 @@ export function useCreateWallet(
   onError: () => void,
 ) {
   return useMutation(
-    (descriptor: string) =>
-      ApiClient.initiateWallet(descriptor, network, electrumUrl, gapLimit),
+    (descriptors: { descriptor: string; changeDescriptor?: string }) =>
+      ApiClient.initiateWallet(
+        descriptors.descriptor,
+        network,
+        electrumUrl,
+        gapLimit,
+        descriptors.changeDescriptor,
+      ),
     {
       onSuccess: () => {
         onSuccess();

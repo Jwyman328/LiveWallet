@@ -22,8 +22,13 @@ export function useGetUtxos() {
 export function useCreateTxFeeEstimate(
   utxos: UtxoRequestParam[],
   feeRate: number,
+  onError?: () => void,
 ) {
-  return useMutation(() => ApiClient.createTxFeeEstimation(utxos, feeRate));
+  return useMutation(() => ApiClient.createTxFeeEstimation(utxos, feeRate), {
+    onError: () => {
+      onError();
+    },
+  });
 }
 
 export function useGetCurrentFees() {

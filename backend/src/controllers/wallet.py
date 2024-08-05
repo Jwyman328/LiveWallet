@@ -25,6 +25,7 @@ LOGGER = structlog.get_logger()
 
 class CreateWalletRequestDto(BaseModel):
     descriptor: str
+    change_descriptor: Optional[str] = None
     network: Annotated[bdk.Network, str]
     electrumUrl: str
     gapLimit: Optional[int] = None
@@ -79,7 +80,7 @@ def create_wallet():
         data = CreateWalletRequestDto.model_validate_json(request.data)
 
         WalletService.create_wallet(
-            data.descriptor, data.network, data.electrumUrl, data.gapLimit
+            data.descriptor, data.change_descriptor, data.network, data.electrumUrl, data.gapLimit
         )
 
         WalletService()

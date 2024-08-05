@@ -62,10 +62,14 @@ def get_fee_for_utxo(
                 errors=["unspendable"], spendable=False
             ).model_dump()
         else:
-            return GetUtxosErrorResponseDto(
-                errors=["error getting fee estimate for utxo"],
-                spendable=False,
-            ).model_dump()
+            return (
+                GetUtxosErrorResponseDto(
+                    spendable=False,
+                    errors=["error getting fee estimate for utxo"],
+                    message="Error getting fee estimate for utxos",
+                ).model_dump(),
+                400,
+            )
 
     except ValidationError as e:
         return (

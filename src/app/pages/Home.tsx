@@ -4,7 +4,7 @@ import { UtxosDisplay } from '../components/utxosDisplay';
 import { useGetBalance, useGetCurrentFees, useGetUtxos } from '../hooks/utxos';
 
 import { notifications } from '@mantine/notifications';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Group,
@@ -50,6 +50,12 @@ function Home() {
   >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
   const [btcPrice, setBtcPrice] = useState(0);
+
+  const location = useLocation();
+  const { numberOfXpubs, signaturesNeeded } = location.state as {
+    numberOfXpubs: number;
+    signaturesNeeded: number;
+  };
 
   const handleGetBtcPrice = (data: GetBTCPriceResponseType) => {
     const usdPrice = data.USD;
@@ -426,6 +432,8 @@ function Home() {
           currentBatchedTxData={currentBatchedTxData}
           setCurrentBatchedTxData={setCurrentBatchedTxData}
           btcPrice={btcPrice}
+          numberOfXpubs={numberOfXpubs || 1}
+          signaturesNeeded={signaturesNeeded || 1}
         />
       </div>
     </div>

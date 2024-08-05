@@ -1,14 +1,19 @@
 import { ReactNode, useState } from 'react';
 import { ConnectHardwareModal } from './ConnectHardwareModal';
 import { SupportedHardwareWallets } from './SupportedHardwareWallets';
+import { MultiSigWalletData } from '../types/wallet';
 
 type HardwareModalManagerProps = {
   isOpen: boolean;
   closeModal: () => void;
+  onGetXpubFromHardwareWalletSuccess?: (
+    keyDetails: MultiSigWalletData,
+  ) => void;
 };
 export const HardwareModalManager = ({
   isOpen,
   closeModal,
+  onGetXpubFromHardwareWalletSuccess,
 }: HardwareModalManagerProps) => {
   const [currentModalIndex, setCurrentModalIndex] = useState(0);
 
@@ -17,6 +22,7 @@ export const HardwareModalManager = ({
       nextModal={() => setCurrentModalIndex(1)}
       isOpen={isOpen}
       closeModal={closeModal}
+      onGetXpubFromHardwareWalletSuccess={onGetXpubFromHardwareWalletSuccess}
     />,
     <SupportedHardwareWallets
       height="400px"

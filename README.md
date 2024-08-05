@@ -19,7 +19,12 @@ https://github.com/user-attachments/assets/4439fbef-a55e-45dd-8a90-4cc1a60e1be3
 
 
 # Development
+
 ## Prerequisits
+- For all things bitcoin core / electrum in local development install ngiri (https://github.com/vulpemventures/nigiri)
+```
+$ curl https://getnigiri.vulpem.com | bash
+```
 - For hardware wallet usb interactions, libusb is required.
 ```bash
 $ brew install libusb

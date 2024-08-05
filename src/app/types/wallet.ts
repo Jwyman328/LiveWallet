@@ -1,17 +1,20 @@
+import { PolicyTypeOption } from '../components/formOptions';
 import { FeeRateColor, ScaleOption } from '../pages/Home';
 import { BtcMetric } from './btcSatHandler';
 import { Network } from './network';
 import { ScriptTypes } from './scriptTypes';
 
 export type Wallet = {
+  policyType: PolicyTypeOption;
+  signaturesNeeded: number;
+  numberOfXpubs: number;
+  keyDetails: MultiSigWalletData[];
   defaultDescriptor: string;
-  defaultMasterFingerprint: string;
-  defaultDerivationPath: string;
-  defaultXpub: string;
+  defaultChangeDescriptor?: string;
+  defaultScriptType: ScriptTypes;
   defaultElectrumServerUrl: string;
   backendServerBaseUrl: string;
   defaultNetwork: Network;
-  defaultScriptType: ScriptTypes;
   isUsingPublicServer: boolean;
   privateElectrumUrl: string;
   publicElectrumUrl: string;
@@ -28,4 +31,41 @@ export type WalletConfigs = {
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
   feeRate?: string | number;
+};
+
+interface Quorum {
+  requiredSigners: number;
+  totalSigners: number;
+}
+
+interface UnchainedExtendedPublicKey {
+  name: string;
+  xpub: string;
+  bip32Path: string;
+  xfp: string;
+}
+
+interface UnchainedClient {
+  type: string;
+  url: string;
+  username: string;
+  walletName: string;
+}
+
+export type UnchainedWalletConfig = {
+  name: string;
+  uuid: string;
+  addressType: string;
+  network: string;
+  quorum: Quorum;
+  startingAddressIndex: number;
+  extendedPublicKeys: UnchainedExtendedPublicKey[];
+  client: UnchainedClient;
+  ledgerPolicyHmacs: any[];
+};
+
+export type MultiSigWalletData = {
+  xpub: string;
+  derivationPath: string;
+  masterFingerprint: string;
 };

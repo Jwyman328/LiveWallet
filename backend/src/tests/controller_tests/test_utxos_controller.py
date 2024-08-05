@@ -131,10 +131,11 @@ class TestUtxosController(TestCase):
                 )
             )
 
+            assert response.status == "400 BAD REQUEST"
             assert json.loads(response.data) == {
                 "errors": ["error getting fee estimate for utxo"],
                 "spendable": False,
-                "message": "Error getting tx fee",
+                "message": "Error getting fee estimate for utxos",
             }
 
     def test_get_utxo_fee_request_data_validation_error(self):

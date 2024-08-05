@@ -58,6 +58,7 @@ class WalletService:
     def create_wallet(
         cls,
         descriptor: str,
+        change_descriptor: Optional[str],
         network: bdk.Network,
         electrum_url: str,
         stop_gap: Optional[int] = 100,
@@ -67,8 +68,10 @@ class WalletService:
         """
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
+
         new_wallet = Wallet(
             descriptor=descriptor,
+            change_descriptor=change_descriptor,
             network=network.value,
             electrum_url=electrum_url,
             stop_gap=stop_gap,
@@ -116,12 +119,19 @@ class WalletService:
             raise Exception("No wallet details in the database")
 
         descriptor = wallet_details.descriptor
+        change_descriptor = wallet_details.change_descriptor
         network = wallet_details.network
         electrum_url = wallet_details.electrum_url
         stop_gap = wallet_details.stop_gap
 
         wallet_descriptor = bdk.Descriptor(
             descriptor, bdk.Network._value2member_map_[network]
+        )
+
+        wallet_change_descriptor = (
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
+            if change_descriptor
+            else None
         )
 
         db_config = bdk.DatabaseConfig.MEMORY()
@@ -134,7 +144,7 @@ class WalletService:
 
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
-            change_descriptor=None,
+            change_descriptor=wallet_change_descriptor,
             network=bdk.Network._value2member_map_[network],
             database_config=db_config,
         )

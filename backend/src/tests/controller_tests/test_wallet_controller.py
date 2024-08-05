@@ -33,7 +33,39 @@ class TestWalletController(TestCase):
                 },
             )
             wallet_service_mock.create_wallet.assert_called_once_with(
-                descriptor, bdk.Network.TESTNET, electrum_url, 101
+                descriptor, None, bdk.Network.TESTNET, electrum_url, 101
+            )
+
+            wallet_service_mock.assert_called_once()
+
+            assert wallet_response.status == "200 OK"
+            assert json.loads(wallet_response.data) == {
+                "message": "wallet created successfully",
+                "descriptor": descriptor,
+                "network": network,
+                "electrumUrl": electrum_url,
+            }
+
+    def test_wallet_controller_with_change_descriptor_success(self):
+        with patch("src.controllers.wallet.WalletService") as wallet_service_mock:
+            wallet_service_mock.create_wallet = MagicMock()
+
+            descriptor = "mock_descriptor"
+            change_descriptor = "change_descriptor"
+            network = "TESTNET"
+            electrum_url = "mock_electrum_url"
+            wallet_response = self.test_client.post(
+                "/wallet/",
+                json={
+                    "descriptor": descriptor,
+                    "change_descriptor": change_descriptor,
+                    "network": network,
+                    "electrumUrl": electrum_url,
+                    "gapLimit": 101,
+                },
+            )
+            wallet_service_mock.create_wallet.assert_called_once_with(
+                descriptor, change_descriptor, bdk.Network.TESTNET, electrum_url, 101
             )
 
             wallet_service_mock.assert_called_once()
