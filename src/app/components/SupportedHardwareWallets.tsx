@@ -106,7 +106,7 @@ const SupportedWallet = ({
             multiline
             w={250}
             withArrow
-            label="This device implements the supported interface but its supported has not been confirmed via manual testing."
+            label="This device implements the supported interface but its support has not been confirmed via manual testing."
           >
             <IconInfoCircle
               style={{ marginLeft: '4px', width: '14px', height: '14px' }}
