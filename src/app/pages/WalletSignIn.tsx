@@ -9,6 +9,7 @@ import {
   NumberInput,
   Tooltip,
   RangeSlider,
+  RangeSliderValue,
 } from '@mantine/core';
 
 import {
@@ -101,7 +102,7 @@ export const WalletSignIn = () => {
     MultiSigWalletData[]
   >([{ ...defaultMultiSigWalletData }]);
 
-  const handleNofMChange = (value: any) => {
+  const handleNofMChange = (value: RangeSliderValue) => {
     const currentAmount = numberOfXpubs;
     const newAmount = value[1];
     const howManyNewTabsToAdd = newAmount - currentAmount;
@@ -471,7 +472,6 @@ export const WalletSignIn = () => {
       },
     );
     setMultisigWalletDetails(unchainedMultisigWalletData);
-    // }
   };
 
   const handleImportedWallet = (walletData: Wallet | UnchainedWalletConfig) => {

@@ -1116,10 +1116,6 @@ const fillOutHardwareWalletModal = async (
 
   expect(walletUnlockedTitle).toBeInTheDocument();
   expect(selectedAccountNumber).toBeInTheDocument();
-  const unlockedWalletCheckbox = await screen.findByTestId(
-    `hardware-walletcheckbox-${hwwId}`,
-  );
-  fireEvent.click(unlockedWalletCheckbox);
 
   // set derivation
   const showDerivationButton = await screen.findByRole('button', {
@@ -1140,6 +1136,11 @@ const fillOutHardwareWalletModal = async (
   fireEvent.click(bitcoinNetworks[0]);
 
   // select unlocked wallet
+  const unlockedWalletCheckbox = await screen.findByTestId(
+    `hardware-walletcheckbox-${hwwId}`,
+  );
+  fireEvent.click(unlockedWalletCheckbox);
+
   // hit advance button
   let advanceButton = await screen.findByRole('button', {
     name: 'Advance',

@@ -69,8 +69,6 @@ class WalletService:
         if Wallet.get_current_wallet():
             cls.remove_global_wallet_and_details()
 
-
-
         new_wallet = Wallet(
             descriptor=descriptor,
             change_descriptor=change_descriptor,
@@ -130,9 +128,11 @@ class WalletService:
             descriptor, bdk.Network._value2member_map_[network]
         )
 
-        wallet_change_descriptor = bdk.Descriptor(
-            change_descriptor, bdk.Network._value2member_map_[network]
-        ) if change_descriptor else None
+        wallet_change_descriptor = (
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
+            if change_descriptor
+            else None
+        )
 
         db_config = bdk.DatabaseConfig.MEMORY()
 

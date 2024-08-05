@@ -116,6 +116,77 @@ class TestWalletService(TestCase):
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
 
+    def test_connect_wallet_with_wallet_without_change_descriptor(self):
+        descriptor_mock = MagicMock(spec=bdk.Descriptor)
+
+        memory_mock = MagicMock()
+        block_chain_config_mock = MagicMock(spec=bdk.BlockchainConfig)
+        electrum_config_mock = MagicMock(spec=bdk.ElectrumConfig)
+        block_chain_mock = MagicMock(spec=bdk.Blockchain)
+        wallet_mock = MagicMock(return_value=self.bdk_wallet_mock)
+        wallet_sync_mock = MagicMock()
+        wallet_mock.sync = wallet_sync_mock
+        wallet_details_mock = MagicMock()
+        wallet_details_mock.descriptor = "mock_descriptor"
+        wallet_details_mock.change_descriptor = None
+        wallet_details_mock.network = bdk.Network.TESTNET.value
+        wallet_details_mock.electrum_url = "mock_url"
+        wallet_details_mock.id = "mock_id"
+        wallet_details_mock.stop_gap = 100
+
+        with (
+            patch.object(
+                bdk, "Descriptor", return_value=descriptor_mock
+            ) as descriptor_patch,
+            patch.object(
+                bdk.DatabaseConfig, "MEMORY", return_value=memory_mock
+            ) as database_config_memory_patch,
+            patch.object(
+                bdk.BlockchainConfig, "ELECTRUM", return_value=block_chain_config_mock
+            ) as block_chain_config_electrum_mock,
+            patch.object(
+                bdk, "ElectrumConfig", return_value=electrum_config_mock
+            ) as electrum_config_patch,
+            patch.object(
+                bdk, "Blockchain", return_value=block_chain_mock
+            ) as blockchain_patch,
+            patch.object(bdk, "Wallet", return_value=wallet_mock) as wallet_patch,
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+        ):
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+
+            response = WalletService.connect_wallet()
+
+            wallet_model_patch.get_current_wallet.assert_called()
+            wallet_model_patch.assert_not_called()
+
+            expected_calls = [
+                call(
+                    wallet_details_mock.descriptor,
+                    bdk.Network.TESTNET,
+                ),
+            ]
+            descriptor_patch.assert_has_calls(expected_calls)
+
+            database_config_memory_patch.assert_called()
+            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            electrum_config_patch.assert_called_with(
+                wallet_details_mock.electrum_url, None, 2, 30, 100, True
+            )
+
+            blockchain_patch.assert_called_with(block_chain_config_mock)
+            wallet_patch.assert_called_with(
+                descriptor=descriptor_mock,
+                change_descriptor=None,
+                network=bdk.Network.TESTNET,
+                database_config=memory_mock,
+            )
+
+            assert WalletService.wallet == wallet_mock
+
+            assert response == wallet_mock
+            wallet_sync_mock.assert_called_with(block_chain_mock, None)
+
     def test_connect_wallet_with_existing_wallet(
         self,
     ):
