@@ -165,7 +165,7 @@ describe('Home', () => {
     });
 
     const batchTotalFees = screen.getByText('Total fees: ...');
-    const batchFeePct = screen.getByText('Fee pct: ...');
+    const batchFeePct = screen.getByText('Fee cost: ...');
 
     expect(title).toBeInTheDocument();
     expect(feeTitle).toBeInTheDocument();

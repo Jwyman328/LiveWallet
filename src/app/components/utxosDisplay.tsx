@@ -435,7 +435,7 @@ export const UtxosDisplay = ({
       return (
         <div className={borderClasses}>
           <p>Total fees: ...</p>
-          <p>Fee pct: ...</p>
+          <p>Fee cost: ...</p>
         </div>
       );
     }
