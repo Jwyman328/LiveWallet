@@ -1,3 +1,6 @@
+# 0.4.0
+- Add multisig wallet support
+
 
 # 0.3.0
 - usd price support.
