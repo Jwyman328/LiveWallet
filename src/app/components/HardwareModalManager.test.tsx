@@ -112,7 +112,7 @@ describe('HardwareWalletModalManager', () => {
     fireEvent.mouseEnter(ledgerWarningTooltip);
 
     const notManuallyTestedMessage = await screen.findByText(
-      'This device implements the supported interface but its supported has not been confirmed via manual testing.',
+      'This device implements the supported interface but its support has not been confirmed via manual testing.',
     );
     expect(notManuallyTestedMessage).toBeInTheDocument();
 
@@ -685,5 +685,4 @@ describe('HardwareWalletModalManager', () => {
       },
     });
   });
-
 });
