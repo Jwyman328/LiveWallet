@@ -219,6 +219,61 @@ function Home() {
 
     setFeeRateColorMapValues(newFeeRateColorMapValues);
   };
+  const scaleColor = (r: number, g: number, b: number, scale: number) => {
+    // Scale factor to increase the color intensity
+    let newR = Math.min(255, Math.max(0, r + scale));
+    let newG = Math.min(255, Math.max(0, g + scale));
+    let newB = Math.min(255, Math.max(0, b + scale));
+
+    return { r: newR, g: newG, b: newB };
+  };
+
+  const extractRGBValues = (rgb: string) => {
+    // Regular expression to match 'rgb(r, g, b)'
+    const regex = /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
+    const match = rgb.match(regex);
+
+    if (match) {
+      // Extract values from the matched groups
+      const r = parseInt(match[1], 10);
+      const g = parseInt(match[2], 10);
+      const b = parseInt(match[3], 10);
+      return { r, g, b };
+    } else {
+      throw new Error('Invalid RGB string format');
+    }
+  };
+
+  const removeFeeRateColor = (index: number) => {
+    const newFeeRateColorMapValues = [...feeRateColorMapValues];
+    newFeeRateColorMapValues.splice(index, 1);
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
+  const addFeeRateColor = () => {
+    const lastFeeRateColor =
+      feeRateColorMapValues[feeRateColorMapValues.length - 1];
+    const newFeeRateColorFeeRate = lastFeeRateColor[0] + 5;
+    const lastFeeRateColorColor = lastFeeRateColor[1];
+    const lastFeeRateColorRGB = extractRGBValues(lastFeeRateColorColor);
+    const newFeeRateColorRGB = scaleColor(
+      lastFeeRateColorRGB['r'],
+      lastFeeRateColorRGB['g'],
+      lastFeeRateColorRGB['b'],
+      -10, // make color darker
+    );
+    const newFeeRateColorColor = `rgb(${newFeeRateColorRGB['r']}, ${newFeeRateColorRGB['g']}, ${newFeeRateColorRGB['b']})`;
+    const newFeeRateColorMapValue: FeeRateColor = [
+      newFeeRateColorFeeRate,
+      newFeeRateColorColor,
+    ];
+
+    const newFeeRateColorMapValues = [
+      ...feeRateColorMapValues,
+      newFeeRateColorMapValue,
+    ];
+
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
 
   const setMinFeeRate = (option: { value: string; label: string }) => {
     if (feeRate < Number(option.value)) {
@@ -307,6 +362,8 @@ function Home() {
               feeRateColorMapValues={feeRateColorMapValues}
               changeFeeRateColorPercent={changeFeeRateColorPercent}
               changeFeeRateColor={changeFeeRateColor}
+              removeFeeRateColor={removeFeeRateColor}
+              addFeeRateColor={addFeeRateColor}
             />
           </div>
 

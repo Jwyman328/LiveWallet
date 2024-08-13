@@ -32,9 +32,6 @@
 
 
 # Feature Ideas
-- usd cost of a transaction.
-    - allow ability to choose the price of bitcoin for this calculation
-    - also get current price via some api.
 - add ability to select how many outputs to use in the fee estimation
   - resource:
     - https://jlopp.github.io/bitcoin-transaction-size-calculator/
