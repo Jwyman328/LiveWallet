@@ -486,8 +486,10 @@ describe('Home', () => {
     fivePercent = within(slideout).queryByDisplayValue('5%');
 
     // after removing the second color/pct, it should no longer be showing
-    expect(fivePercentColor).not.toBeInTheDocument();
-    expect(fivePercent).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(fivePercentColor).not.toBeInTheDocument();
+      expect(fivePercent).not.toBeInTheDocument();
+    });
 
     // test index 5 fee rate color doesn't exist yet
     let fifthPctFeeRateColorContainer = within(slideout).queryByTestId(

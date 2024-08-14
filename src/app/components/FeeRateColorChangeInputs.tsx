@@ -2,6 +2,7 @@ import { NumberInput, ColorInput, CloseButton } from '@mantine/core';
 
 import { IconPlus } from '@tabler/icons-react';
 import { ActionIcon } from '@mantine/core';
+import { useState } from 'react';
 
 type FeeRateColorChangeInputsProps = {
   numberOfInputs: number;
@@ -21,24 +22,35 @@ export const FeeRateColorChangeInputs = ({
 }: FeeRateColorChangeInputsProps) => {
   const components = [];
   const leftItemWidth = '25';
+  const [inputToBeRemoved, setInputToBeRemoved] = useState<any>(null);
 
   const removeFeeRateColorInput = (index: number) => {
-    const newFeeRateColorMapValues = [...feeRateColorMapValues];
-    newFeeRateColorMapValues.splice(index, 1);
-    components.splice(index, 1);
-    removeFeeRateColor(index);
+    // set inputToBeRemoved so that the component's style changes to animate-slideOut
+    setInputToBeRemoved(index);
+    // remove the input after the animation is done in 300ms
+    setTimeout(() => {
+      const newFeeRateColorMapValues = [...feeRateColorMapValues];
+      newFeeRateColorMapValues.splice(index, 1);
+      components.splice(index, 1);
+      removeFeeRateColor(index);
+      setInputToBeRemoved(null);
+    }, 300);
   };
+
   for (let i = 0; i < numberOfInputs; i++) {
     const margin = i === 0 ? 'mt-4' : '';
+    const styles = inputToBeRemoved === i ? 'animate-slideOut' : '';
+
     components.push(
       <div
+        key={`${feeRateColorMapValues[i][1]}`}
         data-testid={`fee-rate-color-container-${i}`}
-        className={`flex flex-row items-end justify-between ${margin}`}
+        className={` animate-slideIn flex flex-row items-end justify-between ${margin} ${styles}`}
       >
         {i > 0 && (
           <CloseButton
             style={{ marginBottom: '5px' }}
-            size={leftItemWidth}
+            size={25}
             className=" relative right-1"
             onClick={() => removeFeeRateColorInput(i)}
           />
