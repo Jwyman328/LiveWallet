@@ -20,6 +20,7 @@ export const FeeRateColorChangeInputs = ({
   addFeeRateColor,
 }: FeeRateColorChangeInputsProps) => {
   const components = [];
+  const leftItemWidth = '25';
 
   const removeFeeRateColorInput = (index: number) => {
     const newFeeRateColorMapValues = [...feeRateColorMapValues];
@@ -30,16 +31,20 @@ export const FeeRateColorChangeInputs = ({
   for (let i = 0; i < numberOfInputs; i++) {
     const margin = i === 0 ? 'mt-4' : '';
     components.push(
-      <div className={`flex flex-row items-end justify-between ${margin}`}>
+      <div
+        data-testid={`fee-rate-color-container-${i}`}
+        className={`flex flex-row items-end justify-between ${margin}`}
+      >
         {i > 0 && (
           <CloseButton
-            size={35}
-            className="mb-0 relative right-1"
+            style={{ marginBottom: '5px' }}
+            size={leftItemWidth}
+            className=" relative right-1"
             onClick={() => removeFeeRateColorInput(i)}
           />
         )}
         <NumberInput
-          style={i === 0 ? { marginLeft: '35px' } : {}}
+          style={i === 0 ? { marginLeft: `${leftItemWidth}px` } : {}}
           label={i === 0 ? 'Fee %' : undefined}
           placeholder="Percents"
           suffix="%"
@@ -62,8 +67,9 @@ export const FeeRateColorChangeInputs = ({
   const AddButton = () => {
     return (
       <ActionIcon
+        data-testid={`add-fee-rate-color`}
         variant="white"
-        size="35"
+        size={leftItemWidth}
         className="mb-0 relative right-1 mt-1.5"
         onClick={addFeeRateColor}
       >
@@ -71,7 +77,7 @@ export const FeeRateColorChangeInputs = ({
       </ActionIcon>
     );
   };
-
+  // don't allow adding more than 9 inputs
   if (components.length < 9) {
     components.push(<AddButton />);
   }

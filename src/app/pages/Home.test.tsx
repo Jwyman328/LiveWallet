@@ -401,47 +401,120 @@ describe('Home', () => {
     // test default Colors
     const zeroPercentColor =
       within(slideout).getByDisplayValue('rgb(220, 252, 231)');
-    const twoPercentColor =
+    const fivePercentColor =
       within(slideout).getByDisplayValue('rgb(254, 240, 138)');
-    const tenPercentColor =
-      within(slideout).getByDisplayValue('rgb(248, 113, 113)');
-    const fortyFivePercentColor =
+    const twentyFivePercentColor =
       within(slideout).getByDisplayValue('rgb(239, 68, 68)');
-    const sixtyFiveColor =
+    const fiftyPercentColor =
       within(slideout).getByDisplayValue('rgb(220, 38, 38)');
-    const eightyFiveColor =
+    const seventyFivePercentColor =
       within(slideout).getByDisplayValue('rgb(185, 28, 28)');
     const hundredPercentColor =
       within(slideout).getByDisplayValue('rgb(153, 27, 27)');
     // test default percents
     const zeroPercent = within(slideout).getByDisplayValue('0%');
-    const twoPercent = within(slideout).getByDisplayValue('2%');
-    const tenPercent = within(slideout).getByDisplayValue('10%');
-    const fortyFivePercent = within(slideout).getByDisplayValue('45%');
-    const sixtyFive = within(slideout).getByDisplayValue('65%');
-    const eightyFive = within(slideout).getByDisplayValue('85%');
+    const fivePercent = within(slideout).getByDisplayValue('5%');
+    const twentyFivePercent = within(slideout).getByDisplayValue('25%');
+    const fiftyPercent = within(slideout).getByDisplayValue('50%');
+    const seventyFivePercent = within(slideout).getByDisplayValue('75%');
     const hundredPercent = within(slideout).getByDisplayValue('100%');
     expect(zeroPercent).toBeInTheDocument();
-    expect(twoPercent).toBeInTheDocument();
-    expect(tenPercent).toBeInTheDocument();
-    expect(fortyFivePercent).toBeInTheDocument();
-    expect(sixtyFive).toBeInTheDocument();
-    expect(eightyFive).toBeInTheDocument();
+    expect(fivePercent).toBeInTheDocument();
+    expect(twentyFivePercent).toBeInTheDocument();
+    expect(fiftyPercent).toBeInTheDocument();
+    expect(seventyFivePercent).toBeInTheDocument();
     expect(hundredPercent).toBeInTheDocument();
 
     expect(zeroPercentColor).toBeInTheDocument();
-    expect(twoPercentColor).toBeInTheDocument();
-    expect(tenPercentColor).toBeInTheDocument();
-    expect(fortyFivePercentColor).toBeInTheDocument();
-    expect(sixtyFiveColor).toBeInTheDocument();
-    expect(eightyFiveColor).toBeInTheDocument();
+    expect(fivePercentColor).toBeInTheDocument();
+    expect(twentyFivePercentColor).toBeInTheDocument();
+    expect(fiftyPercentColor).toBeInTheDocument();
+    expect(seventyFivePercentColor).toBeInTheDocument();
     expect(hundredPercentColor).toBeInTheDocument();
 
     const logOutButton = screen.getByRole('button', { name: 'Log out' });
     expect(logOutButton).toBeEnabled();
   });
 
-  it('Test default settings slideout', async () => {
+  it('Test removing and adding settings percent colors', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    expect(title).toBeInTheDocument();
+
+    const slideoutButton = screen.getByTestId('settings-button');
+    fireEvent.click(slideoutButton);
+
+    const settingsTitle = await screen.findByText('Settings');
+    expect(settingsTitle).toBeInTheDocument();
+
+    const slideout = screen.getByTestId('settings-slideout');
+
+    // confirm that the five percent color and percent are showing
+    let fivePercentColor =
+      within(slideout).getByDisplayValue('rgb(254, 240, 138)');
+    let fivePercent = within(slideout).getByDisplayValue('5%');
+    expect(fivePercentColor).toBeInTheDocument();
+    expect(fivePercent).toBeInTheDocument();
+
+    const zeroPctFeeRateColorContainer = within(slideout).getByTestId(
+      'fee-rate-color-container-0',
+    );
+    const zeroPctFeeRateColorContainerButtons = within(
+      zeroPctFeeRateColorContainer,
+    ).queryAllByRole('button');
+
+    // shouldn't be able to remove the first color/pct.
+    expect(zeroPctFeeRateColorContainerButtons).toHaveLength(0);
+
+    // test you can remove the second color/pct
+    const fivePctFeeRateColorContainer = within(slideout).getByTestId(
+      'fee-rate-color-container-1',
+    );
+    const fivePctFeeRateColorRemoveButton = within(
+      fivePctFeeRateColorContainer,
+    ).queryByRole('button');
+
+    fireEvent.click(fivePctFeeRateColorRemoveButton);
+
+    fivePercentColor =
+      within(slideout).queryByDisplayValue('rgb(254, 240, 138)');
+    fivePercent = within(slideout).queryByDisplayValue('5%');
+
+    // after removing the second color/pct, it should no longer be showing
+    expect(fivePercentColor).not.toBeInTheDocument();
+    expect(fivePercent).not.toBeInTheDocument();
+
+    // test index 5 fee rate color doesn't exist yet
+    let fifthPctFeeRateColorContainer = within(slideout).queryByTestId(
+      'fee-rate-color-container-5',
+    );
+    expect(fifthPctFeeRateColorContainer).not.toBeInTheDocument();
+
+    const addFeeRateColorButton =
+      within(slideout).getByTestId('add-fee-rate-color');
+
+    fireEvent.click(addFeeRateColorButton);
+
+    // now the index 5 color/pct should be added
+    fifthPctFeeRateColorContainer = within(slideout).queryByTestId(
+      'fee-rate-color-container-5',
+    );
+    expect(fifthPctFeeRateColorContainer).toBeInTheDocument();
+
+    // Test the pct and pct color.
+    const newPercentColor =
+      within(slideout).queryByDisplayValue('rgb(143, 17, 17)');
+    const newPercent = within(slideout).queryByDisplayValue('105%');
+    expect(newPercentColor).toBeInTheDocument();
+    expect(newPercent).toBeInTheDocument();
+  });
+
+  it('Test logging out from settings slideout', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <Home />
