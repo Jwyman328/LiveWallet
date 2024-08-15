@@ -39,7 +39,7 @@ export const FeeRateColorChangeInputs = ({
 
   for (let i = 0; i < numberOfInputs; i++) {
     const margin = i === 0 ? 'mt-4' : '';
-    const styles = inputToBeRemoved === i ? 'animate-slideOut' : '';
+    const styles = inputToBeRemoved === i ? 'animate-slideOutAndUp' : '';
 
     components.push(
       <div
