@@ -641,7 +641,8 @@ export const UtxosDisplay = ({
                 withArrow
                 w={300}
                 multiline
-                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number."
+                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number.
+                "
               >
                 <IconInfoCircle
                   style={{
@@ -657,11 +658,12 @@ export const UtxosDisplay = ({
               className={`mb-4 w-40 mt-2`}
               style={sectionLabelStyles}
               allowNegative={false}
+              clampBehavior="strict"
               value={receivingOutputCount}
               onChange={onReceivingOutputChange}
               thousandSeparator=","
               min={1}
-              max={1000}
+              max={5000}
             />
 
             <div className="mt-auto">
@@ -674,7 +676,7 @@ export const UtxosDisplay = ({
                   style={sectionHeaderStyles}
                   className="font-semibold mt-0 mr-1"
                 >
-                  Tx Fees
+                  Fees
                 </InputLabel>
 
                 <DisplayBatchTxData />
@@ -691,13 +693,14 @@ export const UtxosDisplay = ({
       >
         <div className="flex flex-row mt-4 mb-4 h-14">
           <Button
+            loading={batchIsLoading}
             fullWidth
             disabled={selectedUtxos.length < 2}
             onClick={calculateFeeEstimate}
             size="xl"
             style={{ height: '100%' }}
           >
-            Estimate batch
+            Estimate Batch
           </Button>
         </div>
       </Collapse>
