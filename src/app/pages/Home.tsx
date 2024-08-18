@@ -50,6 +50,7 @@ function Home() {
   >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
   const [btcPrice, setBtcPrice] = useState(0);
+  const [isCreateBatchTx, setIsCreateBatchTx] = useState(false);
 
   const location = useLocation();
   const { numberOfXpubs, signaturesNeeded } = location.state as {
@@ -338,6 +339,16 @@ function Home() {
             }}
             data={[BtcMetric.SATS.toString(), BtcMetric.BTC.toString()]}
           />
+
+          <SegmentedControl
+            className="mb-4"
+            value={isCreateBatchTx ? 'BATCH' : 'SINGLE'}
+            onChange={(value) => {
+              const isBatch = value === 'BATCH';
+              setIsCreateBatchTx(isBatch);
+            }}
+            data={['SINGLE', 'BATCH']}
+          />
           <div className="h-full">
             <div className="flex flex-row justify-between mb-4">
               <Select
@@ -356,6 +367,7 @@ function Home() {
                 label={<p>Max fee rate</p>}
               />
             </div>
+
             <FeeRateColorChangeInputs
               numberOfInputs={feeRateColorMapValues.length}
               feeRateColorMapValues={feeRateColorMapValues}
@@ -490,6 +502,7 @@ function Home() {
           btcPrice={btcPrice}
           numberOfXpubs={numberOfXpubs || 1}
           signaturesNeeded={signaturesNeeded || 1}
+          isCreateBatchTx={isCreateBatchTx}
         />
       </div>
     </div>

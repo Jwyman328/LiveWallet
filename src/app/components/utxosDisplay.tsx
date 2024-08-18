@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CreateTxFeeEstimationResponseType,
   UtxoRequestParamWithAmount,
@@ -19,17 +19,36 @@ import {
   ActionIcon,
   rem,
   LoadingOverlay,
+  NumberInput,
+  InputLabel,
+  Collapse,
 } from '@mantine/core';
 import { WalletTypes } from '../types/scriptTypes';
 import Big from 'big.js';
+const sectionColor = 'rgb(1, 67, 97)';
+
+const sectionHeaderStyles = {
+  fontSize: '1.5rem',
+  color: sectionColor,
+  fontWeight: '600',
+};
+
+const sectionLabelStyles = {
+  fontSize: '1.125rem',
+  color: sectionColor,
+  fontWeight: '600',
+};
 
 import {
   IconCopy,
   IconCheck,
   IconCircleCheck,
   IconCircleX,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
+import { useDisclosure } from '@mantine/hooks';
+import { usePrevious } from '../hooks/utils';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
@@ -46,6 +65,7 @@ type UtxosDisplayProps = {
   btcPrice: number;
   signaturesNeeded: number;
   numberOfXpubs: number;
+  isCreateBatchTx: boolean;
 };
 
 export const UtxosDisplay = ({
@@ -61,9 +81,10 @@ export const UtxosDisplay = ({
   btcPrice,
   signaturesNeeded,
   numberOfXpubs,
+  isCreateBatchTx,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
-  const estimateVBtyeOverheadAndOutput = 75; // includes change estimate
+  const estimateVBtyeOverheadAndOutput = 10;
   // for a batch tx that doesn't include the script sig.
   const additionalMultiSigVBtyePerScriptSig = walletType === 'P2SH' ? 73 : 10;
   const additionalMultiSigVBtyePerPubKey = walletType === 'P2SH' ? 45 : 1;
@@ -75,6 +96,21 @@ export const UtxosDisplay = ({
     // P2WSH2O3: 63,
     // P2TR: 16,
   };
+
+  const [receivingOutputCount, setReceivingOutputCount] = useState(2);
+  // only account for outputs above 1 since the first output and the change output is already accounted for.
+  // it varies depending on the receiving output script type but it is somehere between 31-43
+  // we will use 34 for now, but TODO would be to make this more accurate by
+  // changing the estimate based on the script type.
+  const estimateAdditionalVBtyePerReceivingOutput =
+    receivingOutputCount > 1 ? 34 : 0;
+
+  const onReceivingOutputChange = (value: number) => {
+    setReceivingOutputCount(value);
+  };
+
+  const additionalFeeCostFromAdditionalReceivingOutputs =
+    receivingOutputCount * estimateAdditionalVBtyePerReceivingOutput * feeRate;
 
   const batchedSigInputEstimateFeeTotal =
     estimateVBtyePerScriptSig[walletType] * feeRate;
@@ -97,7 +133,8 @@ export const UtxosDisplay = ({
     avgInputCost +
     multiSigAdditionalSigCost +
     multiSigAdditionalPubkeysCost +
-    multisigOverHeadCost;
+    multisigOverHeadCost +
+    additionalFeeCostFromAdditionalReceivingOutputs;
 
   const calculateFeePercent = (amount: number) => {
     const percentOfAmount = (totalCost / amount) * 100;
@@ -170,7 +207,7 @@ export const UtxosDisplay = ({
       {
         header: 'Amount',
         accessorKey: 'amount',
-        size: 140,
+        size: 100,
         Cell: ({ row }: { row: any }) => {
           const amount = btcSatHandler(
             Number(row.original.amount).toFixed(2).toLocaleString(),
@@ -190,7 +227,7 @@ export const UtxosDisplay = ({
       {
         header: '$ Amount',
         accessorKey: 'amountUSD',
-        size: 140,
+        size: 100,
         Cell: ({ row }: { row: any }) => {
           let amountUSD: string | undefined;
 
@@ -220,7 +257,7 @@ export const UtxosDisplay = ({
       {
         header: '~ Fee %',
         accessorKey: 'selfCost',
-        size: 120,
+        size: 100,
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
             ? `${calculateFeePercent(row.original.amount)}%`
@@ -235,7 +272,7 @@ export const UtxosDisplay = ({
       {
         header: '$ Fee',
         accessorKey: 'feeUSD',
-        size: 120,
+        size: 100,
         Cell: () => {
           let amountUSD: number | string | undefined;
 
@@ -268,7 +305,7 @@ export const UtxosDisplay = ({
       {
         header: 'Spendable',
         accessorKey: 'Spendable',
-        size: 40,
+        size: 50,
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
             ? calculateFeePercent(row.original.amount)
@@ -307,35 +344,58 @@ export const UtxosDisplay = ({
     [utxos],
   );
 
-  const DisplaySelectedUtxosData = ({
-    selectedRows,
-  }: {
-    selectedRows: MRT_RowSelectionState;
-  }) => {
-    const totalUtxosSelected = Object.keys(selectedRows).length;
-    const utxosWithData = getSelectedUtxos(selectedRows);
-    const totalAmount: number = utxosWithData.reduce(
-      (total, utxo) => total + utxo.amount,
-      0,
-    );
-    return (
-      <div className="h-16">
-        <p className="pl-4 font-semibold text-lg">
-          Selected: {totalUtxosSelected}{' '}
-        </p>
-        <p className="pl-4 font-semibold text-lg">
-          amount:
-          {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
-          {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
-        </p>
-      </div>
-    );
-  };
+  const DisplaySelectedUtxosData = React.memo(
+    ({
+      selectedRows,
+      showing,
+    }: {
+      selectedRows: MRT_RowSelectionState;
+      showing: boolean;
+    }) => {
+      const totalUtxosSelected = Object.keys(selectedRows).length;
+      const utxosWithData = getSelectedUtxos(selectedRows);
+      const totalAmount: number = utxosWithData.reduce(
+        (total, utxo) => total + utxo.amount,
+        0,
+      );
+
+      return (
+        <>
+          <Collapse
+            in={showing && isCreateBatchTx}
+            transitionDuration={300}
+            transitionTimingFunction="linear"
+          >
+            <div className={`h-16`}>
+              <p
+                style={{
+                  color: sectionColor,
+                }}
+                className=" font-semibold text-lg"
+              >
+                Count: {totalUtxosSelected}{' '}
+              </p>
+              <p
+                style={{
+                  color: sectionColor,
+                }}
+                className="font-semibold text-lg"
+              >
+                Amount:
+                {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
+                {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
+              </p>
+            </div>
+          </Collapse>
+        </>
+      );
+    },
+  );
 
   const table = useMaterialReactTable({
     columns,
     data: utxos,
-    enableRowSelection: true,
+    enableRowSelection: isCreateBatchTx,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     enableFilters: false,
@@ -346,18 +406,41 @@ export const UtxosDisplay = ({
     enableTableFooter: false,
     enableBottomToolbar: false,
     muiTableContainerProps: {
-      className: 'overflow-auto',
-      style: { maxHeight: '24rem' },
+      className: 'overflow-auto transition-all duration-300 ease-in-out',
+      style: { maxHeight: isCreateBatchTx ? '24rem' : '30rem' },
     },
     enableStickyHeader: true,
-    positionToolbarAlertBanner: 'top',
-    positionToolbarDropZone: 'bottom',
-    renderTopToolbarCustomActions: () => (
-      <h1 className="text-lg font-bold text-center ml-2 mt-2">UTXOS</h1>
-    ),
-    renderToolbarAlertBannerContent: ({ table }) => (
-      <DisplaySelectedUtxosData selectedRows={table.getState().rowSelection} />
-    ),
+    enableTopToolbar: true,
+    positionToolbarAlertBanner: 'none',
+    positionToolbarDropZone: 'top',
+    renderTopToolbarCustomActions: ({ table }) => {
+      const isShowing = Object.keys(table.getState().rowSelection).length > 0;
+      const previousShowing = usePrevious(isShowing);
+      const [opened, { toggle }] = useDisclosure(false);
+
+      useEffect(() => {
+        if (isShowing !== previousShowing && previousShowing !== undefined) {
+          toggle();
+        }
+      }, [isShowing]);
+      return (
+        <div className="ml-2">
+          <p
+            style={{
+              color: sectionColor,
+            }}
+            className="text-2xl font-semibold"
+          >
+            Inputs<span className="text-lg"> (utxos)</span>
+          </p>
+
+          <DisplaySelectedUtxosData
+            selectedRows={table.getState().rowSelection}
+            showing={opened}
+          />
+        </div>
+      );
+    },
     muiSelectCheckboxProps: {
       color: 'primary',
     },
@@ -406,7 +489,12 @@ export const UtxosDisplay = ({
     mutateAsync,
     isLoading: batchIsLoading,
     isError: isBatchTxRequestError,
-  } = useCreateTxFeeEstimate(selectedUtxos, feeRate, onCreateBatchTxError);
+  } = useCreateTxFeeEstimate(
+    selectedUtxos,
+    feeRate,
+    receivingOutputCount,
+    onCreateBatchTxError,
+  );
 
   useEffect(() => {
     setCurrentBatchedTxData(batchedTxData);
@@ -425,7 +513,7 @@ export const UtxosDisplay = ({
   };
 
   const DisplayBatchTxData = () => {
-    const borderClasses = 'rounded border-2 w-full ml-8 p-1.5';
+    const borderClasses = 'p-2';
     if (
       !currentBatchedTxData ||
       !selectedUtxos?.length ||
@@ -434,8 +522,8 @@ export const UtxosDisplay = ({
     ) {
       return (
         <div className={borderClasses}>
-          <p>Total fees: ...</p>
-          <p>Fee cost: ...</p>
+          <p style={sectionLabelStyles}>Total fees: ...</p>
+          <p style={sectionLabelStyles}>Fee cost: ...</p>
         </div>
       );
     }
@@ -465,11 +553,11 @@ export const UtxosDisplay = ({
 
     return isSpendable ? (
       <div className={borderClasses} style={{ backgroundColor: bgColor }}>
-        <p>
+        <p style={sectionLabelStyles}>
           Total fees: ~{btcSatHandler(fee.toLocaleString(), btcMetric)}
           {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
         </p>
-        <p>
+        <p style={sectionLabelStyles}>
           Fee cost: $
           {Number(feeUsdAmount).toLocaleString(undefined, {
             minimumFractionDigits: 0,
@@ -482,17 +570,20 @@ export const UtxosDisplay = ({
       <div
         className={`flex items-center justify-center bg-red-600 ${borderClasses}`}
       >
-        <p className="text-black font-bold">Tx not spendable</p>
+        <p className="text-white font-bold">Not Spendable</p>
       </div>
     );
   };
 
   return (
-    <div>
+    <div className="px-20">
       <ThemeProvider
         theme={createTheme({
           palette: {
-            secondary: { main: '#339AF0' },
+            secondary: {
+              main: '#339AF0',
+              light: '#fff',
+            },
           },
           components: {
             MuiTableRow: {
@@ -510,7 +601,7 @@ export const UtxosDisplay = ({
           },
         })}
       >
-        <div className="relative">
+        <div className="relative flex flex-row ">
           <LoadingOverlay
             visible={isLoading}
             zIndex={1000}
@@ -530,21 +621,86 @@ export const UtxosDisplay = ({
             }}
           />
           <MaterialReactTable table={table} />
+
+          <div style={{ minWidth: '275px' }} className="ml-6 flex flex-col">
+            <InputLabel
+              style={sectionHeaderStyles}
+              className="font-semibold mt-0 mr-1"
+            >
+              Outputs
+            </InputLabel>
+            <div className={`flex flex-row items-center`}>
+              <InputLabel
+                style={sectionLabelStyles}
+                className="font-semibold mt-0 mr-1"
+              >
+                Count
+              </InputLabel>
+
+              <Tooltip
+                withArrow
+                w={300}
+                multiline
+                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number."
+              >
+                <IconInfoCircle
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    color: sectionColor,
+                  }}
+                />
+              </Tooltip>
+            </div>
+            <NumberInput
+              data-testid="output-count"
+              className={`mb-4 w-40 mt-2`}
+              style={sectionLabelStyles}
+              allowNegative={false}
+              value={receivingOutputCount}
+              onChange={onReceivingOutputChange}
+              thousandSeparator=","
+              min={1}
+              max={1000}
+            />
+
+            <div className="mt-auto">
+              <Collapse
+                in={isCreateBatchTx}
+                transitionDuration={300}
+                transitionTimingFunction="linear"
+              >
+                <InputLabel
+                  style={sectionHeaderStyles}
+                  className="font-semibold mt-0 mr-1"
+                >
+                  Tx Fees
+                </InputLabel>
+
+                <DisplayBatchTxData />
+              </Collapse>
+            </div>
+          </div>
         </div>
       </ThemeProvider>
-      <div className="flex flex-row mt-4 mb-4 h-16">
-        <Button
-          fullWidth
-          disabled={selectedUtxos.length < 2}
-          onClick={calculateFeeEstimate}
-          size="xl"
-          style={{ height: '100%' }}
-        >
-          Estimate batch
-        </Button>
 
-        <DisplayBatchTxData />
-      </div>
+      <Collapse
+        in={isCreateBatchTx}
+        transitionDuration={300}
+        transitionTimingFunction="linear"
+      >
+        <div className="flex flex-row mt-4 mb-4 h-14">
+          <Button
+            fullWidth
+            disabled={selectedUtxos.length < 2}
+            onClick={calculateFeeEstimate}
+            size="xl"
+            style={{ height: '100%' }}
+          >
+            Estimate batch
+          </Button>
+        </div>
+      </Collapse>
     </div>
   );
 };

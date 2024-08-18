@@ -156,6 +156,8 @@ class WalletService:
 
         cls.wallet = wallet
         cls.wallet_id = wallet_details_id
+        new_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())
+        LOGGER.info(f"New address: {new_address.address.as_string()}")
 
         return wallet
 
@@ -275,6 +277,7 @@ class WalletService:
         utxos: List[bdk.LocalUtxo],
         sats_per_vbyte: int,
         raw_output_script: str,
+        output_receipient_count: int = 1,
     ) -> BuildTransactionResponseType:
         """
         Build an unsigned psbt, using the given utxos as inputs, sats_per_vbyte as the fee rate, and raw_output_script as the locking script.
@@ -298,7 +301,13 @@ class WalletService:
             total_utxos_amount = sum(utxo.txout.value for utxo in utxos)
             transaction_amount = total_utxos_amount / 2
 
-            tx_builder = tx_builder.add_recipient(script, transaction_amount)
+            amount_per_recipient_output = transaction_amount / output_receipient_count
+
+            for _ in range(output_receipient_count):
+                tx_builder = tx_builder.add_recipient(
+                    script, amount_per_recipient_output
+                )
+
             built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
@@ -322,6 +331,7 @@ class WalletService:
         local_utxos: List[bdk.LocalUtxo],
         script_type: ScriptType,
         sats_per_vbyte: int,
+        recipient_count: int = 1,
     ) -> GetFeeEstimateForUtxoResponseType:
         """Create a tx using the given utxos, script type and fee rate, and return the total fee and fee percentage of the tx."""
         example_scripts = {
@@ -334,7 +344,7 @@ class WalletService:
 
         example_script = example_scripts[script_type]
         tx_response = self.build_transaction(
-            local_utxos, sats_per_vbyte, example_script
+            local_utxos, sats_per_vbyte, example_script, recipient_count
         )
 
         if tx_response.status == "success" and tx_response.data is not None:
@@ -364,7 +374,10 @@ class WalletService:
         # todo: get this value from query param
         mock_script_type = ScriptType.P2PKH
         fee_estimate_response = self.get_fee_estimate_for_utxos(
-            utxos, mock_script_type, int(get_utxos_request_dto.fee_rate)
+            utxos,
+            mock_script_type,
+            int(get_utxos_request_dto.fee_rate),
+            int(get_utxos_request_dto.recipient_count),
         )
 
         return fee_estimate_response

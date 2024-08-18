@@ -12,6 +12,7 @@ class TransactionDto(BaseModel):
 class GetUtxosRequestDto(BaseModel):
     fee_rate: str = Field(default="1")
     transactions: list[TransactionDto]
+    recipient_count: str = Field(default="1")
 
     @field_validator("transactions")
     def check_empty_transactions_list(cls, v):

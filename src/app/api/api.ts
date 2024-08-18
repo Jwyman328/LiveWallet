@@ -57,9 +57,10 @@ export class ApiClient {
   static async createTxFeeEstimation(
     utxos: UtxoRequestParam[],
     feeRate: number = 1,
+    recipientCount: number = 1,
   ) {
     const response = await fetchHandler(
-      `${configs.backendServerBaseUrl}/utxos/fees?feeRate=${feeRate}`,
+      `${configs.backendServerBaseUrl}/utxos/fees?feeRate=${feeRate}&recipientCount=${recipientCount}`,
       'POST',
       utxos,
     );
