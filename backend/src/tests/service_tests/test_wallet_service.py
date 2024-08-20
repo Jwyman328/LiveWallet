@@ -544,22 +544,74 @@ class TestWalletService(TestCase):
 
     def test_build_transaction(self):
         tx_builder_mock = MagicMock()
-        with patch.object(bdk, "TxBuilder", return_value=tx_builder_mock):
+        script_mock = MagicMock()
+        with (
+            patch.object(bdk, "TxBuilder", return_value=tx_builder_mock),
+            patch.object(bdk, "Script", return_value=script_mock),
+        ):
             built_transaction_mock = bdk.TxBuilderResult(
                 psbt="mock_psbt", transaction_details=transaction_details_mock
             )
             tx_builder_mock.add_utxos.return_value = tx_builder_mock
             tx_builder_mock.manually_selected_only.return_value = tx_builder_mock
             tx_builder_mock.fee_rate.return_value = tx_builder_mock
+
+            tx_builder_mock.add_recipient = Mock()
             tx_builder_mock.add_recipient.return_value = tx_builder_mock
 
             tx_builder_mock.finish.return_value = built_transaction_mock
+
+            output_count = 2
 
             build_transaction_response = self.wallet_service.build_transaction(
                 [local_utxo_mock],
                 self.sats_per_vbyte_mock,
                 self.raw_output_script_mock,
+                output_count,
             )
+
+            amount_in_each_output = (local_utxo_mock.txout.value / 2) / output_count
+            tx_builder_mock.add_recipient.assert_called_with(
+                script_mock, amount_in_each_output
+            )
+
+            assert tx_builder_mock.add_recipient.call_count == output_count
+            assert build_transaction_response.status == "success"
+            assert build_transaction_response.data is built_transaction_mock
+
+    def test_build_transaction_with_output_count_of_one(self):
+        tx_builder_mock = MagicMock()
+        script_mock = MagicMock()
+        with (
+            patch.object(bdk, "TxBuilder", return_value=tx_builder_mock),
+            patch.object(bdk, "Script", return_value=script_mock),
+        ):
+            built_transaction_mock = bdk.TxBuilderResult(
+                psbt="mock_psbt", transaction_details=transaction_details_mock
+            )
+            tx_builder_mock.add_utxos.return_value = tx_builder_mock
+            tx_builder_mock.manually_selected_only.return_value = tx_builder_mock
+            tx_builder_mock.fee_rate.return_value = tx_builder_mock
+
+            tx_builder_mock.drain_to = Mock()
+            tx_builder_mock.drain_to.return_value = tx_builder_mock
+
+            tx_builder_mock.add_recipient = Mock()
+            tx_builder_mock.add_recipient.return_value = tx_builder_mock
+
+            tx_builder_mock.finish.return_value = built_transaction_mock
+
+            output_count = 1
+
+            build_transaction_response = self.wallet_service.build_transaction(
+                [local_utxo_mock],
+                self.sats_per_vbyte_mock,
+                self.raw_output_script_mock,
+                output_count,
+            )
+
+            tx_builder_mock.add_recipient.assert_not_called()
+            tx_builder_mock.drain_to.assert_called_with(script_mock)
             assert build_transaction_response.status == "success"
             assert build_transaction_response.data is built_transaction_mock
 
@@ -618,9 +670,10 @@ class TestWalletService(TestCase):
             tx_builder_mock.finish.return_value = built_transaction_mock
 
             mock_tx_builder.return_value = tx_builder_mock
+            output_count = 5
 
             fee_estimate_response = self.wallet_service.get_fee_estimate_for_utxos(
-                [local_utxo_mock], ScriptType.P2PKH, 4
+                [local_utxo_mock], ScriptType.P2PKH, 4, output_count
             )
 
             assert fee_estimate_response.status == "success"
@@ -669,7 +722,7 @@ class TestWalletService(TestCase):
             },
         ]
         mock_get_utxos_request_dto = GetUtxosRequestDto.model_validate(
-            dict(transactions=transactions, fee_rate=fee_rate)
+            dict(transactions=transactions, fee_rate=fee_rate, output_count="2")
         )
 
         mock_fee_estimates_response = GetFeeEstimateForUtxoResponseType(
@@ -700,7 +753,10 @@ class TestWalletService(TestCase):
             )
 
             mock_get_fee_estimate_for_utxos.assert_called_with(
-                mock_utxos, ScriptType.P2PKH, int(mock_get_utxos_request_dto.fee_rate)
+                mock_utxos,
+                ScriptType.P2PKH,
+                int(mock_get_utxos_request_dto.fee_rate),
+                int(mock_get_utxos_request_dto.output_count),
             )
             assert fee_estimate_response == mock_fee_estimates_response
 

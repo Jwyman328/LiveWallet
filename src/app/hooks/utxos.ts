@@ -22,11 +22,11 @@ export function useGetUtxos() {
 export function useCreateTxFeeEstimate(
   utxos: UtxoRequestParam[],
   feeRate: number,
-  recipientCount: number,
+  outputCount: number,
   onError?: () => void,
 ) {
   return useMutation(
-    () => ApiClient.createTxFeeEstimation(utxos, feeRate, recipientCount),
+    () => ApiClient.createTxFeeEstimation(utxos, feeRate, outputCount),
     {
       onError: () => {
         onError();

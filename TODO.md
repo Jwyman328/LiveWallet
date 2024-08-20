@@ -32,6 +32,8 @@
 
 
 # Feature Ideas
+- add ability to create a batch based off of how much you owe someone. either in btc or in usd?
+  - so you select the amount you owe and then you can see how much the fee would be. 
 - add ability to select how many outputs to use in the fee estimation
   - resource:
     - https://jlopp.github.io/bitcoin-transaction-size-calculator/

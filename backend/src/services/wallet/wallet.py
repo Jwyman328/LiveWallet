@@ -277,7 +277,7 @@ class WalletService:
         utxos: List[bdk.LocalUtxo],
         sats_per_vbyte: int,
         raw_output_script: str,
-        output_receipient_count: int = 1,
+        output_count: int = 2,
     ) -> BuildTransactionResponseType:
         """
         Build an unsigned psbt, using the given utxos as inputs, sats_per_vbyte as the fee rate, and raw_output_script as the locking script.
@@ -294,19 +294,23 @@ class WalletService:
 
             script = bdk.Script(binary_script)
 
-            # use half the amount of the utxo so that the transaction can be
-            # created used alone for a single transaction
-            # in other words so that the input amount can cover both
-            # the amount and the fees
-            total_utxos_amount = sum(utxo.txout.value for utxo in utxos)
-            transaction_amount = total_utxos_amount / 2
+            if output_count == 1:
+                # if there is only one output then drain the utxos
+                # to the new output
+                tx_builder = tx_builder.drain_to(script)
+            else:
+                # use half the amount of the utxo so that the transaction can be
+                # created used alone for a single transaction
+                # in other words so that the input amount can cover both
+                # the amount and the fees
+                total_utxos_amount = sum(utxo.txout.value for utxo in utxos)
+                for _ in range(output_count):
+                    transaction_amount = total_utxos_amount / 2
 
-            amount_per_recipient_output = transaction_amount / output_receipient_count
-
-            for _ in range(output_receipient_count):
-                tx_builder = tx_builder.add_recipient(
-                    script, amount_per_recipient_output
-                )
+                    amount_per_recipient_output = transaction_amount / output_count
+                    tx_builder = tx_builder.add_recipient(
+                        script, amount_per_recipient_output
+                    )
 
             built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
@@ -331,7 +335,7 @@ class WalletService:
         local_utxos: List[bdk.LocalUtxo],
         script_type: ScriptType,
         sats_per_vbyte: int,
-        recipient_count: int = 1,
+        output_count: int = 2,
     ) -> GetFeeEstimateForUtxoResponseType:
         """Create a tx using the given utxos, script type and fee rate, and return the total fee and fee percentage of the tx."""
         example_scripts = {
@@ -344,7 +348,7 @@ class WalletService:
 
         example_script = example_scripts[script_type]
         tx_response = self.build_transaction(
-            local_utxos, sats_per_vbyte, example_script, recipient_count
+            local_utxos, sats_per_vbyte, example_script, output_count
         )
 
         if tx_response.status == "success" and tx_response.data is not None:
@@ -377,7 +381,7 @@ class WalletService:
             utxos,
             mock_script_type,
             int(get_utxos_request_dto.fee_rate),
-            int(get_utxos_request_dto.recipient_count),
+            int(get_utxos_request_dto.output_count),
         )
 
         return fee_estimate_response

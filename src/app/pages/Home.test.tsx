@@ -140,6 +140,10 @@ describe('Home', () => {
     const balance = await screen.findByText('Balance: 3.00000001 BTC');
     const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
 
+    const outputsTitle = await screen.findByText('Outputs');
+    const countTitle = await screen.findByText('Count');
+    const outputCountInput = await screen.findByTestId('output-count');
+
     const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoTxIdTwo = await screen.findByText('1f6fb0b....8dfd724');
@@ -181,6 +185,9 @@ describe('Home', () => {
     expect(highFeeAmount).toBeInTheDocument();
     expect(balance).toBeInTheDocument();
     expect(customFeeRate).toBeInTheDocument();
+    expect(outputsTitle).toBeInTheDocument();
+    expect(countTitle).toBeInTheDocument();
+    expect(outputCountInput).toHaveValue('2');
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTxIdOne).toBeInTheDocument();
     expect(utxoTxIdTwo).toBeInTheDocument();
@@ -310,7 +317,7 @@ describe('Home', () => {
     expect(utxoOneAmount).toBeInTheDocument();
   });
 
-  it('Test changing btc price and fee rate', async () => {
+  it('Test changing btc price, fee rate', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <Home />
@@ -360,6 +367,50 @@ describe('Home', () => {
     expect(utxoOneAmount).toBeInTheDocument();
   });
 
+  it('Test changing output count effects dollar fee and percent fee', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    mockElectron.ipcRenderer.on.mockResolvedValue(
+      mockImportedWalletDataWithoutConfigs,
+    );
+    act(() => {
+      // make sure the wallet-data callback runs
+      const handleWalletDataFunction =
+        mockElectron.ipcRenderer.on.mock.calls[0][1];
+      handleWalletDataFunction(mockImportedWalletDataWithoutConfigs);
+    });
+
+    expect(mockElectron.ipcRenderer.on.mock.calls[0][0]).toBe('wallet-data');
+
+    expect(getBalanceSpy).toHaveBeenCalled();
+    expect(getUtxosSpy).toHaveBeenCalled();
+    expect(getCurrentFeesSpy).toHaveBeenCalled();
+
+    const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
+    const utxoOneAmount = await screen.findByText('1.00000000');
+
+    let utxoOneFeeEstimate = await screen.findByText('0.0020%');
+    let utxoFeeUsd = await screen.findAllByText('$2');
+
+    expect(customFeeRate).toBeInTheDocument();
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    // a utxo fee usd for all three utxos
+    expect(utxoFeeUsd.length).toBe(3);
+    expect(utxoOneAmount).toBeInTheDocument();
+
+    const outputCountInput = screen.getByTestId('output-count');
+    expect(outputCountInput).toHaveValue('2');
+
+    fireEvent.change(outputCountInput, { target: { value: 500 } });
+    // now higher usd fee and fee rate % showing
+    utxoOneFeeEstimate = await screen.findByText('0.1714%');
+    utxoFeeUsd = await screen.findAllByText('$171');
+  });
+
   it('Test default settings slideout', async () => {
     const screen = render(
       <WrappedInAppWrappers>
@@ -387,6 +438,15 @@ describe('Home', () => {
     });
     expect(satsMetricOption).not.toBeChecked();
     expect(btcMetricOption).toBeChecked();
+
+    const singleOption = within(slideout).getByRole('radio', {
+      name: 'SINGLE',
+    });
+    const batchOption = within(slideout).getByRole('radio', {
+      name: 'BATCH',
+    });
+    expect(batchOption).not.toBeChecked();
+    expect(singleOption).toBeChecked();
 
     const minFeeRateLabel = within(slideout).getByText('Min fee rate');
     const minFeeRate = minFeeRateLabel.parentNode?.nextSibling
@@ -660,6 +720,11 @@ describe('Home', () => {
     const includeAllUtxosButton = txCheckBoxes[0];
     fireEvent.click(includeAllUtxosButton);
 
+    // set output count to 5
+    const outputCountMock = 5;
+    const outputCountInput = screen.getByTestId('output-count');
+    fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
+
     let estimateBatchTxButton = screen.getByRole('button', {
       name: 'Estimate Batch',
     });
@@ -681,7 +746,11 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 2);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        outputCountMock,
+      );
     });
 
     let totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
