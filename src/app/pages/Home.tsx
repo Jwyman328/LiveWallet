@@ -166,9 +166,17 @@ function Home() {
         feeScale,
         minFeeScale,
         feeRate,
+        isCreateBatchTx,
       });
     }
-  }, [btcMetric, feeRateColorMapValues, feeScale, minFeeScale, feeRate]);
+  }, [
+    btcMetric,
+    feeRateColorMapValues,
+    feeScale,
+    minFeeScale,
+    feeRate,
+    isCreateBatchTx,
+  ]);
 
   const handleWalletData = (walletData?: Wallet) => {
     console.log('walletData loaded', walletData);
@@ -186,6 +194,7 @@ function Home() {
       setMinFeeScale(walletData.minFeeScale!);
       setBtcMetric(walletData.btcMetric!);
       setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
+      setIsCreateBatchTx(!!walletData?.isCreateBatchTx!);
     }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };

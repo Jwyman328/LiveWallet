@@ -19,6 +19,7 @@ export type Wallet = {
   privateElectrumUrl: string;
   publicElectrumUrl: string;
   btcMetric?: BtcMetric;
+  isCreateBatchTx?: boolean;
   feeRateColorMapValues?: FeeRateColor[];
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
@@ -31,6 +32,7 @@ export type WalletConfigs = {
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
   feeRate?: string | number;
+  isCreateBatchTx?: boolean;
 };
 
 interface Quorum {

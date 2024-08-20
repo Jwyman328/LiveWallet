@@ -140,7 +140,7 @@ describe('Home', () => {
     const balance = await screen.findByText('Balance: 3.00000001 BTC');
     const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
 
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoTxIdTwo = await screen.findByText('1f6fb0b....8dfd724');
     const utxoOneAmount = await screen.findByText('1.00000000');
@@ -154,14 +154,14 @@ describe('Home', () => {
     const utxoOneFeeEstimate = await screen.findByText('0.0020%');
     const utxoTwoFeeEstimate = await screen.findByText('0.0010%');
     const utxoFeeUsd = await screen.findAllByText('$2');
-    const utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    const utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     const utxoThreeAmount = await screen.findByText('0.00000001');
     const spendableIcons = await screen.findAllByTestId('spendable-icon');
     const notSpendableIcons =
       await screen.findAllByTestId('not-spendable-icon');
 
-    const estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch',
+    const estimateBatchTxButton = screen.queryByRole('button', {
+      name: 'Estimate Batch',
     });
 
     const batchTotalFees = screen.getByText('Total fees: ...');
@@ -198,7 +198,8 @@ describe('Home', () => {
     expect(notSpendableIcons.length).toBe(1);
     expect(batchTotalFees).toBeInTheDocument();
     expect(batchFeePct).toBeInTheDocument();
-    expect(estimateBatchTxButton).toBeDisabled();
+    // batch not showing since BATCH tx type is not selected by default, SINGLE is
+    expect(estimateBatchTxButton).not.toBeInTheDocument();
   });
 
   it('Changing current fee rate environment changes the fee rate estimation for each utxo', async () => {
@@ -219,7 +220,7 @@ describe('Home', () => {
         mockElectron.ipcRenderer.on.mock.calls[0][1];
       handleWalletDataFunction(higherFeeConfig);
     });
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoOneAmount = await screen.findByText('1.00000000');
 
@@ -231,8 +232,8 @@ describe('Home', () => {
     const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
 
     // now a higher estimated rate and usd value to spend this utxo should now be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
-    const utxoFeeUsd = await screen.findAllByText('$100');
+    const utxoOneFeeEstimate = await screen.findByText('0.0508%');
+    const utxoFeeUsd = await screen.findAllByText('$102');
 
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
@@ -263,7 +264,7 @@ describe('Home', () => {
     let utxoOneFeeEstimate = await screen.findByText('0.0020%');
     let utxoTwoFeeEstimate = await screen.findByText('0.0010%');
     let utxoFeeUsd = await screen.findAllByText('$2');
-    let utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    let utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     let utxoThreeAmount = await screen.findByText('0.00000001');
 
     expect(utxoOneFeeEstimate).toBeInTheDocument();
@@ -285,7 +286,7 @@ describe('Home', () => {
     // no change in non usd values
     utxoOneFeeEstimate = await screen.findByText('0.0020%');
     utxoTwoFeeEstimate = await screen.findByText('0.0010%');
-    utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     utxoThreeAmount = await screen.findByText('0.00000001');
     utxoOneAmount = await screen.findByText('1.00000000');
     utxoTwoAmount = await screen.findByText('2.00000000');
@@ -332,7 +333,7 @@ describe('Home', () => {
     // increase btc price by a factor of 10
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoOneAmount = await screen.findByText('1.00000000');
 
@@ -344,8 +345,8 @@ describe('Home', () => {
     const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
 
     // now a higher estimated rate and usd value to spend this utxo should be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
-    const utxoFeeUsd = await screen.findAllByText('$1,000');
+    const utxoOneFeeEstimate = await screen.findByText('0.0508%');
+    const utxoFeeUsd = await screen.findAllByText('$1,015');
 
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
@@ -644,25 +645,31 @@ describe('Home', () => {
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
 
-    const txCheckBoxes = await screen.findAllByRole('checkbox');
+    //  open settings slideout and set batch tx to true
+    await setTxTypeToBatched(screen);
 
-    // three txs so should be three tx checkboxes to be able to include
-    // in our batched tx, as well as a 4th button to include all txs.
-    expect(txCheckBoxes.length).toBe(4);
+    let txCheckBoxes;
+
+    await waitFor(async () => {
+      txCheckBoxes = screen.getAllByRole('checkbox');
+      // three txs so should be three tx checkboxes to be able to include
+      // in our batched tx, as well as a 4th button to include all txs.
+      expect(txCheckBoxes?.length).toBe(4);
+    });
 
     const includeAllUtxosButton = txCheckBoxes[0];
     fireEvent.click(includeAllUtxosButton);
 
     let estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch',
+      name: 'Estimate Batch',
     });
 
     expect(estimateBatchTxButton).toBeEnabled();
 
-    const selectedTotal = screen.getByText('Selected: 3');
+    const selectedTotal = screen.getByText('Count: 3');
     expect(selectedTotal).toBeInTheDocument();
 
-    const amountSelectedTotal = screen.getByText('amount: 3.00000001 BTC');
+    const amountSelectedTotal = screen.getByText('Amount: 3.00000001 BTC');
     expect(amountSelectedTotal).toBeInTheDocument();
 
     fireEvent.click(estimateBatchTxButton);
@@ -674,7 +681,7 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 2);
     });
 
     let totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
@@ -780,3 +787,34 @@ describe('Home', () => {
 
   // test changing config sends update? / other / all main thread calls
 });
+
+// Open slideout and set batch tx to true, then close slideout
+const setTxTypeToBatched = async (screen: any) => {
+  //open settings and set batch tx to true
+  const slideoutButton = screen.getByTestId('settings-button');
+  fireEvent.click(slideoutButton);
+
+  let settingsTitle = await screen.findByText('Settings');
+  expect(settingsTitle).toBeInTheDocument();
+
+  const slideout = screen.getByTestId('settings-slideout');
+  let batchOption = within(slideout).getByRole('radio', {
+    name: 'BATCH',
+  });
+  fireEvent.click(batchOption);
+
+  batchOption = within(slideout).getByRole('radio', {
+    name: 'BATCH',
+  });
+  expect(batchOption).toBeChecked();
+
+  settingsTitle = await screen.findByText('Settings');
+  const closeSlideoutButton = settingsTitle.parentElement
+    .nextElementSibling as HTMLButtonElement;
+
+  fireEvent.click(closeSlideoutButton);
+
+  await waitFor(() => {
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  });
+};

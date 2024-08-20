@@ -476,6 +476,7 @@ describe('WalletSignIn', () => {
         feeScale: mockImportedWalletData.feeScale,
         minFeeScale: mockImportedWalletData.minFeeScale,
         feeRate: mockImportedWalletData.feeRate,
+        isCreateBatchTx: !!mockImportedWalletData?.isCreateBatchTx,
       },
     );
 

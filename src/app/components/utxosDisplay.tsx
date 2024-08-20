@@ -641,7 +641,7 @@ export const UtxosDisplay = ({
                 withArrow
                 w={300}
                 multiline
-                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number.
+                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number. If you are estimating a consolidation transaction you can set the count to 1.
                 "
               >
                 <IconInfoCircle
