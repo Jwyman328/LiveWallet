@@ -275,6 +275,7 @@ class WalletService:
         utxos: List[bdk.LocalUtxo],
         sats_per_vbyte: int,
         raw_output_script: str,
+        # 2 by default, one for the recipient and one for the change
         output_count: int = 2,
     ) -> BuildTransactionResponseType:
         """
@@ -297,14 +298,13 @@ class WalletService:
                 # to the new output
                 tx_builder = tx_builder.drain_to(script)
             else:
-                # use half the amount of the utxo so that the transaction can be
-                # created used alone for a single transaction
-                # in other words so that the input amount can cover both
-                # the amount and the fees
+                # use half the amount of the utxos value so that the transaction can be
+                #  input amount can cover both the amount and the fees
                 total_utxos_amount = sum(utxo.txout.value for utxo in utxos)
+                transaction_amount = total_utxos_amount / 2
                 for _ in range(output_count):
-                    transaction_amount = total_utxos_amount / 2
-
+                    # divide the amount by the number of outputs to get the amount per output
+                    # this is done just to ensure that the tx is still in a spendable range.
                     amount_per_recipient_output = transaction_amount / output_count
                     tx_builder = tx_builder.add_recipient(
                         script, amount_per_recipient_output
@@ -333,6 +333,7 @@ class WalletService:
         local_utxos: List[bdk.LocalUtxo],
         script_type: ScriptType,
         sats_per_vbyte: int,
+        # 2 by default, one for the recipient and one for the change
         output_count: int = 2,
     ) -> GetFeeEstimateForUtxoResponseType:
         """Create a tx using the given utxos, script type and fee rate, and return the total fee and fee percentage of the tx."""

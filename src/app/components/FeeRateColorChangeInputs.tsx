@@ -26,15 +26,18 @@ export const FeeRateColorChangeInputs = ({
 
   const removeFeeRateColorInput = (index: number) => {
     // set inputToBeRemoved so that the component's style changes to animate-slideOut
+    // and therefore the removing animation runs
     setInputToBeRemoved(index);
-    // remove the input after the animation is done in 300ms
+
+    const animationDuration = 300;
+    // remove the feeRateColorInput in 300ms after the animation is done running.
     setTimeout(() => {
       const newFeeRateColorMapValues = [...feeRateColorMapValues];
       newFeeRateColorMapValues.splice(index, 1);
       components.splice(index, 1);
       removeFeeRateColor(index);
       setInputToBeRemoved(null);
-    }, 300);
+    }, animationDuration);
   };
 
   for (let i = 0; i < numberOfInputs; i++) {
