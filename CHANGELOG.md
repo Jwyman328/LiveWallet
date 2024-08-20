@@ -1,3 +1,8 @@
+# 0.5.0
+- Transaction output selection.
+- Separate batch vs single tx ui.
+- Ability to add and remove fee rate colors.
+
 # 0.4.0
 - Add multisig wallet support
 
