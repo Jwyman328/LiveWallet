@@ -156,8 +156,6 @@ class WalletService:
 
         cls.wallet = wallet
         cls.wallet_id = wallet_details_id
-        new_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())
-        LOGGER.info(f"New address: {new_address.address.as_string()}")
 
         return wallet
 
