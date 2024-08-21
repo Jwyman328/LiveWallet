@@ -84,11 +84,11 @@ export const UtxosDisplay = ({
   isCreateBatchTx,
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
-  const estimateVBtyeOverheadAndOutput = 10;
+  const estimateVBtyeOverheadAndOutput = walletType === 'P2PKH' ? 175 : 10;
   // for a batch tx that doesn't include the script sig.
   const additionalMultiSigVBtyePerScriptSig = walletType === 'P2SH' ? 73 : 10;
   const additionalMultiSigVBtyePerPubKey = walletType === 'P2SH' ? 45 : 1;
-  const multisigOverHead = walletType === 'P2SH' ? 145 : 4;
+  const multisigOverHead = walletType === 'P2SH' ? 175 : 4;
   const estimateVBtyePerScriptSig: Record<WalletTypes, number> = {
     P2PKH: 107,
     P2SH: 250, //not really sure on this one. there is a large range, if it is a multisig script hash it could be like 250. I'll use 250 for now.
