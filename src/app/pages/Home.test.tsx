@@ -542,12 +542,11 @@ describe('Home', () => {
 
     fireEvent.click(fivePctFeeRateColorRemoveButton);
 
-    fivePercentColor =
-      within(slideout).queryByDisplayValue('rgb(254, 240, 138)');
-    fivePercent = within(slideout).queryByDisplayValue('5%');
-
     // after removing the second color/pct, it should no longer be showing
     await waitFor(() => {
+      fivePercentColor =
+        within(slideout).queryByDisplayValue('rgb(254, 240, 138)');
+      fivePercent = within(slideout).queryByDisplayValue('5%');
       expect(fivePercentColor).not.toBeInTheDocument();
       expect(fivePercent).not.toBeInTheDocument();
     });
