@@ -59,6 +59,7 @@ export const mockImportedWalletData: Wallet = {
   publicElectrumUrl: 'bitcoin.aranguren.org',
 
   btcMetric: BtcMetric.BTC,
+  isCreateBatchTx: false,
   feeRateColorMapValues: [
     [1, 'rgb(299, 200, 200)'],
     [20, 'rgb(199, 100, 100)'],
@@ -114,6 +115,7 @@ export const mockImportedWalletDataWithoutConfigs: Wallet = {
   feeScale: undefined,
   minFeeScale: undefined,
   feeRate: undefined,
+  isCreateBatchTx: undefined,
 };
 
 export const mockHWNoPinNoPassphraseNeeded = {

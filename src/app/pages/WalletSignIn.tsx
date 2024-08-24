@@ -518,6 +518,7 @@ export const WalletSignIn = () => {
       isUsingPublicServer: importedIsUsingPublicServer,
 
       btcMetric: importedBtcMetric,
+      isCreateBatchTx: importedIsCreateBatchTx,
       feeRateColorMapValues: importedFeeRateColorMapValues,
       feeScale: importedFeeScale,
       minFeeScale: importedMinFeeScale,
@@ -566,6 +567,7 @@ export const WalletSignIn = () => {
       feeScale: importedFeeScale,
       minFeeScale: importedMinFeeScale,
       feeRate: importedFeeRate,
+      isCreateBatchTx: importedIsCreateBatchTx,
     };
     window.electron.ipcRenderer.sendMessage(
       'save-wallet-configs',

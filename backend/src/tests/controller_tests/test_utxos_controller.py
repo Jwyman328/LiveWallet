@@ -50,6 +50,7 @@ class TestUtxosController(TestCase):
             )
 
             fee_rate = "5"
+            outputCount = "2"
 
             # /{transaction_id}/{vout} put this in the request args
             transactions = [
@@ -59,12 +60,18 @@ class TestUtxosController(TestCase):
                 },
             ]
             response = self.test_client.post(
-                "/utxos/fees", query_string={"feeRate": fee_rate}, json=transactions
+                "/utxos/fees",
+                query_string={"feeRate": fee_rate, "outputCount": outputCount},
+                json=transactions,
             )
 
             mock_get_fee_estimate_for_utxos_from_request.assert_called_with(
                 GetUtxosRequestDto.model_validate(
-                    dict(transactions=transactions, fee_rate=fee_rate)
+                    dict(
+                        transactions=transactions,
+                        fee_rate=fee_rate,
+                        output_count=outputCount,
+                    )
                 )
             )
 
@@ -83,6 +90,7 @@ class TestUtxosController(TestCase):
             )
 
             fee_rate = "5"
+            output_count = "2"
             transactions = [
                 {
                     "id": f"{local_utxo_mock.outpoint.txid}",
@@ -90,12 +98,18 @@ class TestUtxosController(TestCase):
                 },
             ]
             response = self.test_client.post(
-                "/utxos/fees", query_string={"feeRate": fee_rate}, json=transactions
+                "/utxos/fees",
+                query_string={"feeRate": fee_rate, "outputCount": output_count},
+                json=transactions,
             )
 
             mock_get_fee_estimate_for_utxos_from_request.assert_called_with(
                 GetUtxosRequestDto.model_validate(
-                    dict(transactions=transactions, fee_rate=fee_rate)
+                    dict(
+                        transactions=transactions,
+                        fee_rate=fee_rate,
+                        output_count=output_count,
+                    )
                 )
             )
 
@@ -115,6 +129,7 @@ class TestUtxosController(TestCase):
             )
 
             fee_rate = "5"
+            outputCount = "2"
             transactions = [
                 {
                     "id": f"{local_utxo_mock.outpoint.txid}",
@@ -122,12 +137,18 @@ class TestUtxosController(TestCase):
                 },
             ]
             response = self.test_client.post(
-                "/utxos/fees", query_string={"feeRate": fee_rate}, json=transactions
+                "/utxos/fees",
+                query_string={"feeRate": fee_rate, "outputCount": outputCount},
+                json=transactions,
             )
 
             mock_get_fee_estimate_for_utxos_from_request.assert_called_with(
                 GetUtxosRequestDto.model_validate(
-                    dict(transactions=transactions, fee_rate=fee_rate)
+                    dict(
+                        transactions=transactions,
+                        fee_rate=fee_rate,
+                        output_count=outputCount,
+                    )
                 )
             )
 
@@ -144,7 +165,9 @@ class TestUtxosController(TestCase):
 
             transactions = ["bad data", "yes it is bad"]
             response = self.test_client.post(
-                "/utxos/fees", query_string={"feeRate": "1"}, json=transactions
+                "/utxos/fees",
+                query_string={"feeRate": "1", "outputCount": "2"},
+                json=transactions,
             )
 
             assert response.status == "400 BAD REQUEST"

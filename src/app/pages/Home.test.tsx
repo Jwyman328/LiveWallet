@@ -140,7 +140,11 @@ describe('Home', () => {
     const balance = await screen.findByText('Balance: 3.00000001 BTC');
     const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
 
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const outputsTitle = await screen.findByText('Outputs');
+    const countTitle = await screen.findByText('Count');
+    const outputCountInput = await screen.findByTestId('output-count');
+
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoTxIdTwo = await screen.findByText('1f6fb0b....8dfd724');
     const utxoOneAmount = await screen.findByText('1.00000000');
@@ -154,14 +158,14 @@ describe('Home', () => {
     const utxoOneFeeEstimate = await screen.findByText('0.0020%');
     const utxoTwoFeeEstimate = await screen.findByText('0.0010%');
     const utxoFeeUsd = await screen.findAllByText('$2');
-    const utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    const utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     const utxoThreeAmount = await screen.findByText('0.00000001');
     const spendableIcons = await screen.findAllByTestId('spendable-icon');
     const notSpendableIcons =
       await screen.findAllByTestId('not-spendable-icon');
 
-    const estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch',
+    const estimateBatchTxButton = screen.queryByRole('button', {
+      name: 'Estimate Batch',
     });
 
     const batchTotalFees = screen.getByText('Total fees: ...');
@@ -181,6 +185,9 @@ describe('Home', () => {
     expect(highFeeAmount).toBeInTheDocument();
     expect(balance).toBeInTheDocument();
     expect(customFeeRate).toBeInTheDocument();
+    expect(outputsTitle).toBeInTheDocument();
+    expect(countTitle).toBeInTheDocument();
+    expect(outputCountInput).toHaveValue('2');
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTxIdOne).toBeInTheDocument();
     expect(utxoTxIdTwo).toBeInTheDocument();
@@ -198,7 +205,8 @@ describe('Home', () => {
     expect(notSpendableIcons.length).toBe(1);
     expect(batchTotalFees).toBeInTheDocument();
     expect(batchFeePct).toBeInTheDocument();
-    expect(estimateBatchTxButton).toBeDisabled();
+    // batch not showing since BATCH tx type is not selected by default, SINGLE is
+    expect(estimateBatchTxButton).not.toBeInTheDocument();
   });
 
   it('Changing current fee rate environment changes the fee rate estimation for each utxo', async () => {
@@ -219,7 +227,7 @@ describe('Home', () => {
         mockElectron.ipcRenderer.on.mock.calls[0][1];
       handleWalletDataFunction(higherFeeConfig);
     });
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoOneAmount = await screen.findByText('1.00000000');
 
@@ -231,8 +239,8 @@ describe('Home', () => {
     const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
 
     // now a higher estimated rate and usd value to spend this utxo should now be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
-    const utxoFeeUsd = await screen.findAllByText('$100');
+    const utxoOneFeeEstimate = await screen.findByText('0.0508%');
+    const utxoFeeUsd = await screen.findAllByText('$102');
 
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
@@ -263,7 +271,7 @@ describe('Home', () => {
     let utxoOneFeeEstimate = await screen.findByText('0.0020%');
     let utxoTwoFeeEstimate = await screen.findByText('0.0010%');
     let utxoFeeUsd = await screen.findAllByText('$2');
-    let utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    let utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     let utxoThreeAmount = await screen.findByText('0.00000001');
 
     expect(utxoOneFeeEstimate).toBeInTheDocument();
@@ -285,7 +293,7 @@ describe('Home', () => {
     // no change in non usd values
     utxoOneFeeEstimate = await screen.findByText('0.0020%');
     utxoTwoFeeEstimate = await screen.findByText('0.0010%');
-    utxoThreeFeeEstimate = await screen.findByText('200000.00%');
+    utxoThreeFeeEstimate = await screen.findByText('203000.00%');
     utxoThreeAmount = await screen.findByText('0.00000001');
     utxoOneAmount = await screen.findByText('1.00000000');
     utxoTwoAmount = await screen.findByText('2.00000000');
@@ -309,7 +317,7 @@ describe('Home', () => {
     expect(utxoOneAmount).toBeInTheDocument();
   });
 
-  it('Test changing btc price and fee rate', async () => {
+  it('Test changing btc price, fee rate', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <Home />
@@ -332,7 +340,7 @@ describe('Home', () => {
     // increase btc price by a factor of 10
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
-    const utxoTableTitle = await screen.findByText('UTXOS');
+    const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
     const utxoOneAmount = await screen.findByText('1.00000000');
 
@@ -344,8 +352,8 @@ describe('Home', () => {
     const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
 
     // now a higher estimated rate and usd value to spend this utxo should be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0500%');
-    const utxoFeeUsd = await screen.findAllByText('$1,000');
+    const utxoOneFeeEstimate = await screen.findByText('0.0508%');
+    const utxoFeeUsd = await screen.findAllByText('$1,015');
 
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
@@ -357,6 +365,50 @@ describe('Home', () => {
     expect(utxoFeeUsd.length).toBe(3);
 
     expect(utxoOneAmount).toBeInTheDocument();
+  });
+
+  it('Test changing output count effects dollar fee and percent fee', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    mockElectron.ipcRenderer.on.mockResolvedValue(
+      mockImportedWalletDataWithoutConfigs,
+    );
+    act(() => {
+      // make sure the wallet-data callback runs
+      const handleWalletDataFunction =
+        mockElectron.ipcRenderer.on.mock.calls[0][1];
+      handleWalletDataFunction(mockImportedWalletDataWithoutConfigs);
+    });
+
+    expect(mockElectron.ipcRenderer.on.mock.calls[0][0]).toBe('wallet-data');
+
+    expect(getBalanceSpy).toHaveBeenCalled();
+    expect(getUtxosSpy).toHaveBeenCalled();
+    expect(getCurrentFeesSpy).toHaveBeenCalled();
+
+    const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
+    const utxoOneAmount = await screen.findByText('1.00000000');
+
+    let utxoOneFeeEstimate = await screen.findByText('0.0020%');
+    let utxoFeeUsd = await screen.findAllByText('$2');
+
+    expect(customFeeRate).toBeInTheDocument();
+    expect(utxoOneFeeEstimate).toBeInTheDocument();
+    // a utxo fee usd for all three utxos
+    expect(utxoFeeUsd.length).toBe(3);
+    expect(utxoOneAmount).toBeInTheDocument();
+
+    const outputCountInput = screen.getByTestId('output-count');
+    expect(outputCountInput).toHaveValue('2');
+
+    fireEvent.change(outputCountInput, { target: { value: 500 } });
+    // now higher usd fee and fee rate % showing
+    utxoOneFeeEstimate = await screen.findByText('0.1714%');
+    utxoFeeUsd = await screen.findAllByText('$171');
   });
 
   it('Test default settings slideout', async () => {
@@ -387,6 +439,15 @@ describe('Home', () => {
     expect(satsMetricOption).not.toBeChecked();
     expect(btcMetricOption).toBeChecked();
 
+    const singleOption = within(slideout).getByRole('radio', {
+      name: 'SINGLE',
+    });
+    const batchOption = within(slideout).getByRole('radio', {
+      name: 'BATCH',
+    });
+    expect(batchOption).not.toBeChecked();
+    expect(singleOption).toBeChecked();
+
     const minFeeRateLabel = within(slideout).getByText('Min fee rate');
     const minFeeRate = minFeeRateLabel.parentNode?.nextSibling
       ?.firstChild as HTMLInputElement;
@@ -401,47 +462,121 @@ describe('Home', () => {
     // test default Colors
     const zeroPercentColor =
       within(slideout).getByDisplayValue('rgb(220, 252, 231)');
-    const twoPercentColor =
+    const fivePercentColor =
       within(slideout).getByDisplayValue('rgb(254, 240, 138)');
-    const tenPercentColor =
-      within(slideout).getByDisplayValue('rgb(248, 113, 113)');
-    const fortyFivePercentColor =
+    const twentyFivePercentColor =
       within(slideout).getByDisplayValue('rgb(239, 68, 68)');
-    const sixtyFiveColor =
+    const fiftyPercentColor =
       within(slideout).getByDisplayValue('rgb(220, 38, 38)');
-    const eightyFiveColor =
+    const seventyFivePercentColor =
       within(slideout).getByDisplayValue('rgb(185, 28, 28)');
     const hundredPercentColor =
       within(slideout).getByDisplayValue('rgb(153, 27, 27)');
     // test default percents
     const zeroPercent = within(slideout).getByDisplayValue('0%');
-    const twoPercent = within(slideout).getByDisplayValue('2%');
-    const tenPercent = within(slideout).getByDisplayValue('10%');
-    const fortyFivePercent = within(slideout).getByDisplayValue('45%');
-    const sixtyFive = within(slideout).getByDisplayValue('65%');
-    const eightyFive = within(slideout).getByDisplayValue('85%');
+    const fivePercent = within(slideout).getByDisplayValue('5%');
+    const twentyFivePercent = within(slideout).getByDisplayValue('25%');
+    const fiftyPercent = within(slideout).getByDisplayValue('50%');
+    const seventyFivePercent = within(slideout).getByDisplayValue('75%');
     const hundredPercent = within(slideout).getByDisplayValue('100%');
     expect(zeroPercent).toBeInTheDocument();
-    expect(twoPercent).toBeInTheDocument();
-    expect(tenPercent).toBeInTheDocument();
-    expect(fortyFivePercent).toBeInTheDocument();
-    expect(sixtyFive).toBeInTheDocument();
-    expect(eightyFive).toBeInTheDocument();
+    expect(fivePercent).toBeInTheDocument();
+    expect(twentyFivePercent).toBeInTheDocument();
+    expect(fiftyPercent).toBeInTheDocument();
+    expect(seventyFivePercent).toBeInTheDocument();
     expect(hundredPercent).toBeInTheDocument();
 
     expect(zeroPercentColor).toBeInTheDocument();
-    expect(twoPercentColor).toBeInTheDocument();
-    expect(tenPercentColor).toBeInTheDocument();
-    expect(fortyFivePercentColor).toBeInTheDocument();
-    expect(sixtyFiveColor).toBeInTheDocument();
-    expect(eightyFiveColor).toBeInTheDocument();
+    expect(fivePercentColor).toBeInTheDocument();
+    expect(twentyFivePercentColor).toBeInTheDocument();
+    expect(fiftyPercentColor).toBeInTheDocument();
+    expect(seventyFivePercentColor).toBeInTheDocument();
     expect(hundredPercentColor).toBeInTheDocument();
 
     const logOutButton = screen.getByRole('button', { name: 'Log out' });
     expect(logOutButton).toBeEnabled();
   });
 
-  it('Test default settings slideout', async () => {
+  it('Test removing and adding settings percent colors', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    expect(title).toBeInTheDocument();
+
+    const slideoutButton = screen.getByTestId('settings-button');
+    fireEvent.click(slideoutButton);
+
+    const settingsTitle = await screen.findByText('Settings');
+    expect(settingsTitle).toBeInTheDocument();
+
+    const slideout = screen.getByTestId('settings-slideout');
+
+    // confirm that the five percent color and percent are showing
+    let fivePercentColor =
+      within(slideout).getByDisplayValue('rgb(254, 240, 138)');
+    let fivePercent = within(slideout).getByDisplayValue('5%');
+    expect(fivePercentColor).toBeInTheDocument();
+    expect(fivePercent).toBeInTheDocument();
+
+    const zeroPctFeeRateColorContainer = within(slideout).getByTestId(
+      'fee-rate-color-container-0',
+    );
+    const zeroPctFeeRateColorContainerButtons = within(
+      zeroPctFeeRateColorContainer,
+    ).queryAllByRole('button');
+
+    // shouldn't be able to remove the first color/pct.
+    expect(zeroPctFeeRateColorContainerButtons).toHaveLength(0);
+
+    // test you can remove the second color/pct
+    const fivePctFeeRateColorContainer = within(slideout).getByTestId(
+      'fee-rate-color-container-1',
+    );
+    const fivePctFeeRateColorRemoveButton = within(
+      fivePctFeeRateColorContainer,
+    ).queryByRole('button');
+
+    fireEvent.click(fivePctFeeRateColorRemoveButton);
+
+    // after removing the second color/pct, it should no longer be showing
+    await waitFor(() => {
+      fivePercentColor =
+        within(slideout).queryByDisplayValue('rgb(254, 240, 138)');
+      fivePercent = within(slideout).queryByDisplayValue('5%');
+      expect(fivePercentColor).not.toBeInTheDocument();
+      expect(fivePercent).not.toBeInTheDocument();
+    });
+
+    // test index 5 fee rate color doesn't exist yet
+    let fifthPctFeeRateColorContainer = within(slideout).queryByTestId(
+      'fee-rate-color-container-5',
+    );
+    expect(fifthPctFeeRateColorContainer).not.toBeInTheDocument();
+
+    const addFeeRateColorButton =
+      within(slideout).getByTestId('add-fee-rate-color');
+
+    fireEvent.click(addFeeRateColorButton);
+
+    // now the index 5 color/pct should be added
+    fifthPctFeeRateColorContainer = within(slideout).queryByTestId(
+      'fee-rate-color-container-5',
+    );
+    expect(fifthPctFeeRateColorContainer).toBeInTheDocument();
+
+    // Test the pct and pct color.
+    const newPercentColor =
+      within(slideout).queryByDisplayValue('rgb(143, 17, 17)');
+    const newPercent = within(slideout).queryByDisplayValue('105%');
+    expect(newPercentColor).toBeInTheDocument();
+    expect(newPercent).toBeInTheDocument();
+  });
+
+  it('Test logging out from settings slideout', async () => {
     const screen = render(
       <WrappedInAppWrappers>
         <Home />
@@ -569,25 +704,36 @@ describe('Home', () => {
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
 
-    const txCheckBoxes = await screen.findAllByRole('checkbox');
+    //  open settings slideout and set batch tx to true
+    await setTxTypeToBatched(screen);
 
-    // three txs so should be three tx checkboxes to be able to include
-    // in our batched tx, as well as a 4th button to include all txs.
-    expect(txCheckBoxes.length).toBe(4);
+    let txCheckBoxes;
+
+    await waitFor(async () => {
+      txCheckBoxes = screen.getAllByRole('checkbox');
+      // three txs so should be three tx checkboxes to be able to include
+      // in our batched tx, as well as a 4th button to include all txs.
+      expect(txCheckBoxes?.length).toBe(4);
+    });
 
     const includeAllUtxosButton = txCheckBoxes[0];
     fireEvent.click(includeAllUtxosButton);
 
+    // set output count to 5
+    const outputCountMock = 5;
+    const outputCountInput = screen.getByTestId('output-count');
+    fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
+
     let estimateBatchTxButton = screen.getByRole('button', {
-      name: 'Estimate batch',
+      name: 'Estimate Batch',
     });
 
     expect(estimateBatchTxButton).toBeEnabled();
 
-    const selectedTotal = screen.getByText('Selected: 3');
+    const selectedTotal = screen.getByText('Count: 3');
     expect(selectedTotal).toBeInTheDocument();
 
-    const amountSelectedTotal = screen.getByText('amount: 3.00000001 BTC');
+    const amountSelectedTotal = screen.getByText('Amount: 3.00000001 BTC');
     expect(amountSelectedTotal).toBeInTheDocument();
 
     fireEvent.click(estimateBatchTxButton);
@@ -599,7 +745,11 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        outputCountMock,
+      );
     });
 
     let totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
@@ -705,3 +855,34 @@ describe('Home', () => {
 
   // test changing config sends update? / other / all main thread calls
 });
+
+// Open slideout and set batch tx to true, then close slideout
+const setTxTypeToBatched = async (screen: any) => {
+  //open settings and set batch tx to true
+  const slideoutButton = screen.getByTestId('settings-button');
+  fireEvent.click(slideoutButton);
+
+  let settingsTitle = await screen.findByText('Settings');
+  expect(settingsTitle).toBeInTheDocument();
+
+  const slideout = screen.getByTestId('settings-slideout');
+  let batchOption = within(slideout).getByRole('radio', {
+    name: 'BATCH',
+  });
+  fireEvent.click(batchOption);
+
+  batchOption = within(slideout).getByRole('radio', {
+    name: 'BATCH',
+  });
+  expect(batchOption).toBeChecked();
+
+  settingsTitle = await screen.findByText('Settings');
+  const closeSlideoutButton = settingsTitle.parentElement
+    .nextElementSibling as HTMLButtonElement;
+
+  fireEvent.click(closeSlideoutButton);
+
+  await waitFor(() => {
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  });
+};

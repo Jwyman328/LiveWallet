@@ -36,6 +36,7 @@ def get_fee_for_utxo(
             dict(
                 fee_rate=request.args.get("feeRate"),
                 transactions=json.loads(transactions_request_data),
+                output_count=request.args.get("outputCount"),
             )
         )
 
@@ -43,6 +44,7 @@ def get_fee_for_utxo(
             "utxo fee data",
             transactions=get_utxos_request_dto.transactions,
             fee_rate=get_utxos_request_dto.fee_rate,
+            output_count=request.args.get("outputCount"),
         )
 
         fee_estimate_response = wallet_service.get_fee_estimate_for_utxos_from_request(

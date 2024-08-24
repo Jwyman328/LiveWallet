@@ -50,6 +50,7 @@ function Home() {
   >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
   const [btcPrice, setBtcPrice] = useState(0);
+  const [isCreateBatchTx, setIsCreateBatchTx] = useState(false);
 
   const location = useLocation();
   const { numberOfXpubs, signaturesNeeded } = location.state as {
@@ -127,18 +128,17 @@ function Home() {
     FeeRateColor[]
   >([
     [0, 'rgb(220, 252, 231)'],
-    [2, 'rgb(254, 240, 138)'],
-    [10, 'rgb(248, 113, 113)'],
+    [5, 'rgb(254, 240, 138)'],
     [
-      45,
+      25,
       'rgb(239, 68, 68)', // 'bg-red-500',
     ],
     [
-      65,
+      50,
       'rgb(220, 38, 38)', // 'bg-red-600',
     ],
     [
-      85,
+      75,
       'rgb(185, 28, 28)', // 'bg-red-700',
     ],
     [
@@ -166,9 +166,17 @@ function Home() {
         feeScale,
         minFeeScale,
         feeRate,
+        isCreateBatchTx,
       });
     }
-  }, [btcMetric, feeRateColorMapValues, feeScale, minFeeScale, feeRate]);
+  }, [
+    btcMetric,
+    feeRateColorMapValues,
+    feeScale,
+    minFeeScale,
+    feeRate,
+    isCreateBatchTx,
+  ]);
 
   const handleWalletData = (walletData?: Wallet) => {
     console.log('walletData loaded', walletData);
@@ -186,6 +194,7 @@ function Home() {
       setMinFeeScale(walletData.minFeeScale!);
       setBtcMetric(walletData.btcMetric!);
       setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
+      setIsCreateBatchTx(!!walletData?.isCreateBatchTx!);
     }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };
@@ -216,6 +225,61 @@ function Home() {
     ];
     const newFeeRateColorMapValues = [...feeRateColorMapValues];
     newFeeRateColorMapValues[index] = newFeeRateColorItem;
+
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
+  const scaleColor = (r: number, g: number, b: number, scale: number) => {
+    // Scale factor to increase the color intensity
+    let newR = Math.min(255, Math.max(0, r + scale));
+    let newG = Math.min(255, Math.max(0, g + scale));
+    let newB = Math.min(255, Math.max(0, b + scale));
+
+    return { r: newR, g: newG, b: newB };
+  };
+
+  const extractRGBValues = (rgb: string) => {
+    // Regular expression to match 'rgb(r, g, b)'
+    const regex = /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
+    const match = rgb.match(regex);
+
+    if (match) {
+      // Extract values from the matched groups
+      const r = parseInt(match[1], 10);
+      const g = parseInt(match[2], 10);
+      const b = parseInt(match[3], 10);
+      return { r, g, b };
+    } else {
+      throw new Error('Invalid RGB string format');
+    }
+  };
+
+  const removeFeeRateColor = (index: number) => {
+    const newFeeRateColorMapValues = [...feeRateColorMapValues];
+    newFeeRateColorMapValues.splice(index, 1);
+    setFeeRateColorMapValues(newFeeRateColorMapValues);
+  };
+  const addFeeRateColor = () => {
+    const lastFeeRateColor =
+      feeRateColorMapValues[feeRateColorMapValues.length - 1];
+    const newFeeRateColorFeeRate = lastFeeRateColor[0] + 5;
+    const lastFeeRateColorColor = lastFeeRateColor[1];
+    const lastFeeRateColorRGB = extractRGBValues(lastFeeRateColorColor);
+    const newFeeRateColorRGB = scaleColor(
+      lastFeeRateColorRGB['r'],
+      lastFeeRateColorRGB['g'],
+      lastFeeRateColorRGB['b'],
+      -10, // make color darker
+    );
+    const newFeeRateColorColor = `rgb(${newFeeRateColorRGB['r']}, ${newFeeRateColorRGB['g']}, ${newFeeRateColorRGB['b']})`;
+    const newFeeRateColorMapValue: FeeRateColor = [
+      newFeeRateColorFeeRate,
+      newFeeRateColorColor,
+    ];
+
+    const newFeeRateColorMapValues = [
+      ...feeRateColorMapValues,
+      newFeeRateColorMapValue,
+    ];
 
     setFeeRateColorMapValues(newFeeRateColorMapValues);
   };
@@ -284,6 +348,16 @@ function Home() {
             }}
             data={[BtcMetric.SATS.toString(), BtcMetric.BTC.toString()]}
           />
+
+          <SegmentedControl
+            className="mb-4"
+            value={isCreateBatchTx ? 'BATCH' : 'SINGLE'}
+            onChange={(value) => {
+              const isBatch = value === 'BATCH';
+              setIsCreateBatchTx(isBatch);
+            }}
+            data={['SINGLE', 'BATCH']}
+          />
           <div className="h-full">
             <div className="flex flex-row justify-between mb-4">
               <Select
@@ -302,11 +376,14 @@ function Home() {
                 label={<p>Max fee rate</p>}
               />
             </div>
+
             <FeeRateColorChangeInputs
               numberOfInputs={feeRateColorMapValues.length}
               feeRateColorMapValues={feeRateColorMapValues}
               changeFeeRateColorPercent={changeFeeRateColorPercent}
               changeFeeRateColor={changeFeeRateColor}
+              removeFeeRateColor={removeFeeRateColor}
+              addFeeRateColor={addFeeRateColor}
             />
           </div>
 
@@ -434,6 +511,7 @@ function Home() {
           btcPrice={btcPrice}
           numberOfXpubs={numberOfXpubs || 1}
           signaturesNeeded={signaturesNeeded || 1}
+          isCreateBatchTx={isCreateBatchTx}
         />
       </div>
     </div>
