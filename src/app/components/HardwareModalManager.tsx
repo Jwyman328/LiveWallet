@@ -1,14 +1,12 @@
 import { ReactNode, useState } from 'react';
 import { ConnectHardwareModal } from './ConnectHardwareModal';
 import { SupportedHardwareWallets } from './SupportedHardwareWallets';
-import { MultiSigWalletData } from '../types/wallet';
+import { KeyDetails } from '../types/wallet';
 
 type HardwareModalManagerProps = {
   isOpen: boolean;
   closeModal: () => void;
-  onGetXpubFromHardwareWalletSuccess?: (
-    keyDetails: MultiSigWalletData,
-  ) => void;
+  onGetXpubFromHardwareWalletSuccess?: (keyDetails: KeyDetails) => void;
 };
 export const HardwareModalManager = ({
   isOpen,

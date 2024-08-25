@@ -26,7 +26,7 @@ import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
 import { notifications } from '@mantine/notifications';
-import { MultiSigWalletData, Wallet } from '../types/wallet';
+import { KeyDetails, Wallet } from '../types/wallet';
 import {
   getScriptTypeFromDerivationPath,
   ScriptTypes,
@@ -46,9 +46,7 @@ type ConnectHardwareModalProps = {
   isOpen: boolean;
   closeModal: () => void;
   nextModal: () => void;
-  onGetXpubFromHardwareWalletSuccess?: (
-    keyDetails: MultiSigWalletData,
-  ) => void;
+  onGetXpubFromHardwareWalletSuccess?: (keyDetails: KeyDetails) => void;
 };
 export const ConnectHardwareModal = ({
   isOpen,

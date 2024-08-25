@@ -48,11 +48,7 @@ import {
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
-import {
-  MultiSigWalletData,
-  UnchainedWalletConfig,
-  Wallet,
-} from '../types/wallet';
+import { KeyDetails, UnchainedWalletConfig, Wallet } from '../types/wallet';
 import { PolicyTypes } from '../types/policyTypes';
 import { HardwareModalManager } from '../components/HardwareModalManager';
 
@@ -91,16 +87,15 @@ export const WalletSignIn = () => {
     policyType.value === PolicyTypes.SINGLE_SIGNATURE ? 1 : 3,
   );
 
-  // TODO rename to just keyData?
-  const defaultMultiSigWalletData = {
+  const defaultKeyDetails = {
     masterFingerprint: configs.defaultMasterFingerprint,
     xpub: configs.defaultXpub,
     derivationPath: configs.defaultDerivationPath,
   };
 
-  const [multisigWalletDetails, setMultisigWalletDetails] = useState<
-    MultiSigWalletData[]
-  >([{ ...defaultMultiSigWalletData }]);
+  const [keyDetails, setKeyDetails] = useState<KeyDetails[]>([
+    { ...defaultKeyDetails },
+  ]);
 
   const handleNofMChange = (value: RangeSliderValue) => {
     const currentAmount = numberOfXpubs;
@@ -115,16 +110,13 @@ export const WalletSignIn = () => {
       const repeatedMultiSigWalletDataArray = Array.from(
         { length: howManyNewTabsToAdd },
         () => {
-          return { ...defaultMultiSigWalletData };
+          return { ...defaultKeyDetails };
         },
       );
-      setMultisigWalletDetails([
-        ...multisigWalletDetails,
-        ...repeatedMultiSigWalletDataArray,
-      ]);
+      setKeyDetails([...keyDetails, ...repeatedMultiSigWalletDataArray]);
     } else {
-      const newSetOfDetails = multisigWalletDetails.slice(0, newAmount);
-      setMultisigWalletDetails([...newSetOfDetails]);
+      const newSetOfDetails = keyDetails.slice(0, newAmount);
+      setKeyDetails([...newSetOfDetails]);
 
       if (Number(activePKTab) + 1 > newAmount) {
         setActivePKTab((newAmount - 1).toString());
@@ -208,7 +200,7 @@ export const WalletSignIn = () => {
     saveWallet({
       defaultDescriptor: defaultDescriptor,
       defaultChangeDescriptor: defaultChangeDescriptor,
-      keyDetails: multisigWalletDetails,
+      keyDetails: keyDetails,
       signaturesNeeded: signaturesNeeded,
       numberOfXpubs: numberOfXpubs,
       policyType: policyType,
@@ -264,12 +256,10 @@ export const WalletSignIn = () => {
     setPrivateElectrumUrl(e.target.value);
   };
 
-  const handleXpubImportedFromHardwareWallet = (
-    keyDetails: MultiSigWalletData,
-  ) => {
-    const newWalletDetails = [...multisigWalletDetails];
-    newWalletDetails[activePKTab] = keyDetails;
-    setMultisigWalletDetails(newWalletDetails);
+  const handleXpubImportedFromHardwareWallet = (newKeyDetail: KeyDetails) => {
+    const newWalletDetails = [...keyDetails];
+    newWalletDetails[activePKTab] = newKeyDetail;
+    setKeyDetails(newWalletDetails);
     setIsHWWModalOpen(false);
   };
 
@@ -309,9 +299,9 @@ export const WalletSignIn = () => {
     const closingParam = isNestedSegWit ? '))' : ')';
 
     if (policyType.value === PolicyTypes.SINGLE_SIGNATURE) {
-      const xpub = multisigWalletDetails[0].xpub;
-      const derivationPath = multisigWalletDetails[0].derivationPath;
-      const masterFingerPrint = multisigWalletDetails[0].masterFingerprint;
+      const xpub = keyDetails[0].xpub;
+      const derivationPath = keyDetails[0].derivationPath;
+      const masterFingerPrint = keyDetails[0].masterFingerprint;
 
       let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
 
@@ -324,7 +314,7 @@ export const WalletSignIn = () => {
     }
 
     if (policyType.value === PolicyTypes.MULTI_SIGNATURE) {
-      const sortedMultiParts = multisigWalletDetails
+      const sortedMultiParts = keyDetails
         .map((key) => {
           return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/0/*`.replace(
             /m\//,
@@ -334,7 +324,7 @@ export const WalletSignIn = () => {
         .reverse()
         .join(',');
 
-      const sortedMultiPartsChange = multisigWalletDetails
+      const sortedMultiPartsChange = keyDetails
         .map((key) => {
           return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/1/*`.replace(
             /m\//,
@@ -349,7 +339,6 @@ export const WalletSignIn = () => {
 
       return {
         descriptor: multisigDescriptor,
-        // TODO should multisigs always return a change descriptor?
         changeDescriptor: multisigChangeDescriptor,
       };
     }
@@ -376,15 +365,13 @@ export const WalletSignIn = () => {
     }
   };
 
-  const areXpubsValid = multisigWalletDetails.every(
-    (wallet) => wallet.xpub.length > 0,
-  );
+  const areXpubsValid = keyDetails.every((wallet) => wallet.xpub.length > 0);
 
-  const areAllDerivationPathsValid = multisigWalletDetails.every(
+  const areAllDerivationPathsValid = keyDetails.every(
     (wallet) => wallet.derivationPath.length > 0,
   );
 
-  const areAllMasterFingerprintsValid = multisigWalletDetails.every(
+  const areAllMasterFingerprintsValid = keyDetails.every(
     (wallet) => wallet.masterFingerprint.length > 0,
   );
 
@@ -462,7 +449,7 @@ export const WalletSignIn = () => {
     setSignaturesNeeded(walletData.quorum.requiredSigners);
     setNumberOfXpubs(walletData.extendedPublicKeys.length);
 
-    const unchainedMultisigWalletData = walletData.extendedPublicKeys.map(
+    const unchainedMultisigWalletKeyDetails = walletData.extendedPublicKeys.map(
       (keyData) => {
         return {
           masterFingerprint: keyData.xfp,
@@ -471,7 +458,7 @@ export const WalletSignIn = () => {
         };
       },
     );
-    setMultisigWalletDetails(unchainedMultisigWalletData);
+    setKeyDetails(unchainedMultisigWalletKeyDetails);
   };
 
   const handleImportedWallet = (walletData: Wallet | UnchainedWalletConfig) => {
@@ -507,7 +494,7 @@ export const WalletSignIn = () => {
     const {
       defaultDescriptor: importedDefaultDescriptor,
       defaultChangeDescriptor: importedChangeDescriptor,
-      keyDetails: importedMultiSigWalletData,
+      keyDetails: importedKeyDetails,
       policyType: importedPolicyType,
       signaturesNeeded: importedSignaturesNeeded,
       numberOfXpubs: importedNumberOfXpubs,
@@ -526,7 +513,7 @@ export const WalletSignIn = () => {
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
-    setMultisigWalletDetails(importedMultiSigWalletData);
+    setKeyDetails(importedKeyDetails);
     setChangeDescriptor(importedChangeDescriptor);
     setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
     setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
@@ -588,7 +575,7 @@ export const WalletSignIn = () => {
   }, []);
 
   const createKeyInformationTabs = () => {
-    return multisigWalletDetails.map((wallet, index) => {
+    return keyDetails.map((wallet, index) => {
       return (
         <Tabs.Panel key={index} value={index.toString()}>
           <Button
@@ -618,11 +605,11 @@ export const WalletSignIn = () => {
               value={wallet.masterFingerprint}
               defaultValue={'00000000'}
               onInput={(event) => {
-                const existingWalletDetails = multisigWalletDetails;
+                const existingWalletDetails = keyDetails;
                 existingWalletDetails[index].masterFingerprint =
                   //@ts-ignore
                   event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                setKeyDetails([...existingWalletDetails]);
               }}
             />
             <div className={`flex flex-row w-72 mb-2 mt-4 items-center`}>
@@ -640,11 +627,11 @@ export const WalletSignIn = () => {
               placeholder={derivationPathPlaceHolder}
               value={wallet.derivationPath}
               onInput={() => {
-                const existingWalletDetails = multisigWalletDetails;
-                existingWalletDetails[index].derivationPath =
+                const existingKeyDetails = keyDetails;
+                existingKeyDetails[index].derivationPath =
                   //@ts-ignore
                   event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                setKeyDetails([...existingKeyDetails]);
               }}
             />
 
@@ -654,10 +641,10 @@ export const WalletSignIn = () => {
               styles={{ input: { minHeight: '5rem' } }}
               placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
               onInput={(event) => {
-                const existingWalletDetails = multisigWalletDetails;
+                const existingKeyDetails = keyDetails;
                 //@ts-ignore
-                existingWalletDetails[index].xpub = event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                existingKeyDetails[index].xpub = event.target.value;
+                setKeyDetails([...existingKeyDetails]);
               }}
               value={wallet.xpub}
             />
@@ -668,11 +655,9 @@ export const WalletSignIn = () => {
   };
 
   const createWalletTabList = () => {
-    const innerTabs = multisigWalletDetails.map((wallet, index) => {
+    const innerTabs = keyDetails.map((wallet, index) => {
       const xpubLabel =
-        multisigWalletDetails.length === 1
-          ? 'Keystore'
-          : `Keystore ${index + 1}`;
+        keyDetails.length === 1 ? 'Keystore' : `Keystore ${index + 1}`;
       return <Tabs.Tab value={index.toString()}>{xpubLabel}</Tabs.Tab>;
     });
     return innerTabs;
@@ -758,9 +743,7 @@ export const WalletSignIn = () => {
                           ) {
                             setSignaturesNeeded(1);
                             setNumberOfXpubs(1);
-                            setMultisigWalletDetails([
-                              { ...defaultMultiSigWalletData },
-                            ]);
+                            setKeyDetails([{ ...defaultKeyDetails }]);
                             setActivePKTab('0');
                             setScriptType(singleSigScriptTypeOptions[2]);
                           }
@@ -772,10 +755,10 @@ export const WalletSignIn = () => {
                           ) {
                             setSignaturesNeeded(2);
                             setNumberOfXpubs(3);
-                            setMultisigWalletDetails([
-                              { ...defaultMultiSigWalletData },
-                              { ...defaultMultiSigWalletData },
-                              { ...defaultMultiSigWalletData },
+                            setKeyDetails([
+                              { ...defaultKeyDetails },
+                              { ...defaultKeyDetails },
+                              { ...defaultKeyDetails },
                             ]);
 
                             setScriptType(multiSigScriptTypeOptions[2]);
