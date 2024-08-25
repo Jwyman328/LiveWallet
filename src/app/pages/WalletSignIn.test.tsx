@@ -14,6 +14,7 @@ import { Wallet } from '../types/wallet';
 import { ScriptTypes } from '../types/scriptTypes';
 import { Network } from '../types/network';
 import { policyTypeOptions } from '../components/formOptions';
+import { Pages } from '../../renderer/pages';
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 const mockNavigate = jest.fn();
@@ -178,7 +179,7 @@ describe('WalletSignIn', () => {
         undefined,
       );
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/home', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.HOME, {
       state: { signaturesNeeded: 1, numberOfXpubs: 1 },
     });
 
@@ -331,7 +332,7 @@ describe('WalletSignIn', () => {
       );
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith('/home', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.HOME, {
       state: { signaturesNeeded: 2, numberOfXpubs: 3 },
     });
 

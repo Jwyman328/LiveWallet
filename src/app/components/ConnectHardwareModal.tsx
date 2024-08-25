@@ -32,6 +32,7 @@ import {
   ScriptTypes,
 } from '../types/scriptTypes';
 import { useNavigate } from 'react-router-dom';
+import { Pages } from '../../renderer/pages';
 
 export type WalletIdAccountNumbers = {
   // the key is the walletId and the value is the account number
@@ -149,7 +150,7 @@ export const ConnectHardwareModal = ({
     if (onGetXpubFromHardwareWalletSuccess) {
       onGetXpubFromHardwareWalletSuccess(wallet.keyDetails[0]);
     } else {
-      navigate('/sign-in', {
+      navigate(Pages.SIGN_IN, {
         state: { walletData: wallet },
       });
     }

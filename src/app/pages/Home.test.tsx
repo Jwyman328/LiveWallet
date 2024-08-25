@@ -14,6 +14,7 @@ import {
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
+import { Pages } from '../../renderer/pages';
 
 const mockNavigate = jest.fn();
 let getBalanceSpy: jest.SpyInstance;
@@ -610,7 +611,7 @@ describe('Home', () => {
         undefined,
       );
 
-      expect(mockNavigate).toHaveBeenCalledWith('/');
+      expect(mockNavigate).toHaveBeenCalledWith(Pages.CHOOSE_PATH);
     });
   });
 
@@ -673,7 +674,7 @@ describe('Home', () => {
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
       'current-route',
-      '/home',
+      Pages.HOME,
     );
   });
 

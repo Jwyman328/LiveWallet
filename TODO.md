@@ -8,7 +8,6 @@
   // - ReadyForPin
   // - ReadyForPassphrase
   // - available
-- use an enum for the page routes.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - add a banner for showing that a specific wallet is loaded
 

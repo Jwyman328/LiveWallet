@@ -3,6 +3,7 @@ import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
 import { ChoosePath } from './ChoosePath';
+import { Pages } from '../../renderer/pages';
 
 const mockNavigate = jest.fn();
 let getServerHealthStatusSpy: jest.SpyInstance;
@@ -51,7 +52,7 @@ describe('ChoosePath', () => {
     expect(hardwareButton).toBeInTheDocument();
 
     fireEvent.click(enterButton);
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in');
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.SIGN_IN);
 
     fireEvent.click(importButton);
 

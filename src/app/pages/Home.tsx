@@ -28,6 +28,7 @@ import {
 } from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
+import { Pages } from '../../renderer/pages';
 
 export type ScaleOption = {
   value: string;
@@ -77,7 +78,7 @@ function Home() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('current-route', '/home');
+    window.electron.ipcRenderer.sendMessage('current-route', Pages.HOME);
   }, []);
 
   const logOut = async () => {
@@ -91,7 +92,7 @@ function Home() {
     window.electron.ipcRenderer.sendMessage('save-wallet-configs', undefined);
 
     window.electron.ipcRenderer.sendMessage('save-wallet', undefined);
-    navigate('/');
+    navigate(Pages.CHOOSE_PATH);
   };
 
   const scaleOptions: ScaleOption[] = [

@@ -41,9 +41,7 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import {
-  getDerivationPathFromScriptType,
-} from '../types/scriptTypes';
+import { getDerivationPathFromScriptType } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
@@ -54,6 +52,7 @@ import {
   generateDescriptor,
   generateDescriptorFromUnchainedWalletConfig,
 } from '../bitcoin/descriptors';
+import { Pages } from '../../renderer/pages';
 
 type PublicElectrumUrl = {
   name: string;
@@ -228,7 +227,7 @@ export const WalletSignIn = () => {
       privateElectrumUrl: privateElectrumUrl,
       publicElectrumUrl: selectedPublicServer.value,
     });
-    navigate('/home', { state: { numberOfXpubs, signaturesNeeded } });
+    navigate(Pages.HOME, { state: { numberOfXpubs, signaturesNeeded } });
   };
 
   const handleWalletError = () => {
@@ -366,7 +365,7 @@ export const WalletSignIn = () => {
   const isLoginEnabled = unchainedWalletLogin || liveWalletLogin;
 
   const navigateToGenerateWallet = () => {
-    navigate('/generate-wallet');
+    navigate(Pages.GENERATE_WALLET);
   };
 
   const handleImportedUnchainedWallet = (walletData: UnchainedWalletConfig) => {
@@ -617,7 +616,7 @@ export const WalletSignIn = () => {
         <Button
           leftSection={<IconArrowLeft />}
           variant="transparent"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(Pages.CHOOSE_PATH)}
         ></Button>
       </Affix>
 

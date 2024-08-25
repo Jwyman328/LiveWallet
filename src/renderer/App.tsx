@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { GenerateWallet } from '../app/pages/GenerateWallet';
 import { ChoosePath } from '../app/pages/ChoosePath';
 import { Notifications } from '@mantine/notifications';
+import { Pages } from './pages';
 
 const queryClient = new QueryClient();
 
@@ -26,10 +27,10 @@ export default function App() {
         <Notifications position="top-right" />
         <Router>
           <Routes>
-            <Route path="/sign-in" element={<WalletSignIn />} />
-            <Route path="/" element={<ChoosePath />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/generate-wallet" element={<GenerateWallet />} />
+            <Route path={Pages.SIGN_IN} element={<WalletSignIn />} />
+            <Route path={Pages.CHOOSE_PATH} element={<ChoosePath />} />
+            <Route path={Pages.HOME} element={<Home />} />
+            <Route path={Pages.GENERATE_WALLET} element={<GenerateWallet />} />
           </Routes>
         </Router>
       </QueryClientProvider>
