@@ -65,6 +65,20 @@ $ sudo npm run package
 ```
   -  The app build will be available in /release directory
 
+## How to have apple sign app builds
+- this script will send zip files of the builds of the arm and intel builds to apple to notarize.
+- specify the version of the build, for example (0.6.0)
+```bash 
+$ bash notarize_mac_app_builds.sh 0.6.0
+```
+
+## How to verify mac os app builds have been notarized by apple
+- this script will run commands to verify both arm64 and intel based builds 
+have been signed by apple and can successfully be run on mac os systems.
+```bash 
+$ bash verify_mac_app_notarizations.sh
+```
+
 
 ## How to start app locally
 - To startup the electron app run
