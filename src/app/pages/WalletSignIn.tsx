@@ -43,7 +43,6 @@ import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import {
   getDerivationPathFromScriptType,
-  scriptTypeToDescriptorMap,
 } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
@@ -51,6 +50,10 @@ import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
 import { KeyDetails, UnchainedWalletConfig, Wallet } from '../types/wallet';
 import { PolicyTypes } from '../types/policyTypes';
 import { HardwareModalManager } from '../components/HardwareModalManager';
+import {
+  generateDescriptor,
+  generateDescriptorFromUnchainedWalletConfig,
+} from '../bitcoin/descriptors';
 
 type PublicElectrumUrl = {
   name: string;
@@ -193,10 +196,23 @@ export const WalletSignIn = () => {
   const handleWalletInitiated = () => {
     // send wallet details to main process so that
     // the main process has the wallet details if they want to save them.
-    const defaultDescriptor = descriptor || generateDescriptor().descriptor;
+    const defaultDescriptor =
+      descriptor ||
+      generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      ).descriptor;
 
     const defaultChangeDescriptor =
-      changeDescriptor || generateDescriptor().changeDescriptor;
+      changeDescriptor ||
+      generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      ).changeDescriptor;
     saveWallet({
       defaultDescriptor: defaultDescriptor,
       defaultChangeDescriptor: defaultChangeDescriptor,
@@ -289,61 +305,6 @@ export const WalletSignIn = () => {
     undefined,
   );
 
-  const generateDescriptor = () => {
-    // take the inputs from the various fields and create a descriptor
-    let scriptTypeDescription = scriptTypeToDescriptorMap[scriptType.value];
-
-    const isNestedSegWit =
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WPKH ||
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WSH;
-    const closingParam = isNestedSegWit ? '))' : ')';
-
-    if (policyType.value === PolicyTypes.SINGLE_SIGNATURE) {
-      const xpub = keyDetails[0].xpub;
-      const derivationPath = keyDetails[0].derivationPath;
-      const masterFingerPrint = keyDetails[0].masterFingerprint;
-
-      let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
-
-      const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationWithoutPrefix}]${xpub}/0/*${closingParam}`;
-
-      return {
-        descriptor: computedDescriptor,
-        changeDescriptor: undefined,
-      };
-    }
-
-    if (policyType.value === PolicyTypes.MULTI_SIGNATURE) {
-      const sortedMultiParts = keyDetails
-        .map((key) => {
-          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/0/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const sortedMultiPartsChange = keyDetails
-        .map((key) => {
-          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/1/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const multisigDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiParts})${closingParam}`;
-      const multisigChangeDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiPartsChange})${closingParam}`;
-
-      return {
-        descriptor: multisigDescriptor,
-        changeDescriptor: multisigChangeDescriptor,
-      };
-    }
-  };
-
   const initiateWalletRequest = useCreateWallet(
     network.value as Network,
     electrumUrl,
@@ -354,7 +315,12 @@ export const WalletSignIn = () => {
 
   const signIn = async () => {
     try {
-      const descriptors = generateDescriptor();
+      const descriptors = generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      );
 
       await initiateWalletRequest.mutateAsync({
         descriptor: descriptors.descriptor,
@@ -377,7 +343,12 @@ export const WalletSignIn = () => {
 
   const liveWalletLogin =
     areXpubsValid &&
-    !!generateDescriptor() &&
+    !!generateDescriptor(
+      scriptType.value,
+      policyType.value,
+      keyDetails,
+      signaturesNeeded,
+    ) &&
     !!scriptType?.value &&
     areAllMasterFingerprintsValid &&
     areAllDerivationPathsValid &&
@@ -399,34 +370,6 @@ export const WalletSignIn = () => {
   };
 
   const handleImportedUnchainedWallet = (walletData: UnchainedWalletConfig) => {
-    const generateDescriptors = () => {
-      const { quorum, extendedPublicKeys } = walletData;
-      const sortedMultiParts = extendedPublicKeys
-        .map((key) => {
-          return `[${key.xfp}${key.bip32Path}]${key.xpub}/0/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const sortedMultiPartsChange = extendedPublicKeys
-        .map((key) => {
-          return `[${key.xfp}${key.bip32Path}]${key.xpub}/1/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      return {
-        unchainedDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiParts}))`,
-        unchainedChangeDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiPartsChange}))`,
-      };
-    };
-
     const importedNetwork = networkOptions.find(
       (option) => option.value === walletData.network.toUpperCase(),
     );
@@ -442,7 +385,7 @@ export const WalletSignIn = () => {
       setScriptType(importedScriptType);
     }
 
-    const descriptors = generateDescriptors();
+    const descriptors = generateDescriptorFromUnchainedWalletConfig(walletData);
     setChangeDescriptor(descriptors.unchainedChangeDescriptor);
     // multisig option
     setPolicyType(policyTypeOptions[1]);
