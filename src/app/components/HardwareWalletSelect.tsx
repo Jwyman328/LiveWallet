@@ -1,6 +1,7 @@
 import {
   HardwareWalletDetails,
   HardwareWalletPromptToUnlockResponseType,
+  HardwareWalletSetPassphraseResponseType,
   HardwareWalletUnlockResponseType,
 } from '../api/types';
 
@@ -12,7 +13,7 @@ import {
   WalletIdAccountNumbers,
   WalletIdDerivationPaths,
 } from './ConnectHardwareModal';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TrezorKeypad } from './TrezorKeypad';
 import {
   usePromptToUnlockWallet,
@@ -35,6 +36,13 @@ type HardwareWalletSelectProps = {
   selectedDerivationPaths: WalletIdDerivationPaths;
 };
 
+enum HardwareWalletState {
+  LOCKED,
+  READY_FOR_PIN,
+  READY_FOR_PASSPHRASE,
+  AVAILABLE,
+}
+
 export const HardwareWalletSelect = ({
   wallet,
   accountOptions,
@@ -48,11 +56,18 @@ export const HardwareWalletSelect = ({
   const model = wallet.model.replace('_', ' ');
   const isTrezor = wallet.type === 'trezor';
 
-  const [isReadyForPin, setIsReadyForPin] = useState(false);
-  const [wasUnlockSuccessful, setWasUnlockSuccessful] = useState(false);
-  const [hasPromptedSuccessfullyOnce, setHasPromptedSuccessfullyOnce] =
-    useState(false);
-  const isLocked = !wasUnlockSuccessful && wallet.needs_pin_sent;
+  const [hardwareWalletState, setHardwareWalletState] =
+    useState<HardwareWalletState>(HardwareWalletState.LOCKED);
+
+  useEffect(() => {
+    if (wallet.needs_pin_sent) {
+      setHardwareWalletState(HardwareWalletState.LOCKED);
+    } else if (wallet.needs_passphrase_sent) {
+      setHardwareWalletState(HardwareWalletState.READY_FOR_PASSPHRASE);
+    } else {
+      setHardwareWalletState(HardwareWalletState.AVAILABLE);
+    }
+  }, [wallet.needs_pin_sent, wallet.needs_passphrase_sent]);
 
   const onSetWalletPassphraseError = () => {
     notifications.show({
@@ -61,22 +76,33 @@ export const HardwareWalletSelect = ({
       color: 'red',
     });
   };
+
+  const onPassphraseSuccess = (
+    data: HardwareWalletSetPassphraseResponseType,
+  ) => {
+    if (data.was_passphrase_set) {
+      setHardwareWalletState(HardwareWalletState.AVAILABLE);
+    } else {
+      onSetWalletPassphraseError();
+    }
+  };
+
   const setWalletPassphraseMutation = useSetWalletPassphraseMutation(
-    undefined,
+    onPassphraseSuccess,
     onSetWalletPassphraseError,
   );
   const isPassphrasePending =
     wallet.needs_passphrase_sent && !setWalletPassphraseMutation.isSuccess;
-  const isLockedOrNeedsPassphrase = isLocked || isPassphrasePending;
+  const isLockedOrNeedsPassphrase =
+    hardwareWalletState === HardwareWalletState.LOCKED || isPassphrasePending;
 
   const [isShowDerivation, setIsShowDerivation] = useState(false);
   const onPromptToUnlockSuccess = (
     response: HardwareWalletPromptToUnlockResponseType,
   ) => {
     if (response.was_prompt_successful) {
-      setHasPromptedSuccessfullyOnce(true);
+      setHardwareWalletState(HardwareWalletState.READY_FOR_PIN);
     }
-    setIsReadyForPin(response.was_prompt_successful);
   };
   const onPromptToUnlockError = () => {
     notifications.show({
@@ -102,12 +128,15 @@ export const HardwareWalletSelect = ({
 
   const handleUnlockSuccess = (response: HardwareWalletUnlockResponseType) => {
     if (response.was_unlock_successful) {
-      setWasUnlockSuccessful(true);
+      if (wallet.needs_passphrase_sent) {
+        setHardwareWalletState(HardwareWalletState.READY_FOR_PASSPHRASE);
+      } else {
+        setHardwareWalletState(HardwareWalletState.AVAILABLE);
+      }
     } else {
-      setWasUnlockSuccessful(false);
       // After a failed unlock, we need to prompt the wallet again
-      // before we can send a pin again, therefore the wallet is not ready for pin
-      setIsReadyForPin(false);
+      // before we can send a pin again, therefore the wallet is LOCKED
+      setHardwareWalletState(HardwareWalletState.LOCKED);
 
       setPin('');
 
@@ -119,7 +148,7 @@ export const HardwareWalletSelect = ({
     }
   };
   const handleUnlockError = () => {
-    setWasUnlockSuccessful(false);
+    setHardwareWalletState(HardwareWalletState.LOCKED);
     setPin('');
 
     notifications.show({
@@ -163,12 +192,12 @@ export const HardwareWalletSelect = ({
         className="mb-2"
         color={'green'}
         onClick={sendPin}
-        disabled={!isReadyForPin}
+        disabled={hardwareWalletState !== HardwareWalletState.READY_FOR_PIN}
       >
         Enter pin
       </Button>
     );
-  }, [unlockWalletMutation.isLoading, isReadyForPin, sendPin]);
+  }, [unlockWalletMutation.isLoading, hardwareWalletState, sendPin]);
 
   return (
     <div>
@@ -184,7 +213,7 @@ export const HardwareWalletSelect = ({
             }
           }}
           checked={selectedHWId === wallet.id}
-          disabled={isLockedOrNeedsPassphrase}
+          disabled={hardwareWalletState !== HardwareWalletState.AVAILABLE}
         />
         <div className="items-center border rounded border-gray-600 p-2 bg-gray-100  mb-4 w-full">
           <div className="flex flex-row justify-between">
@@ -200,44 +229,53 @@ export const HardwareWalletSelect = ({
                 </Button>
               )}
             </div>
-            {isLocked ? (
+            {hardwareWalletState === HardwareWalletState.LOCKED ||
+            hardwareWalletState === HardwareWalletState.READY_FOR_PIN ? (
               <Button
                 loading={promptToUnlockMutation.isLoading}
                 onClick={promptToUnlock}
                 size="sm"
                 color="green"
-                disabled={isReadyForPin}
+                disabled={hardwareWalletState !== HardwareWalletState.LOCKED}
               >
                 Unlock
               </Button>
-            ) : isPassphrasePending ? (
+            ) : isPassphrasePending &&
+              hardwareWalletState ===
+                HardwareWalletState.READY_FOR_PASSPHRASE ? (
               <div className="flex items-center justify-center  text-sm">
                 passphrase required
               </div>
             ) : (
-              <Select
-                data={accountOptions}
-                data-testid={`account-select-${wallet.id}`}
-                placeholder="Pick value"
-                defaultValue={'0'}
-                onChange={(value) => {
-                  setSelectedAccounts({
-                    ...selectedAccounts,
-                    //@ts-ignore
-                    [wallet.id]: value as string,
-                  });
-                }}
-              />
+              hardwareWalletState === HardwareWalletState.AVAILABLE && (
+                <Select
+                  data={accountOptions}
+                  data-testid={`account-select-${wallet.id}`}
+                  placeholder="Pick value"
+                  defaultValue={'0'}
+                  onChange={(value) => {
+                    setSelectedAccounts({
+                      ...selectedAccounts,
+                      //@ts-ignore
+                      [wallet.id]: value as string,
+                    });
+                  }}
+                />
+              )
             )}
           </div>
           <Collapse
-            in={(isReadyForPin || hasPromptedSuccessfullyOnce) && isLocked}
+            in={hardwareWalletState === HardwareWalletState.READY_FOR_PIN}
           >
             {isTrezor ? (
               <div className="flex flex-row mt-4">
                 <TrezorKeypad
                   currentPin={pin}
-                  onPadClick={isReadyForPin ? setPin : () => {}}
+                  onPadClick={
+                    hardwareWalletState === HardwareWalletState.READY_FOR_PIN
+                      ? setPin
+                      : () => {}
+                  }
                 />
                 <div className="w-full ml-3 flex flex-col justify-between">
                   <Input
@@ -250,7 +288,10 @@ export const HardwareWalletSelect = ({
                     }}
                     type="password"
                     styles={{ input: { fontSize: '2.5rem' } }}
-                    disabled={unlockWalletMutation.isLoading || !isReadyForPin}
+                    disabled={
+                      unlockWalletMutation.isLoading ||
+                      hardwareWalletState !== HardwareWalletState.READY_FOR_PIN
+                    }
                   />
                   <EnterPinButton />
                 </div>
@@ -268,14 +309,22 @@ export const HardwareWalletSelect = ({
                       setPin(event.target?.value);
                     }
                   }}
-                  disabled={unlockWalletMutation.isLoading || !isReadyForPin}
+                  disabled={
+                    unlockWalletMutation.isLoading ||
+                    hardwareWalletState !== HardwareWalletState.READY_FOR_PIN
+                  }
                 />
 
                 <EnterPinButton />
               </>
             )}
           </Collapse>
-          <Collapse in={!isLocked && isPassphrasePending}>
+          <Collapse
+            in={
+              isPassphrasePending &&
+              hardwareWalletState === HardwareWalletState.READY_FOR_PASSPHRASE
+            }
+          >
             <div className="flex flex-row mt-1">
               <Input
                 data-testid="send passphrase"
