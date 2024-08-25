@@ -148,14 +148,16 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(
+            return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(
+            return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -204,18 +206,91 @@ class TestWalletController(TestCase):
             }
             assert wallet_response.status == "200 OK"
 
-    def test_spendable_descriptor_error(self):
+    def test_spendable__with_descriptor_param_success(self):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(
+            return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(
+            return_value="mock_address")
+        wallet_mock.get_address = address_mock
+        self.mock_wallet_service.create_spendable_wallet = MagicMock(
+            return_value=wallet_mock
+        )
+
+        with (
+            patch(
+                "src.controllers.wallet.randomly_fund_mock_wallet"
+            ) as randomly_fund_mock_wallet_mock,
+            patch("src.controllers.wallet.sleep", return_value=None),
+            patch.object(
+                WalletService,
+                "create_spendable_descriptor",
+                return_value=spendable_descriptor_mock,
+            ) as create_spendable_descriptor_mock,
+            patch.object(
+                WalletService, "create_spendable_wallet", return_value=wallet_mock
+            ) as create_spendable_wallet_mock,
+            patch.object(
+                bdk, "Descriptor", return_value=spendable_descriptor_mock
+            ) as bdk_descriptor_mock,
+        ):
+            wallet_response = self.test_client.post(
+                "/wallet/spendable",
+                json={
+                    "network": "TESTNET",
+                    "type": "P2PK",
+                    "utxoCount": "4",
+                    "minUtxoAmount": "1",
+                    "maxUtxoAmount": "2",
+                    "descriptor": "mock_descriptor",
+                },
+            )
+
+            # since descriptor is provided, create_spendable_descriptor_mock should not be called
+            create_spendable_descriptor_mock.assert_not_called()
+
+            bdk_descriptor_mock.assert_called_once_with(
+                descriptor="mock_descriptor", network=bdk.Network.TESTNET
+            )
+            create_spendable_wallet_mock.assert_called_once_with(
+                bdk.Network.TESTNET, spendable_descriptor_mock
+            )
+
+            wallet_mock.get_address.assert_called_once_with(
+                bdk.AddressIndex.LAST_UNUSED()
+            )
+            randomly_fund_mock_wallet_mock.assert_called_once_with(
+                "mock_address", 1.0, 2.0, 4
+            )
+            assert json.loads(wallet_response.data) == {
+                "message": "wallet created successfully",
+                "descriptor": "mock_descriptor",
+                "network": "TESTNET",
+            }
+            assert wallet_response.status == "200 OK"
+
+    def test_spendable_descriptor_error(self):
+        self.mock_wallet_service = MagicMock(WalletService)
+
+        spendable_descriptor_mock = MagicMock(bdk.Descriptor)
+        spendable_descriptor_mock.as_string = MagicMock(
+            return_value="mock_descriptor")
+        self.mock_wallet_service.create_spendable_descriptor = MagicMock(
+            return_value=spendable_descriptor_mock
+        )
+        wallet_mock = MagicMock(bdk.Wallet)
+        get_address_mock = MagicMock()
+        address_mock = MagicMock(return_value=get_address_mock)
+        get_address_mock.address.as_string = MagicMock(
+            return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -260,14 +335,16 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(
+            return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(
+            return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -287,7 +364,8 @@ class TestWalletController(TestCase):
                 WalletService, "create_spendable_wallet", return_value=wallet_mock
             ) as create_spendable_wallet_mock,
         ):
-            randomly_fund_mock_wallet_mock.side_effect = Exception("mock exception")
+            randomly_fund_mock_wallet_mock.side_effect = Exception(
+                "mock exception")
             wallet_response = self.test_client.post(
                 "/wallet/spendable",
                 json={
@@ -315,14 +393,16 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(
+            return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(
+            return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
