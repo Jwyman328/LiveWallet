@@ -16,13 +16,6 @@ https://github.com/user-attachments/assets/42f34e55-e6ef-4519-9754-dadb7fed4f7b
 https://github.com/user-attachments/assets/ca5f1332-5443-4283-8c0d-54bdf4363e11
 
 
-
-
-
-
-
-
-
 # Development
 
 ## Prerequisits
@@ -39,13 +32,13 @@ $ brew install libusb
 - Use the script update_app_version.sh, passing it a new version number and text to append to the change log file.
 - If a new version is successfully set then this script will build a new release by running the package_app.sh script.
 ```bash
-$ bash update_app_version.sh "1.2.0" "I am adding another item to the change log"
+$ bash scripts/update_app_version.sh "1.2.0" "I am adding another item to the change log"
 ```
 
 ## How to create build
 - in a single script you can package the backend and the frontend into a single executable by running
 ```bash
-$ bash package_app.sh
+$ bash scripts/package_app.sh
 ```
   -  The app build will be available in /release directory
 
@@ -69,14 +62,14 @@ $ sudo npm run package
 - this script will send zip files of the builds of the arm and intel builds to apple to notarize.
 - specify the version of the build, for example (0.6.0)
 ```bash 
-$ bash notarize_mac_app_builds.sh 0.6.0
+$ bash scripts/notarize_mac_app_builds.sh 0.6.0
 ```
 
 ## How to verify mac os app builds have been notarized by apple
 - this script will run commands to verify both arm64 and intel based builds 
 have been signed by apple and can successfully be run on mac os systems.
 ```bash 
-$ bash verify_mac_app_notarizations.sh
+$ bash scripts/verify_mac_app_notarizations.sh
 ```
 
 
