@@ -218,3 +218,27 @@ class TestWalletController(TestCase):
                 "message": "Error getting xpub from hardware wallet",
                 "errors": ANY,
             }
+
+    def test_get_xpub_xpub_not_found_error(self):
+        with patch.object(
+            HardwareWalletService,
+            "get_xpub_from_device",
+            return_value=None,
+        ) as get_xpub_from_device_mock:
+            response = self.test_client.post(
+                "hardware-wallets/unlock/mock_uuid/xpub",
+                json={
+                    "derivation_path": "m/86'/0'/0'/0/0",
+                    "account_number": 1,
+                    "network": "BITCOIN",
+                },
+            )
+            get_xpub_from_device_mock.assert_called_once_with(
+                "mock_uuid", 1, common.AddressType.TAP, Chain.MAIN
+            )
+
+            assert response.status == "400 BAD REQUEST"
+            assert json.loads(response.data) == {
+                "message": "Error getting xpub from hardware wallet",
+                "errors": ANY,
+            }
