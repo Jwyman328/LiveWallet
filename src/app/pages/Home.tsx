@@ -454,6 +454,7 @@ function Home() {
                   className="ml-8 mr-8 relative top-4"
                 >
                   <Slider
+                    data-testid="fee-rate-slider"
                     marks={feeRateMarks}
                     defaultValue={parseInt(minFeeScale.value)}
                     min={parseInt(minFeeScale.value)}

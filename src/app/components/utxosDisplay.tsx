@@ -107,6 +107,10 @@ export const UtxosDisplay = ({
 
   const onReceivingOutputChange = (value: number) => {
     setReceivingOutputCount(value);
+    // reset the current batched tx data
+    // since a new output count will change the batch fee estimate
+    // and thefore the current fee estimate will be invalid.
+    setCurrentBatchedTxData(null);
   };
 
   const additionalFeeCostFromAdditionalReceivingOutputs =

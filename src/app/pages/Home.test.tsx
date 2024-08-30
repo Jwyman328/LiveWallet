@@ -5,6 +5,9 @@ import {
   act,
   within,
 } from '@testing-library/react';
+
+import userEvent from '@testing-library/user-event';
+
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
@@ -779,6 +782,88 @@ describe('Home', () => {
     expect(totalFees).toBeInTheDocument();
     expect(totalFeeCost).toBeInTheDocument();
     expect(totalFeePct).toBeInTheDocument();
+  });
+
+  it('Changing output count after batch tx estimate should remove batch tx estimate', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    expect(title).toBeInTheDocument();
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set batch tx to true
+    await setTxTypeToBatched(screen);
+
+    let txCheckBoxes;
+
+    await waitFor(async () => {
+      txCheckBoxes = screen.getAllByRole('checkbox');
+      // three txs so should be three tx checkboxes to be able to include
+      // in our batched tx, as well as a 4th button to include all txs.
+      expect(txCheckBoxes?.length).toBe(4);
+    });
+
+    const includeAllUtxosButton = txCheckBoxes[0];
+    fireEvent.click(includeAllUtxosButton);
+
+    // set output count to 5
+    const outputCountMock = 5;
+    let outputCountInput = screen.getByTestId('output-count');
+    fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
+
+    let estimateBatchTxButton = screen.getByRole('button', {
+      name: 'Estimate Batch',
+    });
+
+    expect(estimateBatchTxButton).toBeEnabled();
+
+    const selectedTotal = screen.getByText('Count: 3');
+    expect(selectedTotal).toBeInTheDocument();
+
+    const BTCSelectedTotal = screen.getByText('BTC: 3.00000001');
+    expect(BTCSelectedTotal).toBeInTheDocument();
+
+    const USDSelectedTotal = screen.getByText('USD: $300,000');
+    expect(USDSelectedTotal).toBeInTheDocument();
+
+    fireEvent.click(estimateBatchTxButton);
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        outputCountMock,
+      );
+    });
+
+    let totalFees = await screen.findByText('Total fees: ~0.15000810 BTC');
+    let totalFeeCost = await screen.findByText('Fee cost: $15,001');
+    let totalFeePct = await screen.findByText('(5.0003%)');
+    expect(totalFees).toBeInTheDocument();
+    expect(totalFeeCost).toBeInTheDocument();
+    expect(totalFeePct).toBeInTheDocument();
+
+    // change outputs count
+    const newOutputCount = outputCountMock + 10;
+    fireEvent.change(outputCountInput, { target: { value: newOutputCount } });
+
+    // Fees should now be removed
+    totalFees = await screen.findByText('Total fees: ...');
+    totalFeeCost = await screen.findByText('Fee cost: ...');
+
+    expect(totalFees).toBeInTheDocument();
+    expect(totalFeeCost).toBeInTheDocument();
   });
 
   it('Importing in wallet data with configs', async () => {
