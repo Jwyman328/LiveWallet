@@ -1,5 +1,4 @@
 # TODO frontend
-- in batch tx header, show the amount usd below the amount btc.
 - changing fee output amount in batch should clear batch fee state.
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - add a banner for showing that a specific wallet is loaded

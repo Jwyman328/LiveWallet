@@ -734,8 +734,11 @@ describe('Home', () => {
     const selectedTotal = screen.getByText('Count: 3');
     expect(selectedTotal).toBeInTheDocument();
 
-    const amountSelectedTotal = screen.getByText('Amount: 3.00000001 BTC');
-    expect(amountSelectedTotal).toBeInTheDocument();
+    const BTCSelectedTotal = screen.getByText('BTC: 3.00000001');
+    expect(BTCSelectedTotal).toBeInTheDocument();
+
+    const USDSelectedTotal = screen.getByText('USD: $300,000');
+    expect(USDSelectedTotal).toBeInTheDocument();
 
     fireEvent.click(estimateBatchTxButton);
 

@@ -359,6 +359,19 @@ export const UtxosDisplay = ({
         0,
       );
 
+      const totalAmountInBTC = btcSatHandler(
+        totalAmount.toLocaleString(),
+        BtcMetric.BTC,
+      );
+      const totalAmountUsd = Big(btcPrice).times(totalAmountInBTC).toFixed(2);
+
+      const amountUSDDisplay = totalAmountUsd
+        ? `$${Number(totalAmountUsd).toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}`
+        : '...';
+
       return (
         <>
           <Collapse
@@ -366,7 +379,7 @@ export const UtxosDisplay = ({
             transitionDuration={300}
             transitionTimingFunction="linear"
           >
-            <div className={`h-16`}>
+            <div>
               <p
                 style={{
                   color: sectionColor,
@@ -381,9 +394,17 @@ export const UtxosDisplay = ({
                 }}
                 className="font-semibold text-lg"
               >
-                Amount:
+                {btcMetric === BtcMetric.BTC ? ' BTC' : ' Sats'}:{' '}
                 {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
-                {btcMetric === BtcMetric.BTC ? ' BTC' : ' sats'}
+              </p>
+
+              <p
+                style={{
+                  color: sectionColor,
+                }}
+                className="font-semibold text-lg"
+              >
+                USD: {amountUSDDisplay}
               </p>
             </div>
           </Collapse>
