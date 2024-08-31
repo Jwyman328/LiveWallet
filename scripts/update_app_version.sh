@@ -106,5 +106,5 @@ echo "Version updated to $NEW_VERSION in $PACKAGE_LOCK_PATH and $PACKAGE_PATH an
 
 echo "Creating new release build for $NEW_VERSION"
 
-bash ./package_app.sh
+bash ./scripts/package_app.sh
 
