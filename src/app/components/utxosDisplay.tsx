@@ -23,7 +23,7 @@ import {
   InputLabel,
   Collapse,
 } from '@mantine/core';
-import { WalletTypes } from '../types/scriptTypes';
+import { ScriptTypes, WalletTypes } from '../types/scriptTypes';
 import Big from 'big.js';
 const sectionColor = 'rgb(1, 67, 97)';
 
@@ -49,11 +49,12 @@ import {
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { useDisclosure } from '@mantine/hooks';
 import { usePrevious } from '../hooks/utils';
+import { createTxFeeEstimate } from '../bitcoin/txFeeCalculation';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
   feeRate: number;
-  walletType: WalletTypes;
+  walletType: ScriptTypes;
   isLoading: boolean;
   isError: boolean;
   btcMetric: BtcMetric;
@@ -85,25 +86,8 @@ export const UtxosDisplay = ({
 }: UtxosDisplayProps) => {
   const estimateVBtyePerInput = 125;
   const estimateVBtyeOverheadAndOutput = walletType === 'P2PKH' ? 175 : 10;
-  // for a batch tx that doesn't include the script sig.
-  const additionalMultiSigVBtyePerScriptSig = walletType === 'P2SH' ? 73 : 10;
-  const additionalMultiSigVBtyePerPubKey = walletType === 'P2SH' ? 45 : 1;
-  const multisigOverHead = walletType === 'P2SH' ? 175 : 4;
-  const estimateVBtyePerScriptSig: Record<WalletTypes, number> = {
-    P2PKH: 107,
-    P2SH: 250, //not really sure on this one. there is a large range, if it is a multisig script hash it could be like 250. I'll use 250 for now.
-    P2WPKH: 27,
-    // P2WSH2O3: 63,
-    // P2TR: 16,
-  };
 
   const [receivingOutputCount, setReceivingOutputCount] = useState(2);
-  // only account for outputs above 1 since the first output and the change output is already accounted for.
-  // it varies depending on the receiving output script type but it is somehere between 31-43
-  // we will use 34 for now, but TODO would be to make this more accurate by
-  // changing the estimate based on the script type.
-  const estimateAdditionalVBtyePerReceivingOutput =
-    receivingOutputCount > 1 ? 34 : 0;
 
   const onReceivingOutputChange = (value: number) => {
     setReceivingOutputCount(value);
@@ -113,32 +97,17 @@ export const UtxosDisplay = ({
     setCurrentBatchedTxData(null);
   };
 
-  const additionalFeeCostFromAdditionalReceivingOutputs =
-    receivingOutputCount * estimateAdditionalVBtyePerReceivingOutput * feeRate;
-
-  const batchedSigInputEstimateFeeTotal =
-    estimateVBtyePerScriptSig[walletType] * feeRate;
-
   const avgInputCost = estimateVBtyePerInput * feeRate;
   const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
-  const multiSigAdditionalSigCost =
-    numberOfXpubs > 1
-      ? additionalMultiSigVBtyePerScriptSig * signaturesNeeded * feeRate
-      : 0;
-  const multiSigAdditionalPubkeysCost =
-    numberOfXpubs > 1
-      ? additionalMultiSigVBtyePerPubKey * numberOfXpubs * feeRate
-      : 0;
-  const multisigOverHeadCost =
-    numberOfXpubs > 1 ? multisigOverHead * feeRate : 0;
 
-  const totalCost =
-    avgBaseCost +
-    avgInputCost +
-    multiSigAdditionalSigCost +
-    multiSigAdditionalPubkeysCost +
-    multisigOverHeadCost +
-    additionalFeeCostFromAdditionalReceivingOutputs;
+  const totalVBtyes = createTxFeeEstimate(
+    1,
+    walletType,
+    signaturesNeeded,
+    numberOfXpubs,
+    receivingOutputCount,
+  );
+  const totalCost = totalVBtyes * feeRate;
 
   const calculateFeePercent = (amount: number) => {
     const percentOfAmount = (totalCost / amount) * 100;
@@ -557,11 +526,9 @@ export const UtxosDisplay = ({
       0,
     );
 
-    const inputSigFees = batchedSigInputEstimateFeeTotal * selectedUtxos.length;
+    //const inputSigFees = batchedSigInputEstimateFeeTotal * selectedUtxos.length;
 
-    const fee = !isBatchTxRequestError
-      ? Number(batchedTxData?.fee) + inputSigFees
-      : undefined;
+    const fee = !isBatchTxRequestError ? Number(batchedTxData?.fee) : undefined;
     const percentOfTxFee = fee
       ? (Number(fee / utxoInputTotal) * 100).toFixed(4)
       : undefined;

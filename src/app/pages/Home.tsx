@@ -29,6 +29,7 @@ import {
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
 import { Pages } from '../../renderer/pages';
+import { ScriptTypes } from '../types/scriptTypes';
 
 export type ScaleOption = {
   value: string;
@@ -499,7 +500,10 @@ function Home() {
           btcMetric={btcMetric}
           feeRate={feeRate}
           utxos={getUtxosQueryRequest?.data?.utxos || []}
-          walletType={getWalletTypeQueryRequest.data || 'P2WPKH'}
+          walletType={
+            (getWalletTypeQueryRequest.data as ScriptTypes) ||
+            ScriptTypes.P2WPKH
+          }
           isLoading={
             getUtxosQueryRequest.isLoading ||
             getWalletTypeQueryRequest.isLoading ||
