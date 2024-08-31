@@ -203,7 +203,7 @@ describe('WalletSignIn', () => {
         defaultScriptType: 'P2WPKH',
         isUsingPublicServer: false,
         privateElectrumUrl: defaultElectrumUrl,
-        publicElectrumUrl: 'electrum.blockstream.info',
+        publicElectrumUrl: 'blockstream.info',
       },
     );
   });
@@ -248,7 +248,7 @@ describe('WalletSignIn', () => {
 
     // now inputs for all three key stores should be showing
     const derivationPathInputs = screen.getAllByPlaceholderText(
-      "m/49'/0'/0'",
+      "m/48'/0'/0'",
     ) as HTMLInputElement[];
     expect(derivationPathInputs.length).toBe(3);
 
@@ -369,7 +369,7 @@ describe('WalletSignIn', () => {
         defaultScriptType: 'P2WSH',
         isUsingPublicServer: false,
         privateElectrumUrl: '127.0.0.1:50000',
-        publicElectrumUrl: 'electrum.blockstream.info',
+        publicElectrumUrl: 'blockstream.info',
       },
     );
   });
@@ -634,7 +634,7 @@ describe('WalletSignIn', () => {
     expect(publicElectrumServer).toBeInTheDocument();
     expect(privateElectrumServer).toBeInTheDocument();
     expect(privateElectrumUrl.value).toBe('127.0.0.1:50000');
-    expect(publicElectrumUrl.value).toBe('electrum.blockstream.info');
+    expect(publicElectrumUrl.value).toBe('blockstream.info');
 
     let setupButton = screen.getByRole('button', { name: 'Connect' });
     expect(setupButton).toBeEnabled();
@@ -698,11 +698,11 @@ describe('WalletSignIn', () => {
       defaultNetwork: Network.BITCOIN,
       defaultScriptType: ScriptTypes.P2SHP2WPKH,
       defaultDescriptor: '',
-      defaultElectrumServerUrl: 'electrum.blockstream.info',
+      defaultElectrumServerUrl: 'blockstream.info',
       backendServerBaseUrl: '',
       isUsingPublicServer: true,
       privateElectrumUrl: '',
-      publicElectrumUrl: 'electrum.blockstream.info',
+      publicElectrumUrl: 'blockstream.info',
     };
 
     mockUseLocation = {
@@ -782,7 +782,7 @@ describe('WalletSignIn', () => {
       expect(initiateWalletSpy).toHaveBeenCalledWith(
         "sh(wpkh([00000000/84'/0'/0']mockXpub/0/*))",
         walletDataFromHwWallet.defaultNetwork,
-        `${walletDataFromHwWallet.publicElectrumUrl}:50001`,
+        `${walletDataFromHwWallet.publicElectrumUrl}:110`,
         100,
         undefined,
       );
@@ -1041,7 +1041,7 @@ describe('WalletSignIn', () => {
 
       // now all this data from the hardware wallet key should be showing in the form
       let derivationPathInputs = (await screen.findAllByPlaceholderText(
-        "m/86'/0'/0'",
+        "m/49'/1'/0'",
       )) as HTMLInputElement[];
 
       let masterFingerPrintSelected = (await screen.findAllByPlaceholderText(
@@ -1085,7 +1085,7 @@ describe('WalletSignIn', () => {
 
       // now all this data for this hardware wallet key should be showing in the form
       derivationPathInputs = (await screen.findAllByPlaceholderText(
-        "m/86'/0'/0'",
+        "m/49'/1'/0'",
       )) as HTMLInputElement[];
 
       masterFingerPrintSelected = (await screen.findAllByPlaceholderText(

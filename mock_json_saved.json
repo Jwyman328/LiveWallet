@@ -9,5 +9,5 @@
   "defaultScriptType": "P2WPKH",
   "isUsingPublicServer": false,
   "privateElectrumUrl": "127.0.0.1:50000",
-  "publicElectrumUrl": "electrum.blockstream.info"
+  "publicElectrumUrl": "blockstream.info"
 }

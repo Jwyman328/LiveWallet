@@ -41,7 +41,10 @@ import {
 } from '@mantine/core';
 import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
-import { getDerivationPathFromScriptType } from '../types/scriptTypes';
+import {
+  getDerivationPathFromScriptType,
+  getScriptTypeFromDerivationPath,
+} from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
@@ -141,11 +144,11 @@ export const WalletSignIn = () => {
   // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
   const publicElectrumUrls: PublicElectrumUrl[] = [
     {
-      name: 'electrum.blockstream.info',
+      name: 'blockstream.info',
       ports: {
-        [Network.REGTEST]: 60001,
-        [Network.TESTNET]: 60001,
-        [Network.BITCOIN]: 50001,
+        [Network.REGTEST]: 143,
+        [Network.TESTNET]: 143,
+        [Network.BITCOIN]: 110,
       },
     },
     {
@@ -157,11 +160,19 @@ export const WalletSignIn = () => {
       },
     },
     {
-      name: 'blockstream.info',
+      name: 'fulcrum.grey.pw',
       ports: {
-        [Network.REGTEST]: 143,
-        [Network.TESTNET]: 143,
-        [Network.BITCOIN]: 110,
+        [Network.REGTEST]: 51002,
+        [Network.TESTNET]: 51002,
+        [Network.BITCOIN]: 51001,
+      },
+    },
+    {
+      name: 'electrum.jochen-hoenicke.de',
+      ports: {
+        [Network.REGTEST]: 50006,
+        [Network.TESTNET]: 50006,
+        [Network.BITCOIN]: 50099,
       },
     },
   ];
@@ -275,6 +286,17 @@ export const WalletSignIn = () => {
     const newWalletDetails = [...keyDetails];
     newWalletDetails[activePKTab] = newKeyDetail;
     setKeyDetails(newWalletDetails);
+    const scriptType = getScriptTypeFromDerivationPath(
+      newKeyDetail.derivationPath,
+    );
+
+    const scriptTypeOption = scriptTypeOptions.find(
+      (option) => option.value === scriptType,
+    );
+
+    if (scriptTypeOption) {
+      setScriptType(scriptTypeOption);
+    }
     setIsHWWModalOpen(false);
   };
 

@@ -53,8 +53,10 @@ export const getScriptTypeFromDerivationPath = (derivationPath: string) => {
     switch (scriptTypeNumber) {
       case '44':
         return ScriptTypes.P2PKH;
-      case '49':
+      case '48':
         return ScriptTypes.P2WSH;
+      case '49':
+        return ScriptTypes.P2SHP2WPKH;
       case '84':
         return ScriptTypes.P2WPKH;
       case '86':
@@ -72,6 +74,8 @@ export const getDerivationPathFromScriptType = (scriptType: ScriptTypes) => {
     case ScriptTypes.P2PKH:
       return "m/44'/0'/0'";
     case ScriptTypes.P2WSH:
+      return "m/48'/0'/0'";
+    case ScriptTypes.P2SHP2WSH:
       return "m/49'/0'/0'";
     case ScriptTypes.P2WPKH:
       return "m/84'/0'/0'";
