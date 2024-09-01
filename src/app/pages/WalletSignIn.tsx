@@ -81,6 +81,12 @@ export const WalletSignIn = () => {
   );
   const [isShowDescriptorInput, setIsShowDescriptorInput] = useState(false);
 
+  const defaultNetwork = networkOptions.find(
+    (option) => option.value === configs.defaultNetwork,
+  ) as NetworkTypeOption;
+
+  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
+
   const [policyType, setPolicyType] = useState<PolicyTypeOption>(
     policyTypeOptions[0],
   );
@@ -142,40 +148,51 @@ export const WalletSignIn = () => {
 
   // Testnet electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers_testnet.json
   // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
-  const publicElectrumUrls: PublicElectrumUrl[] = [
-    {
-      name: 'blockstream.info',
-      ports: {
-        [Network.REGTEST]: 143,
-        [Network.TESTNET]: 143,
-        [Network.BITCOIN]: 110,
+  const publicElectrumUrls: PublicElectrumUrl[] = React.useMemo(() => {
+    const publicServers = [
+      {
+        name: 'blockstream.info',
+        ports: {
+          [Network.REGTEST]: 143,
+          [Network.TESTNET]: 143,
+          [Network.BITCOIN]: 110,
+        },
       },
-    },
-    {
-      name: 'bitcoin.aranguren.org',
-      ports: {
-        [Network.REGTEST]: 51001,
-        [Network.TESTNET]: 51001,
-        [Network.BITCOIN]: 50001,
+      {
+        name: 'bitcoin.aranguren.org',
+        ports: {
+          [Network.REGTEST]: 51001,
+          [Network.TESTNET]: 51001,
+          [Network.BITCOIN]: 50001,
+        },
       },
-    },
-    {
-      name: 'fulcrum.grey.pw',
-      ports: {
-        [Network.REGTEST]: 51002,
-        [Network.TESTNET]: 51002,
-        [Network.BITCOIN]: 51001,
+    ];
+
+    const bitcoinNetworkOnlyServer = [
+      {
+        name: 'electrum.bitaroo.net',
+        ports: {
+          [Network.REGTEST]: 50002,
+          [Network.TESTNET]: 50002,
+          [Network.BITCOIN]: 50001,
+        },
       },
-    },
-    {
-      name: 'electrum.jochen-hoenicke.de',
-      ports: {
-        [Network.REGTEST]: 50006,
-        [Network.TESTNET]: 50006,
-        [Network.BITCOIN]: 50099,
+      {
+        name: 'electrum.jochen-hoenicke.de',
+        ports: {
+          [Network.REGTEST]: 50006,
+          [Network.TESTNET]: 50006,
+          [Network.BITCOIN]: 50099,
+        },
       },
-    },
-  ];
+    ];
+
+    if (network.value === Network.BITCOIN) {
+      return [...publicServers, ...bitcoinNetworkOnlyServer];
+    } else {
+      return publicServers;
+    }
+  }, [network?.value]);
 
   const publicElectrumOptions = publicElectrumUrls.map((server) => ({
     value: server.name,
@@ -187,12 +204,6 @@ export const WalletSignIn = () => {
   );
   const [displayInitiateWalletError, setDisplayInitateWalletError] =
     useState(false);
-
-  const defaultNetwork = networkOptions.find(
-    (option) => option.value === configs.defaultNetwork,
-  ) as NetworkTypeOption;
-
-  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
 
   const defaultScriptType = scriptTypeOptions.find(
     (option) => option.value === configs.defaultScriptType,
