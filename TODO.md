@@ -1,6 +1,9 @@
 # TODO frontend
 - better control where wallets are saved and imported from so it is less random. like how sparrow does it
 - add a banner for showing that a specific wallet is loaded
+- redesign (meet with bitcoin design foundation)
+  - https://bitcoindesignfoundation.org/
+- 
 
 
 # TODOs backend
@@ -16,9 +19,17 @@
   - "Since pyinstaller is not a cross-compiler (which means with pyinstaller you cannot create an executable for any other system than the one you are on), you will have to look for other tools."
   - use wine?
 - Analyze the build size and try to make it smaller
+- e2e tests
 
 
 # Feature Ideas
+- consolidation comparison, and create psbt at end of process.
+  - ability to toggle fee rate comparing the prevous utxos vs. the hypothetical new one and how they fare in different fee rates
+- consolidation recommendation support.
+- utxo cost breakdown.
+- individual non wallet fee estimation.
+- additional hardware wallet support
+- additional config wallet support
 - add ability to create a batch based off of how much you owe someone. either in btc or in usd?
   - so you select the amount you owe and then you can see how much the fee would be. 
 - a button that generates a summary of your wallet
