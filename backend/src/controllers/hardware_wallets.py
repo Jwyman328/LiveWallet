@@ -208,6 +208,15 @@ def get_xpub(uuid: str):
             uuid, data.account_number, script_type, data.network
         )
 
+        if xpub is None:
+            return (
+                ValidationErrorResponse(
+                    message="Error getting xpub from hardware wallet",
+                    errors=["Error getting xpub from hardware wallet"],
+                ).model_dump(),
+                400,
+            )
+
         return GetXpubResponseDto(xpub=xpub).model_dump()
 
     except ValidationError as e:

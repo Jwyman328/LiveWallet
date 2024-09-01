@@ -43,18 +43,19 @@ import { configs } from '../configs';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import {
   getDerivationPathFromScriptType,
-  scriptTypeToDescriptorMap,
+  getScriptTypeFromDerivationPath,
 } from '../types/scriptTypes';
 import { XIcon } from '../components/XIcon';
 
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
-import {
-  MultiSigWalletData,
-  UnchainedWalletConfig,
-  Wallet,
-} from '../types/wallet';
+import { KeyDetails, UnchainedWalletConfig, Wallet } from '../types/wallet';
 import { PolicyTypes } from '../types/policyTypes';
 import { HardwareModalManager } from '../components/HardwareModalManager';
+import {
+  generateDescriptor,
+  generateDescriptorFromUnchainedWalletConfig,
+} from '../bitcoin/descriptors';
+import { Pages } from '../../renderer/pages';
 
 type PublicElectrumUrl = {
   name: string;
@@ -80,6 +81,12 @@ export const WalletSignIn = () => {
   );
   const [isShowDescriptorInput, setIsShowDescriptorInput] = useState(false);
 
+  const defaultNetwork = networkOptions.find(
+    (option) => option.value === configs.defaultNetwork,
+  ) as NetworkTypeOption;
+
+  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
+
   const [policyType, setPolicyType] = useState<PolicyTypeOption>(
     policyTypeOptions[0],
   );
@@ -91,16 +98,15 @@ export const WalletSignIn = () => {
     policyType.value === PolicyTypes.SINGLE_SIGNATURE ? 1 : 3,
   );
 
-  // TODO rename to just keyData?
-  const defaultMultiSigWalletData = {
+  const defaultKeyDetails = {
     masterFingerprint: configs.defaultMasterFingerprint,
     xpub: configs.defaultXpub,
     derivationPath: configs.defaultDerivationPath,
   };
 
-  const [multisigWalletDetails, setMultisigWalletDetails] = useState<
-    MultiSigWalletData[]
-  >([{ ...defaultMultiSigWalletData }]);
+  const [keyDetails, setKeyDetails] = useState<KeyDetails[]>([
+    { ...defaultKeyDetails },
+  ]);
 
   const handleNofMChange = (value: RangeSliderValue) => {
     const currentAmount = numberOfXpubs;
@@ -115,16 +121,13 @@ export const WalletSignIn = () => {
       const repeatedMultiSigWalletDataArray = Array.from(
         { length: howManyNewTabsToAdd },
         () => {
-          return { ...defaultMultiSigWalletData };
+          return { ...defaultKeyDetails };
         },
       );
-      setMultisigWalletDetails([
-        ...multisigWalletDetails,
-        ...repeatedMultiSigWalletDataArray,
-      ]);
+      setKeyDetails([...keyDetails, ...repeatedMultiSigWalletDataArray]);
     } else {
-      const newSetOfDetails = multisigWalletDetails.slice(0, newAmount);
-      setMultisigWalletDetails([...newSetOfDetails]);
+      const newSetOfDetails = keyDetails.slice(0, newAmount);
+      setKeyDetails([...newSetOfDetails]);
 
       if (Number(activePKTab) + 1 > newAmount) {
         setActivePKTab((newAmount - 1).toString());
@@ -145,32 +148,51 @@ export const WalletSignIn = () => {
 
   // Testnet electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers_testnet.json
   // Bitcoin electrum public servers https://github.com/spesmilo/electrum/blob/master/electrum/servers.json
-  const publicElectrumUrls: PublicElectrumUrl[] = [
-    {
-      name: 'electrum.blockstream.info',
-      ports: {
-        [Network.REGTEST]: 60001,
-        [Network.TESTNET]: 60001,
-        [Network.BITCOIN]: 50001,
+  const publicElectrumUrls: PublicElectrumUrl[] = React.useMemo(() => {
+    const publicServers = [
+      {
+        name: 'blockstream.info',
+        ports: {
+          [Network.REGTEST]: 143,
+          [Network.TESTNET]: 143,
+          [Network.BITCOIN]: 110,
+        },
       },
-    },
-    {
-      name: 'bitcoin.aranguren.org',
-      ports: {
-        [Network.REGTEST]: 51001,
-        [Network.TESTNET]: 51001,
-        [Network.BITCOIN]: 50001,
+      {
+        name: 'bitcoin.aranguren.org',
+        ports: {
+          [Network.REGTEST]: 51001,
+          [Network.TESTNET]: 51001,
+          [Network.BITCOIN]: 50001,
+        },
       },
-    },
-    {
-      name: 'blockstream.info',
-      ports: {
-        [Network.REGTEST]: 143,
-        [Network.TESTNET]: 143,
-        [Network.BITCOIN]: 110,
+    ];
+
+    const bitcoinNetworkOnlyServer = [
+      {
+        name: 'electrum.bitaroo.net',
+        ports: {
+          [Network.REGTEST]: 50002,
+          [Network.TESTNET]: 50002,
+          [Network.BITCOIN]: 50001,
+        },
       },
-    },
-  ];
+      {
+        name: 'electrum.jochen-hoenicke.de',
+        ports: {
+          [Network.REGTEST]: 50006,
+          [Network.TESTNET]: 50006,
+          [Network.BITCOIN]: 50099,
+        },
+      },
+    ];
+
+    if (network.value === Network.BITCOIN) {
+      return [...publicServers, ...bitcoinNetworkOnlyServer];
+    } else {
+      return publicServers;
+    }
+  }, [network?.value]);
 
   const publicElectrumOptions = publicElectrumUrls.map((server) => ({
     value: server.name,
@@ -182,12 +204,6 @@ export const WalletSignIn = () => {
   );
   const [displayInitiateWalletError, setDisplayInitateWalletError] =
     useState(false);
-
-  const defaultNetwork = networkOptions.find(
-    (option) => option.value === configs.defaultNetwork,
-  ) as NetworkTypeOption;
-
-  const [network, setNetwork] = useState<NetworkTypeOption>(defaultNetwork);
 
   const defaultScriptType = scriptTypeOptions.find(
     (option) => option.value === configs.defaultScriptType,
@@ -201,14 +217,27 @@ export const WalletSignIn = () => {
   const handleWalletInitiated = () => {
     // send wallet details to main process so that
     // the main process has the wallet details if they want to save them.
-    const defaultDescriptor = descriptor || generateDescriptor().descriptor;
+    const defaultDescriptor =
+      descriptor ||
+      generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      ).descriptor;
 
     const defaultChangeDescriptor =
-      changeDescriptor || generateDescriptor().changeDescriptor;
+      changeDescriptor ||
+      generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      ).changeDescriptor;
     saveWallet({
       defaultDescriptor: defaultDescriptor,
       defaultChangeDescriptor: defaultChangeDescriptor,
-      keyDetails: multisigWalletDetails,
+      keyDetails: keyDetails,
       signaturesNeeded: signaturesNeeded,
       numberOfXpubs: numberOfXpubs,
       policyType: policyType,
@@ -220,7 +249,7 @@ export const WalletSignIn = () => {
       privateElectrumUrl: privateElectrumUrl,
       publicElectrumUrl: selectedPublicServer.value,
     });
-    navigate('/home', { state: { numberOfXpubs, signaturesNeeded } });
+    navigate(Pages.HOME, { state: { numberOfXpubs, signaturesNeeded } });
   };
 
   const handleWalletError = () => {
@@ -264,12 +293,21 @@ export const WalletSignIn = () => {
     setPrivateElectrumUrl(e.target.value);
   };
 
-  const handleXpubImportedFromHardwareWallet = (
-    keyDetails: MultiSigWalletData,
-  ) => {
-    const newWalletDetails = [...multisigWalletDetails];
-    newWalletDetails[activePKTab] = keyDetails;
-    setMultisigWalletDetails(newWalletDetails);
+  const handleXpubImportedFromHardwareWallet = (newKeyDetail: KeyDetails) => {
+    const newWalletDetails = [...keyDetails];
+    newWalletDetails[activePKTab] = newKeyDetail;
+    setKeyDetails(newWalletDetails);
+    const scriptType = getScriptTypeFromDerivationPath(
+      newKeyDetail.derivationPath,
+    );
+
+    const scriptTypeOption = scriptTypeOptions.find(
+      (option) => option.value === scriptType,
+    );
+
+    if (scriptTypeOption) {
+      setScriptType(scriptTypeOption);
+    }
     setIsHWWModalOpen(false);
   };
 
@@ -299,62 +337,6 @@ export const WalletSignIn = () => {
     undefined,
   );
 
-  const generateDescriptor = () => {
-    // take the inputs from the various fields and create a descriptor
-    let scriptTypeDescription = scriptTypeToDescriptorMap[scriptType.value];
-
-    const isNestedSegWit =
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WPKH ||
-      scriptTypeDescription === scriptTypeToDescriptorMap.P2SHP2WSH;
-    const closingParam = isNestedSegWit ? '))' : ')';
-
-    if (policyType.value === PolicyTypes.SINGLE_SIGNATURE) {
-      const xpub = multisigWalletDetails[0].xpub;
-      const derivationPath = multisigWalletDetails[0].derivationPath;
-      const masterFingerPrint = multisigWalletDetails[0].masterFingerprint;
-
-      let derivationWithoutPrefix = derivationPath.replace(/^m\//, '');
-
-      const computedDescriptor = `${scriptTypeDescription}([${masterFingerPrint}/${derivationWithoutPrefix}]${xpub}/0/*${closingParam}`;
-
-      return {
-        descriptor: computedDescriptor,
-        changeDescriptor: undefined,
-      };
-    }
-
-    if (policyType.value === PolicyTypes.MULTI_SIGNATURE) {
-      const sortedMultiParts = multisigWalletDetails
-        .map((key) => {
-          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/0/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const sortedMultiPartsChange = multisigWalletDetails
-        .map((key) => {
-          return `[${key.masterFingerprint}${key.derivationPath}]${key.xpub}/1/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const multisigDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiParts})${closingParam}`;
-      const multisigChangeDescriptor = `${scriptTypeDescription}(sortedmulti(${signaturesNeeded},${sortedMultiPartsChange})${closingParam}`;
-
-      return {
-        descriptor: multisigDescriptor,
-        // TODO should multisigs always return a change descriptor?
-        changeDescriptor: multisigChangeDescriptor,
-      };
-    }
-  };
-
   const initiateWalletRequest = useCreateWallet(
     network.value as Network,
     electrumUrl,
@@ -365,7 +347,12 @@ export const WalletSignIn = () => {
 
   const signIn = async () => {
     try {
-      const descriptors = generateDescriptor();
+      const descriptors = generateDescriptor(
+        scriptType.value,
+        policyType.value,
+        keyDetails,
+        signaturesNeeded,
+      );
 
       await initiateWalletRequest.mutateAsync({
         descriptor: descriptors.descriptor,
@@ -376,21 +363,24 @@ export const WalletSignIn = () => {
     }
   };
 
-  const areXpubsValid = multisigWalletDetails.every(
-    (wallet) => wallet.xpub.length > 0,
-  );
+  const areXpubsValid = keyDetails.every((wallet) => wallet.xpub.length > 0);
 
-  const areAllDerivationPathsValid = multisigWalletDetails.every(
+  const areAllDerivationPathsValid = keyDetails.every(
     (wallet) => wallet.derivationPath.length > 0,
   );
 
-  const areAllMasterFingerprintsValid = multisigWalletDetails.every(
+  const areAllMasterFingerprintsValid = keyDetails.every(
     (wallet) => wallet.masterFingerprint.length > 0,
   );
 
   const liveWalletLogin =
     areXpubsValid &&
-    !!generateDescriptor() &&
+    !!generateDescriptor(
+      scriptType.value,
+      policyType.value,
+      keyDetails,
+      signaturesNeeded,
+    ) &&
     !!scriptType?.value &&
     areAllMasterFingerprintsValid &&
     areAllDerivationPathsValid &&
@@ -408,38 +398,10 @@ export const WalletSignIn = () => {
   const isLoginEnabled = unchainedWalletLogin || liveWalletLogin;
 
   const navigateToGenerateWallet = () => {
-    navigate('/generate-wallet');
+    navigate(Pages.GENERATE_WALLET);
   };
 
   const handleImportedUnchainedWallet = (walletData: UnchainedWalletConfig) => {
-    const generateDescriptors = () => {
-      const { quorum, extendedPublicKeys } = walletData;
-      const sortedMultiParts = extendedPublicKeys
-        .map((key) => {
-          return `[${key.xfp}${key.bip32Path}]${key.xpub}/0/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      const sortedMultiPartsChange = extendedPublicKeys
-        .map((key) => {
-          return `[${key.xfp}${key.bip32Path}]${key.xpub}/1/*`.replace(
-            /m\//,
-            '/',
-          );
-        })
-        .reverse()
-        .join(',');
-
-      return {
-        unchainedDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiParts}))`,
-        unchainedChangeDescriptor: `sh(sortedmulti(${quorum.requiredSigners},${sortedMultiPartsChange}))`,
-      };
-    };
-
     const importedNetwork = networkOptions.find(
       (option) => option.value === walletData.network.toUpperCase(),
     );
@@ -455,14 +417,14 @@ export const WalletSignIn = () => {
       setScriptType(importedScriptType);
     }
 
-    const descriptors = generateDescriptors();
+    const descriptors = generateDescriptorFromUnchainedWalletConfig(walletData);
     setChangeDescriptor(descriptors.unchainedChangeDescriptor);
     // multisig option
     setPolicyType(policyTypeOptions[1]);
     setSignaturesNeeded(walletData.quorum.requiredSigners);
     setNumberOfXpubs(walletData.extendedPublicKeys.length);
 
-    const unchainedMultisigWalletData = walletData.extendedPublicKeys.map(
+    const unchainedMultisigWalletKeyDetails = walletData.extendedPublicKeys.map(
       (keyData) => {
         return {
           masterFingerprint: keyData.xfp,
@@ -471,7 +433,7 @@ export const WalletSignIn = () => {
         };
       },
     );
-    setMultisigWalletDetails(unchainedMultisigWalletData);
+    setKeyDetails(unchainedMultisigWalletKeyDetails);
   };
 
   const handleImportedWallet = (walletData: Wallet | UnchainedWalletConfig) => {
@@ -507,7 +469,7 @@ export const WalletSignIn = () => {
     const {
       defaultDescriptor: importedDefaultDescriptor,
       defaultChangeDescriptor: importedChangeDescriptor,
-      keyDetails: importedMultiSigWalletData,
+      keyDetails: importedKeyDetails,
       policyType: importedPolicyType,
       signaturesNeeded: importedSignaturesNeeded,
       numberOfXpubs: importedNumberOfXpubs,
@@ -526,7 +488,7 @@ export const WalletSignIn = () => {
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
-    setMultisigWalletDetails(importedMultiSigWalletData);
+    setKeyDetails(importedKeyDetails);
     setChangeDescriptor(importedChangeDescriptor);
     setIsUsingPublicServer(importedIsUsingPublicServer as boolean);
     setPrivateElectrumUrl(importedPrivateElectrumUrl as string);
@@ -588,7 +550,7 @@ export const WalletSignIn = () => {
   }, []);
 
   const createKeyInformationTabs = () => {
-    return multisigWalletDetails.map((wallet, index) => {
+    return keyDetails.map((wallet, index) => {
       return (
         <Tabs.Panel key={index} value={index.toString()}>
           <Button
@@ -618,11 +580,11 @@ export const WalletSignIn = () => {
               value={wallet.masterFingerprint}
               defaultValue={'00000000'}
               onInput={(event) => {
-                const existingWalletDetails = multisigWalletDetails;
+                const existingWalletDetails = keyDetails;
                 existingWalletDetails[index].masterFingerprint =
                   //@ts-ignore
                   event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                setKeyDetails([...existingWalletDetails]);
               }}
             />
             <div className={`flex flex-row w-72 mb-2 mt-4 items-center`}>
@@ -640,11 +602,11 @@ export const WalletSignIn = () => {
               placeholder={derivationPathPlaceHolder}
               value={wallet.derivationPath}
               onInput={() => {
-                const existingWalletDetails = multisigWalletDetails;
-                existingWalletDetails[index].derivationPath =
+                const existingKeyDetails = keyDetails;
+                existingKeyDetails[index].derivationPath =
                   //@ts-ignore
                   event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                setKeyDetails([...existingKeyDetails]);
               }}
             />
 
@@ -654,10 +616,10 @@ export const WalletSignIn = () => {
               styles={{ input: { minHeight: '5rem' } }}
               placeholder="xpubDD9A9r18sJyyMPGaEMp1LMkv4cy43Kmb7kuP6kcdrMmuDvj7oxLrMe8Bk6pCvPihgddJmJ8GU3WLPgCCYXu2HZ2JAgMH5dbP1zvZm7QzcPt"
               onInput={(event) => {
-                const existingWalletDetails = multisigWalletDetails;
+                const existingKeyDetails = keyDetails;
                 //@ts-ignore
-                existingWalletDetails[index].xpub = event.target.value;
-                setMultisigWalletDetails([...existingWalletDetails]);
+                existingKeyDetails[index].xpub = event.target.value;
+                setKeyDetails([...existingKeyDetails]);
               }}
               value={wallet.xpub}
             />
@@ -668,11 +630,9 @@ export const WalletSignIn = () => {
   };
 
   const createWalletTabList = () => {
-    const innerTabs = multisigWalletDetails.map((wallet, index) => {
+    const innerTabs = keyDetails.map((wallet, index) => {
       const xpubLabel =
-        multisigWalletDetails.length === 1
-          ? 'Keystore'
-          : `Keystore ${index + 1}`;
+        keyDetails.length === 1 ? 'Keystore' : `Keystore ${index + 1}`;
       return <Tabs.Tab value={index.toString()}>{xpubLabel}</Tabs.Tab>;
     });
     return innerTabs;
@@ -689,7 +649,7 @@ export const WalletSignIn = () => {
         <Button
           leftSection={<IconArrowLeft />}
           variant="transparent"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(Pages.CHOOSE_PATH)}
         ></Button>
       </Affix>
 
@@ -758,9 +718,7 @@ export const WalletSignIn = () => {
                           ) {
                             setSignaturesNeeded(1);
                             setNumberOfXpubs(1);
-                            setMultisigWalletDetails([
-                              { ...defaultMultiSigWalletData },
-                            ]);
+                            setKeyDetails([{ ...defaultKeyDetails }]);
                             setActivePKTab('0');
                             setScriptType(singleSigScriptTypeOptions[2]);
                           }
@@ -772,10 +730,10 @@ export const WalletSignIn = () => {
                           ) {
                             setSignaturesNeeded(2);
                             setNumberOfXpubs(3);
-                            setMultisigWalletDetails([
-                              { ...defaultMultiSigWalletData },
-                              { ...defaultMultiSigWalletData },
-                              { ...defaultMultiSigWalletData },
+                            setKeyDetails([
+                              { ...defaultKeyDetails },
+                              { ...defaultKeyDetails },
+                              { ...defaultKeyDetails },
                             ]);
 
                             setScriptType(multiSigScriptTypeOptions[2]);

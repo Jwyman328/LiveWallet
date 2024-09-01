@@ -15,6 +15,7 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { importJSONFile, resolveHtmlPath, saveJsonToFile } from './util';
 import { WalletConfigs } from '../app/types/wallet';
+import { Pages } from '../renderer/pages';
 
 class AppUpdater {
   constructor() {
@@ -36,7 +37,7 @@ ipcMain.on('current-route', (event, currentRoute) => {
   const menuImportedWallet = MenuBuilder.menu.getMenuItemById('importWallet');
   const menuSaveWallet = MenuBuilder.menu.getMenuItemById('saveWallet');
 
-  if (currentRoute === '/signin' || currentRoute === '/') {
+  if (currentRoute === Pages.SIGN_IN || currentRoute === Pages.CHOOSE_PATH) {
     if (menuImportedWallet) {
       console.log('setting import wallet option to enabled');
       menuImportedWallet.enabled = true;

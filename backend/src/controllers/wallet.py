@@ -62,6 +62,7 @@ class CreateSpendableWalletRequestDto(BaseModel):
     utxoCount: str
     minUtxoAmount: str
     maxUtxoAmount: str
+    descriptor: Optional[str] = None
 
 
 class CreateSpendableWalletResponseDto(BaseModel):
@@ -80,7 +81,11 @@ def create_wallet():
         data = CreateWalletRequestDto.model_validate_json(request.data)
 
         WalletService.create_wallet(
-            data.descriptor, data.change_descriptor, data.network, data.electrumUrl, data.gapLimit
+            data.descriptor,
+            data.change_descriptor,
+            data.network,
+            data.electrumUrl,
+            data.gapLimit,
         )
 
         WalletService()
@@ -154,20 +159,29 @@ def create_spendable_wallet():
     Create a new wallet with spendable UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(
+            request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
-        wallet_descriptor = WalletService.create_spendable_descriptor(
-            bdk_network, data.type
-        )
+
+        if data.descriptor is None:
+            wallet_descriptor = WalletService.create_spendable_descriptor(
+                bdk_network, data.type
+            )
+        else:
+            wallet_descriptor = bdk.Descriptor(
+                descriptor=data.descriptor, network=bdk_network
+            )
 
         if wallet_descriptor is None:
             return (
-                SimpleErrorResponse(message="Error creating wallet").model_dump(),
+                SimpleErrorResponse(
+                    message="Error creating wallet").model_dump(),
                 400,
             )
 
-        wallet = WalletService.create_spendable_wallet(bdk_network, wallet_descriptor)
+        wallet = WalletService.create_spendable_wallet(
+            bdk_network, wallet_descriptor)
         # fund wallet
         try:
             wallet_address = wallet.get_address(bdk.AddressIndex.LAST_UNUSED())

@@ -26,12 +26,13 @@ import { configs } from '../configs';
 import { HardwareWalletSelect } from './HardwareWalletSelect';
 import { ApiClient } from '../api/api';
 import { notifications } from '@mantine/notifications';
-import { MultiSigWalletData, Wallet } from '../types/wallet';
+import { KeyDetails, Wallet } from '../types/wallet';
 import {
   getScriptTypeFromDerivationPath,
   ScriptTypes,
 } from '../types/scriptTypes';
 import { useNavigate } from 'react-router-dom';
+import { Pages } from '../../renderer/pages';
 
 export type WalletIdAccountNumbers = {
   // the key is the walletId and the value is the account number
@@ -46,9 +47,7 @@ type ConnectHardwareModalProps = {
   isOpen: boolean;
   closeModal: () => void;
   nextModal: () => void;
-  onGetXpubFromHardwareWalletSuccess?: (
-    keyDetails: MultiSigWalletData,
-  ) => void;
+  onGetXpubFromHardwareWalletSuccess?: (keyDetails: KeyDetails) => void;
 };
 export const ConnectHardwareModal = ({
   isOpen,
@@ -151,7 +150,7 @@ export const ConnectHardwareModal = ({
     if (onGetXpubFromHardwareWalletSuccess) {
       onGetXpubFromHardwareWalletSuccess(wallet.keyDetails[0]);
     } else {
-      navigate('/sign-in', {
+      navigate(Pages.SIGN_IN, {
         state: { walletData: wallet },
       });
     }

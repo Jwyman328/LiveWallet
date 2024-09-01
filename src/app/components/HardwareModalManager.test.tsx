@@ -11,6 +11,7 @@ import {
 } from '../../__tests__/mocks';
 import { ScriptTypes } from '../types/scriptTypes';
 import { policyTypeOptions } from './formOptions';
+import { Pages } from '../../renderer/pages';
 
 const mockNavigate = jest.fn();
 const closeModalSpy = jest.fn();
@@ -286,7 +287,7 @@ describe('HardwareWalletModalManager', () => {
       ),
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.SIGN_IN, {
       state: {
         walletData: {
           policyType: policyTypeOptions[0],
@@ -397,7 +398,7 @@ describe('HardwareWalletModalManager', () => {
       ),
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.SIGN_IN, {
       state: {
         walletData: {
           policyType: policyTypeOptions[0],
@@ -505,7 +506,7 @@ describe('HardwareWalletModalManager', () => {
       ),
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.SIGN_IN, {
       state: {
         walletData: {
           policyType: policyTypeOptions[0],
@@ -660,7 +661,7 @@ describe('HardwareWalletModalManager', () => {
       ),
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in', {
+    expect(mockNavigate).toHaveBeenCalledWith(Pages.SIGN_IN, {
       state: {
         walletData: {
           policyType: policyTypeOptions[0],

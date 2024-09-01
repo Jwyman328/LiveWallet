@@ -7,6 +7,7 @@ import { IconUsb, IconKeyboard, IconFolder } from '@tabler/icons-react';
 import { useGetServerHealthStatus } from '../hooks/healthStatus';
 import { XIcon } from '../components/XIcon';
 import { HardwareModalManager } from '../components/HardwareModalManager';
+import { Pages } from '../../renderer/pages';
 
 export const ChoosePath = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export const ChoosePath = () => {
   };
 
   const handleImportedWallet = (walletData: Wallet) => {
-    navigate('/sign-in', { state: { walletData } });
+    navigate(Pages.SIGN_IN, { state: { walletData } });
   };
 
   const [isHWWModalOpen, setIsHWWModalOpen] = React.useState(false);
@@ -37,7 +38,7 @@ export const ChoosePath = () => {
     // Listen for the 'json-wallet' event sent from the main process
     // @ts-ignore
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
-    window.electron.ipcRenderer.sendMessage('current-route', '/');
+    window.electron.ipcRenderer.sendMessage('current-route', Pages.CHOOSE_PATH);
   }, []);
   return isServerAvailableAndHealthy ? (
     <div className="w-screen h-screen flex justify-center items-center bg-gray-100 ">
@@ -68,7 +69,7 @@ export const ChoosePath = () => {
             size="xl"
             style={{ height: '12rem', width: '14rem' }}
             onClick={() => {
-              navigate('/sign-in');
+              navigate(Pages.SIGN_IN);
             }}
           >
             <div className="flex flex-col justify-center items-center">

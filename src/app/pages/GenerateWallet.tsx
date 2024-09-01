@@ -27,11 +27,12 @@ import {
 } from '../components/formOptions';
 import { XIcon } from '../components/XIcon';
 import { CreateMockWalletResponseType } from '../api/types';
+import { Pages } from '../../renderer/pages';
 
 export const GenerateWallet = () => {
   const navigate = useNavigate();
   const backToSignIn = () => {
-    navigate('/sign-in');
+    navigate(Pages.SIGN_IN);
   };
 
   const formItemWidth = 'w-80';
@@ -117,7 +118,7 @@ export const GenerateWallet = () => {
       scriptType
     ] as unknown as ScriptTypes;
     configs.defaultScriptType = defaultScriptType;
-    navigate('/');
+    navigate(Pages.CHOOSE_PATH);
   };
   const generateMockWalletMutation = useCreateMockWallet(
     network.value as Network,

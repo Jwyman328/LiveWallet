@@ -444,6 +444,42 @@ class TestHardwareWalletService(TestCase):
 
             assert response == None
 
+    def test_get_xpub_from_device_when_error_thrown(self):
+        connected_wallet_mock = MagicMock()
+        mock_wallet_uuid = "mock_wallet_id"
+        account_number_mock = 0
+        addres_type_mock = common.AddressType.WIT
+        chain_mock = common.Chain.MAIN
+
+        def raise_exception():
+            raise Exception("An error occurred")
+
+        with (
+            patch.object(
+                HardwareWalletService,
+                "get_wallet_from_db_and_connect_to_device",
+                return_value=connected_wallet_mock,
+            ) as get_wallet_from_db_and_connect_to_device_mock,
+            patch.object(
+                HardwareWalletService,
+                "get_xpub",
+                side_effect=raise_exception,
+            ) as get_xpub_mock,
+        ):
+            response = HardwareWalletService.get_xpub_from_device(
+                mock_wallet_uuid, account_number_mock, addres_type_mock, chain_mock
+            )
+
+            get_wallet_from_db_and_connect_to_device_mock.assert_called_with(
+                "mock_wallet_id", chain_mock
+            )
+
+            get_xpub_mock.assert_called_with(
+                connected_wallet_mock, account_number_mock, addres_type_mock
+            )
+
+            assert response is None
+
     def test_get_wallet_from_db_and_connect_to_device(self):
         hardware_wallet_mock = MagicMock()
         connected_wallet_mock = MagicMock()

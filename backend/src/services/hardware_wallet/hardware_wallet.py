@@ -218,7 +218,8 @@ class HardwareWalletService:
             )
 
         except Exception as e:
-            LOGGER.info("caught it error", error=e)
+            LOGGER.info("Error getting xpub from hardware device", error=e)
+            return None
 
         return xpub
 

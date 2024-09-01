@@ -1,3 +1,16 @@
+
+# 0.6.0
+- Improve fee estimate
+- Display total USD value in Batch input header
+- Bug fixes
+  - Clear batch tx estimate after output count changes.
+  - Handle hardware wallet xpub not found error handling
+- Code refactors
+  - Enum for page routes
+  - Refactor descriptor functions.
+  - improve hardware wallet flow with state enum.
+  - Improve variable naming (multisigWalletDetails -> keyDetails)
+
 # 0.5.0
 - Transaction output selection.
 - Separate batch vs single tx ui.

@@ -8,7 +8,7 @@ export type Wallet = {
   policyType: PolicyTypeOption;
   signaturesNeeded: number;
   numberOfXpubs: number;
-  keyDetails: MultiSigWalletData[];
+  keyDetails: KeyDetails[];
   defaultDescriptor: string;
   defaultChangeDescriptor?: string;
   defaultScriptType: ScriptTypes;
@@ -66,7 +66,7 @@ export type UnchainedWalletConfig = {
   ledgerPolicyHmacs: any[];
 };
 
-export type MultiSigWalletData = {
+export type KeyDetails = {
   xpub: string;
   derivationPath: string;
   masterFingerprint: string;

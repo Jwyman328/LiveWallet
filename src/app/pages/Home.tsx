@@ -28,6 +28,8 @@ import {
 } from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
+import { Pages } from '../../renderer/pages';
+import { ScriptTypes } from '../types/scriptTypes';
 
 export type ScaleOption = {
   value: string;
@@ -77,7 +79,7 @@ function Home() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('current-route', '/home');
+    window.electron.ipcRenderer.sendMessage('current-route', Pages.HOME);
   }, []);
 
   const logOut = async () => {
@@ -91,7 +93,7 @@ function Home() {
     window.electron.ipcRenderer.sendMessage('save-wallet-configs', undefined);
 
     window.electron.ipcRenderer.sendMessage('save-wallet', undefined);
-    navigate('/');
+    navigate(Pages.CHOOSE_PATH);
   };
 
   const scaleOptions: ScaleOption[] = [
@@ -453,6 +455,7 @@ function Home() {
                   className="ml-8 mr-8 relative top-4"
                 >
                   <Slider
+                    data-testid="fee-rate-slider"
                     marks={feeRateMarks}
                     defaultValue={parseInt(minFeeScale.value)}
                     min={parseInt(minFeeScale.value)}
@@ -497,7 +500,10 @@ function Home() {
           btcMetric={btcMetric}
           feeRate={feeRate}
           utxos={getUtxosQueryRequest?.data?.utxos || []}
-          walletType={getWalletTypeQueryRequest.data || 'P2WPKH'}
+          walletType={
+            (getWalletTypeQueryRequest.data as ScriptTypes) ||
+            ScriptTypes.P2WPKH
+          }
           isLoading={
             getUtxosQueryRequest.isLoading ||
             getWalletTypeQueryRequest.isLoading ||
