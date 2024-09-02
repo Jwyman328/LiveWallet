@@ -25,6 +25,14 @@
 # Feature Ideas
 - consolidation comparison, and create psbt at end of process.
   - ability to toggle fee rate comparing the prevous utxos vs. the hypothetical new one and how they fare in different fee rates
+  - what is the user story here?
+    - choose the utxos that you want to go into the tx. 
+    - * don't need to choose the outputs, that will be fixed to one.  
+    - show existing utxo fee rates on their own. 
+    - show the end result utxo and its stats as a single utxo.
+    - Do I need to show the summary of the hypothetical consolidation tx, or is that too much info? 
+        - I would say yes? but also you could just switch to estimate batch mode to be able to see?
+          - But single -> batch -> consolidation is kind of building off of one another and adding features. which may be good. 
 - consolidation recommendation support.
 - utxo cost breakdown.
 - individual non wallet fee estimation.
