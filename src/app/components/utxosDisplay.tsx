@@ -100,15 +100,13 @@ export const UtxosDisplay = ({
     return selectedColor;
   };
 
-  const [selectedUtxos, setSelectedUtxos] =
-    useState<UtxoRequestParamWithAmount[]>();
+  const [selectedUtxos, setSelectedUtxos] = useState<
+    UtxoRequestParamWithAmount[]
+  >([]);
 
-  const onRowSelection = React.useCallback(
-    (utxosSelected: UtxoRequestParamWithAmount[]) => {
-      setSelectedUtxos(utxosSelected);
-    },
-    [],
-  );
+  const onRowSelection = (utxosSelected: UtxoRequestParamWithAmount[]) => {
+    setSelectedUtxos(utxosSelected);
+  };
 
   const onCreateBatchTxError = () => {
     notifications.show({

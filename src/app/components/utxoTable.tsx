@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 import Big from 'big.js';
@@ -68,6 +68,7 @@ export const UtxoTable = ({
 
     return formatted;
   };
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const getSelectedUtxos = React.useCallback(
     (selectedTxRows: MRT_RowSelectionState) => {
@@ -86,74 +87,64 @@ export const UtxoTable = ({
     [utxos],
   );
 
-  const DisplaySelectedUtxosData = React.memo(
-    ({
-      selectedRows,
-      showing,
-    }: {
-      selectedRows: MRT_RowSelectionState;
-      showing: boolean;
-    }) => {
-      const totalUtxosSelected = Object.keys(selectedRows).length;
-      const utxosWithData = getSelectedUtxos(selectedRows);
-      const totalAmount: number = utxosWithData.reduce(
-        (total, utxo) => total + utxo.amount,
-        0,
-      );
+  const [opened, { toggle }] = useDisclosure(false);
 
-      const totalAmountInBTC = btcSatHandler(
-        totalAmount.toLocaleString(),
-        BtcMetric.BTC,
-      );
-      const totalAmountUsd = Big(btcPrice).times(totalAmountInBTC).toFixed(2);
+  const previousShowing = usePrevious(opened);
 
-      const amountUSDDisplay = totalAmountUsd
-        ? `$${Number(totalAmountUsd).toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          })}`
-        : '...';
+  const DisplaySelectedUtxosData = () => {
+    const totalUtxosSelected = Object.keys(rowSelection).length;
+    const utxosWithData = getSelectedUtxos(rowSelection);
+    const totalAmount: number = utxosWithData.reduce(
+      (total, utxo) => total + utxo.amount,
+      0,
+    );
 
-      return (
-        <>
-          <Collapse
-            in={showing && isCreateBatchTx}
-            transitionDuration={300}
-            transitionTimingFunction="linear"
+    const totalAmountInBTC = btcSatHandler(
+      totalAmount.toLocaleString(),
+      BtcMetric.BTC,
+    );
+    const totalAmountUsd = Big(btcPrice).times(totalAmountInBTC).toFixed(2);
+
+    const amountUSDDisplay = totalAmountUsd
+      ? `$${Number(totalAmountUsd).toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        })}`
+      : '...';
+
+    return (
+      <>
+        <div>
+          <p
+            style={{
+              color: sectionColor,
+            }}
+            className=" font-semibold text-lg"
           >
-            <div>
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className=" font-semibold text-lg"
-              >
-                Count: {totalUtxosSelected}{' '}
-              </p>
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className="font-semibold text-lg"
-              >
-                {btcMetric === BtcMetric.BTC ? ' BTC' : ' Sats'}:{' '}
-                {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
-              </p>
+            Count: {totalUtxosSelected}{' '}
+          </p>
+          <p
+            style={{
+              color: sectionColor,
+            }}
+            className="font-semibold text-lg"
+          >
+            {btcMetric === BtcMetric.BTC ? ' BTC' : ' Sats'}:{' '}
+            {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
+          </p>
 
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className="font-semibold text-lg"
-              >
-                USD: {amountUSDDisplay}
-              </p>
-            </div>
-          </Collapse>
-        </>
-      );
-    },
-  );
+          <p
+            style={{
+              color: sectionColor,
+            }}
+            className="font-semibold text-lg"
+          >
+            USD: {amountUSDDisplay}
+          </p>
+        </div>
+      </>
+    );
+  };
 
   const columns = useMemo(
     () => [
@@ -318,6 +309,7 @@ export const UtxoTable = ({
     ],
     [btcMetric, btcPrice, totalCost],
   );
+
   const table = useMaterialReactTable({
     columns,
     data: utxos,
@@ -340,15 +332,6 @@ export const UtxoTable = ({
     positionToolbarAlertBanner: 'none',
     positionToolbarDropZone: 'top',
     renderTopToolbarCustomActions: ({ table }) => {
-      const isShowing = Object.keys(table.getState().rowSelection).length > 0;
-      const previousShowing = usePrevious(isShowing);
-      const [opened, { toggle }] = useDisclosure(false);
-
-      useEffect(() => {
-        if (isShowing !== previousShowing && previousShowing !== undefined) {
-          toggle();
-        }
-      }, [isShowing]);
       return (
         <div className="ml-2">
           <p
@@ -360,10 +343,13 @@ export const UtxoTable = ({
             Inputs<span className="text-lg"> (utxos)</span>
           </p>
 
-          <DisplaySelectedUtxosData
-            selectedRows={table.getState().rowSelection}
-            showing={opened}
-          />
+          <Collapse
+            in={opened && isCreateBatchTx}
+            transitionDuration={300}
+            transitionTimingFunction="linear"
+          >
+            <DisplaySelectedUtxosData />
+          </Collapse>
         </div>
       );
     },
@@ -378,6 +364,8 @@ export const UtxoTable = ({
         },
       ],
     },
+
+    state: { rowSelection },
     // @ts-ignore
     muiTableBodyRowProps: { classes: { root: { after: 'bg-green-100' } } },
     muiTableBodyCellProps: ({ row }) => {
@@ -394,21 +382,23 @@ export const UtxoTable = ({
     getRowId: (originalRow) => {
       return originalRow.txid;
     },
+
+    onRowSelectionChange: setRowSelection,
   });
 
-  // passing back row selection data
-  //
-
-  const selectedTxs = table.getState().rowSelection;
-
-  // const selectedUtxos: UtxoRequestParamWithAmount[] = useMemo(() => {
-  //   return getSelectedUtxos(selectedTxs);
-  // }, [selectedTxs, getSelectedUtxos]);
+  useEffect(() => {
+    onRowSelection(getSelectedUtxos(rowSelection));
+  }, [rowSelection]);
 
   useEffect(() => {
-    const selectedUtxos = getSelectedUtxos(selectedTxs);
-    onRowSelection(selectedUtxos);
-  }, [selectedTxs]);
+    const rowSelectionLength = Object.keys(rowSelection).length;
+    if (rowSelectionLength > 0 && previousShowing === false) {
+      toggle();
+    }
+    if (rowSelectionLength === 0 && previousShowing === true) {
+      toggle();
+    }
+  }, [rowSelection]);
 
   return (
     <div>
