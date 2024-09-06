@@ -54,9 +54,15 @@ def get_fee_for_utxo(
             fee_estimate_response.status == "success"
             and fee_estimate_response.data is not None
         ):
+            base_64_psbt = (
+                fee_estimate_response.psbt.serialize()
+                if fee_estimate_response.psbt
+                else None
+            )
             return GetUtxosResponseDto(
                 spendable=True,
                 fee=fee_estimate_response.data.fee,
+                psbt=base_64_psbt,
             ).model_dump()
 
         if fee_estimate_response.status == "unspendable":

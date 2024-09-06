@@ -26,7 +26,8 @@ const sectionColor = 'rgb(1, 67, 97)';
 
 type UtxoTableProps = {
   utxos: Utxo[];
-  isCreateBatchTx: boolean;
+  areRowsSelectable: boolean;
+  onRowSelection: (rowData: UtxoRequestParamWithAmount[]) => void;
   walletType: ScriptTypes;
   signaturesNeeded: number;
   btcPrice: number;
@@ -35,12 +36,14 @@ type UtxoTableProps = {
   feeRate: number;
   getFeeRateColor: any;
   btcMetric: BtcMetric;
-  onRowSelection: (rowData: UtxoRequestParamWithAmount[]) => void;
+  title?: string;
+  isShowTxId?: boolean;
 };
 
 export const UtxoTable = ({
+  title = 'Inputs',
   utxos,
-  isCreateBatchTx,
+  areRowsSelectable,
   walletType,
   signaturesNeeded,
   numberOfXpubs,
@@ -49,10 +52,13 @@ export const UtxoTable = ({
   getFeeRateColor,
   btcPrice,
   btcMetric,
+  isShowTxId = true,
   onRowSelection,
 }: UtxoTableProps) => {
+  // each row represents one utxo
+  const TX_INPUTS_PER_ROW = 1;
   const totalVBtyes = createTxFeeEstimate(
-    1,
+    TX_INPUTS_PER_ROW,
     walletType,
     signaturesNeeded,
     numberOfXpubs,
@@ -88,7 +94,6 @@ export const UtxoTable = ({
   );
 
   const [opened, { toggle }] = useDisclosure(false);
-
   const previousShowing = usePrevious(opened);
 
   const DisplaySelectedUtxosData = () => {
@@ -146,47 +151,47 @@ export const UtxoTable = ({
     );
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        header: 'Txid',
-        accessorKey: 'txid',
-        Cell: ({ row }: { row: any }) => {
-          const prefix = row.original.txid.substring(0, 7);
-          const suffix = row.original.txid.substring(
-            row.original.txid.length - 7,
-          );
-          const abrv = `${prefix}....${suffix}`;
-          return (
-            <div className="flex justify-center items-center">
-              <Tooltip label={row.original.txid}>
-                <p className="mr-2">{abrv}</p>
-              </Tooltip>
-              <CopyButton value={row.original.txid} timeout={2000}>
-                {({ copied, copy }) => (
-                  <Tooltip
-                    label={copied ? 'Copied' : 'Copy'}
-                    withArrow
-                    position="right"
+  const columns = useMemo(() => {
+    const txIdColumn = {
+      header: 'Txid',
+      accessorKey: 'txid',
+      Cell: ({ row }: { row: any }) => {
+        const prefix = row.original.txid.substring(0, 7);
+        const suffix = row.original.txid.substring(
+          row.original.txid.length - 7,
+        );
+        const abrv = `${prefix}....${suffix}`;
+        return (
+          <div className="flex justify-center items-center">
+            <Tooltip label={row.original.txid}>
+              <p className="mr-2">{abrv}</p>
+            </Tooltip>
+            <CopyButton value={row.original.txid} timeout={2000}>
+              {({ copied, copy }) => (
+                <Tooltip
+                  label={copied ? 'Copied' : 'Copy'}
+                  withArrow
+                  position="right"
+                >
+                  <ActionIcon
+                    color={copied ? 'teal' : 'gray'}
+                    variant="subtle"
+                    onClick={copy}
                   >
-                    <ActionIcon
-                      color={copied ? 'teal' : 'gray'}
-                      variant="subtle"
-                      onClick={copy}
-                    >
-                      {copied ? (
-                        <IconCheck style={{ width: rem(16) }} />
-                      ) : (
-                        <IconCopy style={{ width: rem(16) }} />
-                      )}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </div>
-          );
-        },
+                    {copied ? (
+                      <IconCheck style={{ width: rem(16) }} />
+                    ) : (
+                      <IconCopy style={{ width: rem(16) }} />
+                    )}
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </CopyButton>
+          </div>
+        );
       },
+    };
+    const defaultColumns = [
       {
         header: 'Amount',
         accessorKey: 'amount',
@@ -306,14 +311,15 @@ export const UtxoTable = ({
           );
         },
       },
-    ],
-    [btcMetric, btcPrice, totalCost],
-  );
+    ];
+
+    return isShowTxId ? [txIdColumn, ...defaultColumns] : defaultColumns;
+  }, [btcMetric, btcPrice, totalCost]);
 
   const table = useMaterialReactTable({
     columns,
     data: utxos,
-    enableRowSelection: isCreateBatchTx,
+    enableRowSelection: areRowsSelectable,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     enableFilters: false,
@@ -325,7 +331,7 @@ export const UtxoTable = ({
     enableBottomToolbar: false,
     muiTableContainerProps: {
       className: 'overflow-auto transition-all duration-300 ease-in-out',
-      style: { maxHeight: isCreateBatchTx ? '24rem' : '30rem' },
+      style: { maxHeight: areRowsSelectable ? '24rem' : '30rem' },
     },
     enableStickyHeader: true,
     enableTopToolbar: true,
@@ -340,11 +346,12 @@ export const UtxoTable = ({
             }}
             className="text-2xl font-semibold"
           >
-            Inputs<span className="text-lg"> (utxos)</span>
+            {title}
+            <span className="text-lg"> (utxos)</span>
           </p>
 
           <Collapse
-            in={opened && isCreateBatchTx}
+            in={opened && areRowsSelectable}
             transitionDuration={300}
             transitionTimingFunction="linear"
           >

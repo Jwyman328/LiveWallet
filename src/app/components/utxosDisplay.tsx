@@ -1,19 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CreateTxFeeEstimationResponseType,
   UtxoRequestParamWithAmount,
 } from '../api/types';
-import { MRT_RowSelectionState } from 'material-react-table';
 import { notifications } from '@mantine/notifications';
-import { createTheme, ThemeProvider } from '@mui/material';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import {
   Button,
   Tooltip,
-  CopyButton,
-  ActionIcon,
-  rem,
   LoadingOverlay,
   NumberInput,
   InputLabel,
@@ -38,6 +33,7 @@ const sectionLabelStyles = {
 import { IconInfoCircle } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { UtxoTable } from './utxoTable';
+import { TxMode } from '../pages/Home';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
@@ -54,7 +50,8 @@ type UtxosDisplayProps = {
   btcPrice: number;
   signaturesNeeded: number;
   numberOfXpubs: number;
-  isCreateBatchTx: boolean;
+  txMode: TxMode;
+  consolidationFeeRate: number;
 };
 
 export const UtxosDisplay = ({
@@ -70,9 +67,63 @@ export const UtxosDisplay = ({
   btcPrice,
   signaturesNeeded,
   numberOfXpubs,
-  isCreateBatchTx,
+  txMode,
+  consolidationFeeRate,
 }: UtxosDisplayProps) => {
-  const [receivingOutputCount, setReceivingOutputCount] = useState(2);
+  const startingReceivingOutputCount = txMode === TxMode.CONSOLIDATE ? 1 : 2;
+  const [receivingOutputCount, setReceivingOutputCount] = useState(
+    startingReceivingOutputCount,
+  );
+  const [consolidationUtxo, setConsolidationUtxo] = useState<Utxo[]>([]);
+  const [isSavePSBTEnabled, setIsSavePSBTEnabled] = useState(false);
+
+  const [selectedUtxos, setSelectedUtxos] = useState<
+    UtxoRequestParamWithAmount[]
+  >([]);
+
+  const onCreateBatchTxError = () => {
+    notifications.show({
+      title: 'Error creating batch tx fee estimate.',
+      message: 'Please try again',
+      color: 'red',
+    });
+  };
+
+  const {
+    data: batchedTxData,
+    mutateAsync,
+    isLoading: batchIsLoading,
+    isError: isBatchTxRequestError,
+  } = useCreateTxFeeEstimate(
+    selectedUtxos,
+    txMode === TxMode.CONSOLIDATE ? consolidationFeeRate : feeRate,
+    txMode === TxMode.CONSOLIDATE ? 1 : receivingOutputCount,
+    onCreateBatchTxError,
+  );
+
+  useEffect(() => {
+    setCurrentBatchedTxData(batchedTxData);
+  }, [batchedTxData]);
+
+  // switching selectedUtxos should clear current batchTxData
+  useEffect(() => {
+    setCurrentBatchedTxData(null);
+  }, [selectedUtxos]);
+
+  // switching to consolidation mode should clear the consolidation data.
+  useEffect(() => {
+    if (txMode === TxMode.CONSOLIDATE) {
+      setIsSavePSBTEnabled(false);
+      setConsolidationUtxo([]);
+    }
+  }, [consolidationFeeRate, selectedUtxos.length, txMode]);
+
+  const savePsbt = () => {
+    window.electron.ipcRenderer.sendMessage(
+      'save-psbt',
+      currentBatchedTxData?.psbt || '',
+    );
+  };
 
   const onReceivingOutputChange = (value: number) => {
     setReceivingOutputCount(value);
@@ -100,45 +151,26 @@ export const UtxosDisplay = ({
     return selectedColor;
   };
 
-  const [selectedUtxos, setSelectedUtxos] = useState<
-    UtxoRequestParamWithAmount[]
-  >([]);
-
   const onRowSelection = (utxosSelected: UtxoRequestParamWithAmount[]) => {
     setSelectedUtxos(utxosSelected);
   };
 
-  const onCreateBatchTxError = () => {
-    notifications.show({
-      title: 'Error creating batch tx fee estimate.',
-      message: 'Please try again',
-      color: 'red',
-    });
-  };
-
-  const {
-    data: batchedTxData,
-    mutateAsync,
-    isLoading: batchIsLoading,
-    isError: isBatchTxRequestError,
-  } = useCreateTxFeeEstimate(
-    selectedUtxos,
-    feeRate,
-    receivingOutputCount,
-    onCreateBatchTxError,
-  );
-
-  useEffect(() => {
-    setCurrentBatchedTxData(batchedTxData);
-  }, [batchedTxData]);
-
-  useEffect(() => {
-    setCurrentBatchedTxData(null);
-  }, [selectedUtxos]);
-
   const calculateFeeEstimate = async () => {
     try {
-      await mutateAsync();
+      const response = await mutateAsync();
+      if (txMode === TxMode.CONSOLIDATE) {
+        setIsSavePSBTEnabled(true);
+
+        const totalAmount =
+          selectedUtxos.reduce((accumulator, currentObject) => {
+            return accumulator + currentObject.amount;
+          }, 0) - response?.fee;
+        const batchedUtxos =
+          selectedUtxos.length > 1 && response
+            ? [{ amount: totalAmount, vout: 0, txid: 'mockTxId' }]
+            : [];
+        setConsolidationUtxo(batchedUtxos);
+      }
     } catch (e) {
       console.log('Error calculating fee estimate', e);
     }
@@ -203,8 +235,10 @@ export const UtxosDisplay = ({
     );
   };
 
+  const containerClassNames = txMode === TxMode.CONSOLIDATE ? 'px-4' : 'px-20';
+
   return (
-    <div className="px-20">
+    <div className={containerClassNames}>
       <div className="relative flex flex-row ">
         <LoadingOverlay
           visible={isLoading}
@@ -224,67 +258,114 @@ export const UtxosDisplay = ({
             ),
           }}
         />
-        <UtxoTable
-          utxos={utxos}
-          isCreateBatchTx={isCreateBatchTx}
-          walletType={walletType}
-          signaturesNeeded={signaturesNeeded}
-          numberOfXpubs={numberOfXpubs}
-          receivingOutputCount={receivingOutputCount}
-          feeRate={feeRate}
-          getFeeRateColor={getFeeRateColor}
-          btcPrice={btcPrice}
-          btcMetric={btcMetric}
-          onRowSelection={onRowSelection}
-        />
-
-        <div style={{ minWidth: '275px' }} className="ml-6 flex flex-col">
-          <InputLabel
-            style={sectionHeaderStyles}
-            className="font-semibold mt-0 mr-1"
-          >
-            Outputs
-          </InputLabel>
-          <div className={`flex flex-row items-center`}>
-            <InputLabel
-              style={sectionLabelStyles}
-              className="font-semibold mt-0 mr-1"
-            >
-              Count
-            </InputLabel>
-
-            <Tooltip
-              withArrow
-              w={300}
-              multiline
-              label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number. If you are estimating a consolidation transaction you can set the count to 1.
-                "
-            >
-              <IconInfoCircle
-                style={{
-                  width: '14px',
-                  height: '14px',
-                  color: sectionColor,
-                }}
-              />
-            </Tooltip>
-          </div>
-          <NumberInput
-            data-testid="output-count"
-            className={`mb-4 w-40 mt-2`}
-            style={sectionLabelStyles}
-            allowNegative={false}
-            clampBehavior="strict"
-            value={receivingOutputCount}
-            onChange={onReceivingOutputChange}
-            thousandSeparator=","
-            min={1}
-            max={5000}
+        <div className="flex flex-row">
+          <UtxoTable
+            utxos={utxos}
+            areRowsSelectable={
+              txMode === TxMode.BATCH || txMode === TxMode.CONSOLIDATE
+            }
+            onRowSelection={onRowSelection}
+            walletType={walletType}
+            signaturesNeeded={signaturesNeeded}
+            numberOfXpubs={numberOfXpubs}
+            receivingOutputCount={receivingOutputCount}
+            feeRate={feeRate}
+            getFeeRateColor={getFeeRateColor}
+            btcPrice={btcPrice}
+            btcMetric={btcMetric}
           />
+
+          {txMode === TxMode.CONSOLIDATE && (
+            <div className="ml-4 flex flex-col justify-between">
+              <UtxoTable
+                utxos={consolidationUtxo}
+                areRowsSelectable={false}
+                onRowSelection={() => {}}
+                walletType={walletType}
+                signaturesNeeded={signaturesNeeded}
+                numberOfXpubs={numberOfXpubs}
+                receivingOutputCount={1}
+                feeRate={feeRate}
+                getFeeRateColor={getFeeRateColor}
+                btcPrice={btcPrice}
+                btcMetric={btcMetric}
+                title="Output"
+                isShowTxId={false}
+              />
+
+              <div className="mt-auto">
+                <InputLabel
+                  style={sectionHeaderStyles}
+                  className="font-semibold mt-0 mr-1"
+                >
+                  {txMode === TxMode.CONSOLIDATE ? 'Consolidation ' : ''}
+                  Fees
+                </InputLabel>
+
+                <DisplayBatchTxData />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{ minWidth: txMode !== TxMode.CONSOLIDATE ? '275px' : '0px' }}
+          className="ml-6 flex flex-col"
+        >
+          <Collapse
+            in={txMode !== TxMode.CONSOLIDATE}
+            transitionDuration={300}
+            transitionTimingFunction="linear"
+          >
+            <>
+              <InputLabel
+                style={sectionHeaderStyles}
+                className="font-semibold mt-0 mr-1"
+              >
+                Outputs
+              </InputLabel>
+              <div className={`flex flex-row items-center`}>
+                <InputLabel
+                  style={sectionLabelStyles}
+                  className="font-semibold mt-0 mr-1"
+                >
+                  Count
+                </InputLabel>
+
+                <Tooltip
+                  withArrow
+                  w={300}
+                  multiline
+                  label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number. If you are estimating a consolidation transaction you can set the count to 1.
+                "
+                >
+                  <IconInfoCircle
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      color: sectionColor,
+                    }}
+                  />
+                </Tooltip>
+              </div>
+              <NumberInput
+                data-testid="output-count"
+                className={`mb-4 w-40 mt-2`}
+                style={sectionLabelStyles}
+                allowNegative={false}
+                clampBehavior="strict"
+                value={receivingOutputCount}
+                onChange={onReceivingOutputChange}
+                thousandSeparator=","
+                min={1}
+                max={5000}
+              />
+            </>
+          </Collapse>
 
           <div className="mt-auto">
             <Collapse
-              in={isCreateBatchTx}
+              in={txMode === TxMode.BATCH}
               transitionDuration={300}
               transitionTimingFunction="linear"
             >
@@ -302,21 +383,36 @@ export const UtxosDisplay = ({
       </div>
 
       <Collapse
-        in={isCreateBatchTx}
+        in={txMode === TxMode.BATCH || txMode === TxMode.CONSOLIDATE}
         transitionDuration={300}
         transitionTimingFunction="linear"
       >
-        <div className="flex flex-row mt-4 mb-4 h-14">
+        <div className="flex flex-row mt-4 mb-4 h-14 mr-6">
           <Button
             loading={batchIsLoading}
             fullWidth
-            disabled={selectedUtxos?.length < 2}
+            disabled={
+              selectedUtxos?.length < 2 ||
+              (txMode === TxMode.CONSOLIDATE && isSavePSBTEnabled)
+            }
             onClick={calculateFeeEstimate}
             size="xl"
             style={{ height: '100%' }}
           >
-            Estimate Batch
+            {txMode === TxMode.CONSOLIDATE ? 'Consolidate' : 'Estimate Batch'}
           </Button>
+
+          {txMode === TxMode.CONSOLIDATE && (
+            <Button
+              fullWidth
+              disabled={!isSavePSBTEnabled}
+              onClick={savePsbt}
+              size="xl"
+              style={{ height: '100%', marginLeft: '1rem' }}
+            >
+              Save PSBT
+            </Button>
+          )}
         </div>
       </Collapse>
     </div>

@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, field_validator, Field
 import structlog
 
@@ -26,6 +27,7 @@ class GetUtxosRequestDto(BaseModel):
 class GetUtxosResponseDto(BaseModel):
     spendable: bool
     fee: int
+    psbt: Optional[str]
 
 
 class GetUtxosErrorResponseDto(BaseModel):

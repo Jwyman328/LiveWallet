@@ -11,6 +11,7 @@ export type Channels =
   | 'get-wallet-data'
   | 'import-wallet-from-dialog'
   | 'save-wallet-data-from-dialog'
+  | 'save-psbt'
   | 'wallet-data';
 
 const electronHandler = {

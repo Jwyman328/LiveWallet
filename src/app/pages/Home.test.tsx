@@ -127,7 +127,7 @@ describe('Home', () => {
     expect(getUtxosSpy).toHaveBeenCalled();
     expect(getCurrentFeesSpy).toHaveBeenCalled();
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     const feeTitle = await screen.findByText('Current fees');
 
     const btcPriceTitle = await screen.findByText('BTC Price');
@@ -146,7 +146,8 @@ describe('Home', () => {
 
     const outputsTitle = await screen.findByText('Outputs');
     const countTitle = await screen.findByText('Count');
-    const outputCountInput = await screen.findByTestId('output-count');
+    const allOutputCountInputs = await screen.findAllByTestId('output-count');
+    const outputCountInput = allOutputCountInputs[1];
 
     const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
@@ -406,7 +407,8 @@ describe('Home', () => {
     expect(utxoFeeUsd.length).toBe(3);
     expect(utxoOneAmount).toBeInTheDocument();
 
-    const outputCountInput = screen.getByTestId('output-count');
+    const allOutputCountInputs = await screen.findAllByTestId('output-count');
+    const outputCountInput = allOutputCountInputs[1];
     expect(outputCountInput).toHaveValue('2');
 
     fireEvent.change(outputCountInput, { target: { value: 500 } });
@@ -422,7 +424,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -508,7 +510,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -587,7 +589,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -625,7 +627,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -672,7 +674,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -688,7 +690,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -703,7 +705,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
@@ -725,7 +727,8 @@ describe('Home', () => {
 
     // set output count to 5
     const outputCountMock = 5;
-    const outputCountInput = screen.getByTestId('output-count');
+    const allOutputCountInputs = await screen.findAllByTestId('output-count');
+    const outputCountInput = allOutputCountInputs[1];
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -791,7 +794,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
@@ -813,7 +816,8 @@ describe('Home', () => {
 
     // set output count to 5
     const outputCountMock = 5;
-    let outputCountInput = screen.getByTestId('output-count');
+    const allOutputCountInputs = await screen.findAllByTestId('output-count');
+    const outputCountInput = allOutputCountInputs[1];
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -873,7 +877,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(

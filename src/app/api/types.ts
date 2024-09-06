@@ -34,6 +34,7 @@ export type CurrentFeesResponseType = {
 export type CreateTxFeeEstimationResponseType = {
   spendable: boolean;
   fee: number;
+  psbt?: string; // base64 of psbt
 };
 
 export type InitiateWalletResponseType = {

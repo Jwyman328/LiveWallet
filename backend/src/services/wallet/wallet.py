@@ -35,6 +35,7 @@ class BuildTransactionResponseType:
 class GetFeeEstimateForUtxoResponseType:
     status: Literal["success", "unspendable", "error"]
     data: Optional[FeeDetails]
+    psbt: Optional[bdk.PartiallySignedTransaction]
 
 
 class WalletService:
@@ -353,17 +354,18 @@ class WalletService:
         if tx_response.status == "success" and tx_response.data is not None:
             built_transaction = tx_response.data
             fee = built_transaction.transaction_details.fee
+            psbt = built_transaction.psbt
 
             if fee is not None:
                 total = fee + built_transaction.transaction_details.sent
                 percent_fee_is_of_utxo: float = (fee / total) * 100
                 return GetFeeEstimateForUtxoResponseType(
-                    "success", FeeDetails(percent_fee_is_of_utxo, fee)
+                    "success", FeeDetails(percent_fee_is_of_utxo, fee), psbt
                 )
             else:
-                return GetFeeEstimateForUtxoResponseType("error", None)
+                return GetFeeEstimateForUtxoResponseType("error", None, None)
         else:
-            return GetFeeEstimateForUtxoResponseType(tx_response.status, None)
+            return GetFeeEstimateForUtxoResponseType(tx_response.status, None, None)
 
     def get_fee_estimate_for_utxos_from_request(
         self, get_utxos_request_dto: GetUtxosRequestDto

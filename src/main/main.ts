@@ -13,7 +13,12 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { importJSONFile, resolveHtmlPath, saveJsonToFile } from './util';
+import {
+  importJSONFile,
+  resolveHtmlPath,
+  saveJsonToFile,
+  savePsbtToFile,
+} from './util';
 import { WalletConfigs } from '../app/types/wallet';
 import { Pages } from '../renderer/pages';
 
@@ -103,6 +108,25 @@ ipcMain.on('save-wallet-data-from-dialog', async (event, walletDetails) => {
     })
     .catch((err) => {
       console.error('Error saving JSON file:', err);
+    });
+});
+
+ipcMain.on('save-psbt', async (event, psbt: string) => {
+  // Open file dialog to save psbt file
+  const { dialog } = require('electron');
+  dialog
+    .showSaveDialog({
+      title: 'Save psbt',
+      defaultPath: './my_psbt.psbt', // Specify the default file name
+    })
+    .then((result) => {
+      if (!result.canceled && result.filePath) {
+        const filePath = result.filePath;
+        savePsbtToFile(psbt, filePath);
+      }
+    })
+    .catch((err) => {
+      console.error('Error saving psbt file:', err);
     });
 });
 
