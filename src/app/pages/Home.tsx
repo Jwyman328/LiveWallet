@@ -353,6 +353,7 @@ function Home() {
 
   const onConsolidationFeeRate = (consolidationFeeRate: string | number) => {
     setConsolidationFeeRate(Number(consolidationFeeRate));
+    setCurrentBatchedTxData(null);
   };
 
   const onBtcPriceChange = (netBtcPrice: string | number) => {
@@ -480,7 +481,7 @@ function Home() {
                 Consolidation Tx Fee Rate (sat/vB)
               </h1>
               <NumberInput
-                data-testid="output-count"
+                data-testid="consolidation-fee-rate-input"
                 className={`mb-4 w-40 mt-2`}
                 //style={sectionLabelStyles}
                 allowNegative={false}

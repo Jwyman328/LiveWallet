@@ -146,8 +146,7 @@ describe('Home', () => {
 
     const outputsTitle = await screen.findByText('Outputs');
     const countTitle = await screen.findByText('Count');
-    const allOutputCountInputs = await screen.findAllByTestId('output-count');
-    const outputCountInput = allOutputCountInputs[1];
+    const outputCountInput = await screen.findByTestId('output-count');
 
     const utxoTableTitle = await screen.findByText('Inputs');
     const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
@@ -407,8 +406,7 @@ describe('Home', () => {
     expect(utxoFeeUsd.length).toBe(3);
     expect(utxoOneAmount).toBeInTheDocument();
 
-    const allOutputCountInputs = await screen.findAllByTestId('output-count');
-    const outputCountInput = allOutputCountInputs[1];
+    const outputCountInput = await screen.findByTestId('output-count');
     expect(outputCountInput).toHaveValue('2');
 
     fireEvent.change(outputCountInput, { target: { value: 500 } });
@@ -727,8 +725,7 @@ describe('Home', () => {
 
     // set output count to 5
     const outputCountMock = 5;
-    const allOutputCountInputs = await screen.findAllByTestId('output-count');
-    const outputCountInput = allOutputCountInputs[1];
+    const outputCountInput = await screen.findByTestId('output-count');
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -816,8 +813,7 @@ describe('Home', () => {
 
     // set output count to 5
     const outputCountMock = 5;
-    const allOutputCountInputs = await screen.findAllByTestId('output-count');
-    const outputCountInput = allOutputCountInputs[1];
+    const outputCountInput = await screen.findByTestId('output-count');
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -946,11 +942,148 @@ describe('Home', () => {
     expect(secondPercentColor).toBeInTheDocument();
   });
 
-  // test changing config sends update? / other / all main thread calls
+  it('Test consolidate mode', async () => {
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
+    expect(title).toBeInTheDocument();
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    const inputsTitle = screen.getByText('Inputs');
+    const outputsTitle = await screen.findByText('Output');
+    const emptyOutputTable = await screen.findByText('No records to display');
+    const consolidationTxFeeRateTitle = screen.getByText(
+      'Consolidation Tx Fee Rate (sat/vB)',
+    );
+    const consolidationTxFeeRate = await screen.findByTestId(
+      'consolidation-fee-rate-input',
+    );
+    expect(inputsTitle).toBeInTheDocument();
+    expect(outputsTitle).toBeInTheDocument();
+    expect(emptyOutputTable).toBeInTheDocument();
+    expect(consolidationTxFeeRateTitle).toBeInTheDocument();
+    expect(consolidationTxFeeRate).toHaveValue('10');
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    let txCheckBoxes;
+
+    await waitFor(async () => {
+      txCheckBoxes = screen.getAllByRole('checkbox');
+      // three txs so should be three tx checkboxes to be able to include
+      // in our batched tx, as well as a 4th button to include all txs.
+      expect(txCheckBoxes?.length).toBe(4);
+    });
+
+    const includeAllUtxosButton = txCheckBoxes[0];
+    fireEvent.click(includeAllUtxosButton);
+
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+    expect(consolidateTxButton).toBeEnabled();
+
+    const totalUTxoBtcAmount = '3.00000001';
+
+    const selectedTotal = screen.getByText('Count: 3');
+    expect(selectedTotal).toBeInTheDocument();
+
+    const BTCSelectedTotal = screen.getByText(`BTC: ${totalUTxoBtcAmount}`);
+    expect(BTCSelectedTotal).toBeInTheDocument();
+
+    const USDSelectedTotal = screen.getByText('USD: $300,000');
+    expect(USDSelectedTotal).toBeInTheDocument();
+
+    fireEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+    });
+
+    //output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    const consolidationBtcAmount = await screen.findByText(
+      consolidationOutputUtxoAmount,
+    );
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = await screen.findByText('$285,000');
+    let consolidatationUtxoFeeUsd = await screen.findByText('$1');
+    let consolidatationUtxoFeePct = await screen.findByText('0.0004%');
+
+    expect(consolidationBtcAmount).toBeInTheDocument();
+    expect(consolidationAmountUsd).toBeInTheDocument();
+    expect(consolidatationUtxoFeeUsd).toBeInTheDocument();
+    expect(consolidatationUtxoFeePct).toBeInTheDocument();
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+    let totalFees = await screen.findAllByText(
+      `Total fees: ~${totalFeesAmount} BTC`,
+    );
+    let totalFeeCost = await screen.findAllByText('Fee cost: $15,000');
+    let totalFeePct = await screen.findAllByText('(5.0000%)');
+    expect(consolidationFeesTitle).toBeInTheDocument();
+    expect(totalFees[0]).toBeInTheDocument();
+    expect(totalFeeCost[0]).toBeInTheDocument();
+    expect(totalFeePct[0]).toBeInTheDocument();
+
+    // change btc price should change the usd fee cost of the batch tx
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+
+    // increase price by a factor of 10
+    fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
+
+    // should not change
+    totalFees = await screen.findAllByText('Total fees: ~0.15000000 BTC');
+    // should not change
+    totalFeePct = await screen.findAllByText('(5.0000%)');
+    // should be higher by around a factor of 10
+    totalFeeCost = await screen.findAllByText('Fee cost: $150,000');
+    consolidationAmountUsd = screen.getByText('$2,850,000');
+    consolidatationUtxoFeeUsd = screen.getByText('$12');
+
+    expect(totalFees[0]).toBeInTheDocument();
+    expect(totalFeeCost[0]).toBeInTheDocument();
+    expect(totalFeePct[0]).toBeInTheDocument();
+    expect(consolidationAmountUsd).toBeInTheDocument();
+    expect(consolidatationUtxoFeeUsd).toBeInTheDocument();
+  });
 });
 
 // Open slideout and set batch tx to true, then close slideout
-const setTxTypeToBatched = async (screen: any) => {
+const setTxType = async (screen: any, txType = 'BATCH') => {
   //open settings and set batch tx to true
   const slideoutButton = screen.getByTestId('settings-button');
   fireEvent.click(slideoutButton);
@@ -960,12 +1093,12 @@ const setTxTypeToBatched = async (screen: any) => {
 
   const slideout = screen.getByTestId('settings-slideout');
   let batchOption = within(slideout).getByRole('radio', {
-    name: 'BATCH',
+    name: txType,
   });
   fireEvent.click(batchOption);
 
   batchOption = within(slideout).getByRole('radio', {
-    name: 'BATCH',
+    name: txType,
   });
   expect(batchOption).toBeChecked();
 
@@ -973,9 +1106,19 @@ const setTxTypeToBatched = async (screen: any) => {
   const closeSlideoutButton = settingsTitle.parentElement
     .nextElementSibling as HTMLButtonElement;
 
-  fireEvent.click(closeSlideoutButton);
+  act(() => fireEvent.click(closeSlideoutButton));
 
-  await waitFor(() => {
-    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
-  });
+  await waitFor(
+    () => {
+      expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+    },
+    { timeout: 10000 },
+  );
+};
+
+const setTxTypeToBatched = async (screen: any) => {
+  await setTxType(screen, 'BATCH');
+};
+const setTxTypeToConsolidate = async (screen: any) => {
+  await setTxType(screen, 'CONSOLIDATE');
 };
