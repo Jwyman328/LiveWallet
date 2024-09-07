@@ -4,6 +4,7 @@ import {
   waitFor,
   act,
   within,
+  RenderResult,
 } from '@testing-library/react';
 
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
@@ -1175,7 +1176,7 @@ describe('Home', () => {
 });
 
 // Open slideout and set batch tx to true, then close slideout
-const setTxType = async (screen: any, txType = 'BATCH') => {
+const setTxType = async (screen: RenderResult, txType = 'BATCH') => {
   //open settings and set batch tx to true
   const slideoutButton = screen.getByTestId('settings-button');
   fireEvent.click(slideoutButton);
@@ -1208,14 +1209,14 @@ const setTxType = async (screen: any, txType = 'BATCH') => {
   );
 };
 
-const setTxTypeToBatched = async (screen: any) => {
+const setTxTypeToBatched = async (screen: RenderResult) => {
   await setTxType(screen, 'BATCH');
 };
-const setTxTypeToConsolidate = async (screen: any) => {
+const setTxTypeToConsolidate = async (screen: RenderResult) => {
   await setTxType(screen, 'CONSOLIDATE');
 };
 
-const selectAllUtxos = async (screen: any) => {
+const selectAllUtxos = async (screen: RenderResult) => {
   let txCheckBoxes;
 
   await waitFor(async () => {
@@ -1230,7 +1231,7 @@ const selectAllUtxos = async (screen: any) => {
 };
 
 const expectMultiInputTxFeeEstimateUI = async (
-  screen: any,
+  screen: RenderResult,
   btcFeeCost: string,
   usdFeeCost: string,
   feePct: string,
@@ -1246,7 +1247,7 @@ const expectMultiInputTxFeeEstimateUI = async (
   expect(totalFeePct[estimatePosition]).toBeInTheDocument();
 };
 
-const expectEmptyStateMultiInputTxFeeEstimateUI = async (screen: any) => {
+const expectEmptyStateMultiInputTxFeeEstimateUI = async (screen: RenderResult) => {
   const batchTotalFees = screen.getByText('Total fees: ...');
   const batchFeePct = screen.getByText('Fee cost: ...');
 
@@ -1255,7 +1256,7 @@ const expectEmptyStateMultiInputTxFeeEstimateUI = async (screen: any) => {
 };
 
 const expectUtxoTableValues = async (
-  screen: any,
+  screen: RenderResult,
   txId: string | undefined,
   btcAmount: string,
   usdAmount: string,
@@ -1294,7 +1295,7 @@ const expectUtxoTableValues = async (
 };
 
 const expectSelectedUtxoValues = async (
-  screen: any,
+  screen: RenderResult,
   count: string,
   btcAmount: string,
   usdAmount: string,
