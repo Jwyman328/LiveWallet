@@ -6,7 +6,6 @@ import {
   within,
   RenderResult,
 } from '@testing-library/react';
-
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
@@ -17,6 +16,7 @@ import {
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
 import { Pages } from '../../renderer/pages';
+import userEvent from '@testing-library/user-event';
 
 const mockNavigate = jest.fn();
 let getBalanceSpy: jest.SpyInstance;
@@ -55,6 +55,7 @@ const mockUtXos = [
 const createTxFeeEstimateMock = {
   spendable: true,
   fee: '15000000',
+  psbt: undefined,
 };
 
 const currentFeesMock = {
@@ -319,7 +320,7 @@ describe('Home', () => {
     let utxoThreeFeeEstimate = '153000.00';
     let utxoThreeAmount = '0.00000001';
 
-    expectUtxoTableValues(
+    await expectUtxoTableValues(
       screen,
       utxoTxIdOne,
       utxoOneAmount,
@@ -363,7 +364,7 @@ describe('Home', () => {
     // since price is now 1M and amount 2btc
     utxoTwoAmountUSD = '2,000,000';
 
-    expectUtxoTableValues(
+    await expectUtxoTableValues(
       screen,
       utxoTxIdOne,
       utxoOneAmount,
@@ -1028,6 +1029,11 @@ describe('Home', () => {
   });
 
   it('Test consolidate mode', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
     const screen = render(
       <WrappedInAppWrappers>
         <Home />
@@ -1094,6 +1100,14 @@ describe('Home', () => {
       expect(savePsbtButton).toBeEnabled();
     });
 
+    fireEvent.click(savePsbtButton);
+    await waitFor(() => {
+      expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+        'save-psbt',
+        createTxFeeEstimateMockWithPsbt.psbt,
+      );
+    });
+
     const expectedData = mockUtXos.map((utxo) => ({
       id: utxo.txid,
       vout: utxo.vout,
@@ -1113,7 +1127,7 @@ describe('Home', () => {
     let consolidatationUtxoFeeUsd = '1';
     let consolidatationUtxoFeePct = '0.0004';
 
-    expectUtxoTableValues(
+    await expectUtxoTableValues(
       screen,
       undefined,
       consolidationOutputUtxoAmount.toString(),
@@ -1161,7 +1175,7 @@ describe('Home', () => {
     // individual output utxo usd values should have changed as well
     consolidationAmountUsd = '2,850,000';
     consolidatationUtxoFeeUsd = '12';
-    expectUtxoTableValues(
+    await expectUtxoTableValues(
       screen,
       undefined,
       consolidationOutputUtxoAmount.toString(),
@@ -1172,6 +1186,134 @@ describe('Home', () => {
       true,
       0,
     );
+  });
+
+  it('Test consolidate mode changing consolidate fee rate after consolidation', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    let emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    await selectAllUtxos(screen);
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+
+    const selectedTotal = '3';
+    const totalUTxoBtcAmount = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      totalUTxoBtcAmount,
+      USDSelectedTotal,
+    );
+
+    userEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+    });
+
+    //output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = '285,000';
+    let consolidatationUtxoFeeUsd = '1';
+    let consolidatationUtxoFeePct = '0.0004';
+
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+
+    expect(consolidationFeesTitle).toBeInTheDocument();
+
+    const btcFeeCost = totalFeesAmount;
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+
+    // change consolidation fee rate should wipe consolidation fees and output utxo values, and reset buttons
+    const consolidationTxFeeRate = await screen.findByTestId(
+      'consolidation-fee-rate-input',
+    );
+
+    fireEvent.change(consolidationTxFeeRate, { target: { value: '432' } });
+    //
+    emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
+
+    savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+    expect(savePsbtButton).not.toBeEnabled();
+
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
   });
 });
 
@@ -1247,12 +1389,15 @@ const expectMultiInputTxFeeEstimateUI = async (
   expect(totalFeePct[estimatePosition]).toBeInTheDocument();
 };
 
-const expectEmptyStateMultiInputTxFeeEstimateUI = async (screen: RenderResult) => {
-  const batchTotalFees = screen.getByText('Total fees: ...');
-  const batchFeePct = screen.getByText('Fee cost: ...');
+const expectEmptyStateMultiInputTxFeeEstimateUI = async (
+  screen: RenderResult,
+) => {
+  // both batch and consolidation summaryies exists therefore we need findAll
+  const batchTotalFees = await screen.findAllByText('Total fees: ...');
+  const batchFeePct = await screen.findAllByText('Fee cost: ...');
 
-  expect(batchTotalFees).toBeInTheDocument();
-  expect(batchFeePct).toBeInTheDocument();
+  expect(batchTotalFees[0]).toBeInTheDocument();
+  expect(batchFeePct[0]).toBeInTheDocument();
 };
 
 const expectUtxoTableValues = async (
@@ -1268,7 +1413,6 @@ const expectUtxoTableValues = async (
 ) => {
   const utxoAmount = await screen.findByText(btcAmount);
   const utxoAmountUSD = await screen.findByText(`$${usdAmount}`);
-  console.log('error', feePct);
   const utxoFeeEstimate = await screen.findByText(`${feePct}%`);
   const utxoFeeUsd = await screen.findAllByText(`$${feeUsd}`);
 
