@@ -1229,7 +1229,7 @@ describe('Home', () => {
     const selectedTotal = '3';
     const totalUTxoBtcAmount = '3.00000001';
     const USDSelectedTotal = '300,000';
-    expectSelectedUtxoValues(
+    await expectSelectedUtxoValues(
       screen,
       selectedTotal,
       totalUTxoBtcAmount,
@@ -1315,6 +1315,137 @@ describe('Home', () => {
 
     expect(consolidateTxButton).toBeEnabled();
   });
+  it('Test consolidate mode changing txMode clears output and fee data', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    let emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    await selectAllUtxos(screen);
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+
+    const selectedTotal = '3';
+    const totalUTxoBtcAmount = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    await expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      totalUTxoBtcAmount,
+      USDSelectedTotal,
+    );
+
+    userEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+    });
+
+    // output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = '285,000';
+    let consolidatationUtxoFeeUsd = '1';
+    let consolidatationUtxoFeePct = '0.0004';
+
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+
+    expect(consolidationFeesTitle).toBeInTheDocument();
+
+    const btcFeeCost = totalFeesAmount;
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+
+    // set batch mode
+    await setTxTypeToBatched(screen);
+    // confirm on batch mode
+    const estimateBatchButton = await screen.findByRole('button', {
+      name: 'Estimate Batch',
+    });
+    expect(estimateBatchButton).toBeInTheDocument();
+
+    // set back to consolidate mode
+    await setTxTypeToConsolidate(screen);
+
+    emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
+
+    savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+    expect(savePsbtButton).not.toBeEnabled();
+
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+  }, 100000);
 });
 
 // Open slideout and set batch tx to true, then close slideout
