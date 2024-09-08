@@ -680,6 +680,7 @@ class TestWalletService(TestCase):
             fee: int = cast(int, transaction_details_mock.fee)
             expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
             assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
+            assert fee_estimate_response.psbt == "mock_psbt"
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
         build_transaction_error_response = BuildTransactionResponseType(
@@ -725,8 +726,9 @@ class TestWalletService(TestCase):
             dict(transactions=transactions, fee_rate=fee_rate, output_count="2")
         )
 
+        mock_psbt = Mock()
         mock_fee_estimates_response = GetFeeEstimateForUtxoResponseType(
-            status="success", data=FeeDetails(0.1, 100)
+            status="success", data=FeeDetails(0.1, 100), psbt=mock_psbt
         )
 
         with (

@@ -58,9 +58,10 @@ export class ApiClient {
     utxos: UtxoRequestParam[],
     feeRate: number = 1,
     outputCount: number = 1,
+    includePsbtInResponse: boolean = false,
   ) {
     const response = await fetchHandler(
-      `${configs.backendServerBaseUrl}/utxos/fees?feeRate=${feeRate}&outputCount=${outputCount}`,
+      `${configs.backendServerBaseUrl}/utxos/fees?feeRate=${feeRate}&outputCount=${outputCount}&includePsbt=${includePsbtInResponse}`,
       'POST',
       utxos,
     );

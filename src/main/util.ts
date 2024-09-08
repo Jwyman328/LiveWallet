@@ -41,3 +41,14 @@ export const saveJsonToFile = (jsonData: Wallet, filePath: string) => {
     }
   });
 };
+
+export const savePsbtToFile = (psbt: string, filePath: string) => {
+  const fs = require('fs');
+  fs.writeFile(filePath, psbt, 'utf8', (err) => {
+    if (err) {
+      console.error('Error saving JSON file:', err);
+    } else {
+      console.log('JSON file saved successfully');
+    }
+  });
+};

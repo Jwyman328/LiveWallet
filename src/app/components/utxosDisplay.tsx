@@ -1,29 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CreateTxFeeEstimationResponseType,
   UtxoRequestParamWithAmount,
 } from '../api/types';
-import {
-  MaterialReactTable,
-  MRT_RowSelectionState,
-  useMaterialReactTable,
-} from 'material-react-table';
 import { notifications } from '@mantine/notifications';
-import { createTheme, ThemeProvider } from '@mui/material';
 import { Utxo } from '../api/types';
 import { useCreateTxFeeEstimate } from '../hooks/utxos';
 import {
   Button,
   Tooltip,
-  CopyButton,
-  ActionIcon,
-  rem,
   LoadingOverlay,
   NumberInput,
   InputLabel,
   Collapse,
 } from '@mantine/core';
-import { ScriptTypes, WalletTypes } from '../types/scriptTypes';
+import { ScriptTypes } from '../types/scriptTypes';
 import Big from 'big.js';
 const sectionColor = 'rgb(1, 67, 97)';
 
@@ -39,17 +30,10 @@ const sectionLabelStyles = {
   fontWeight: '600',
 };
 
-import {
-  IconCopy,
-  IconCheck,
-  IconCircleCheck,
-  IconCircleX,
-  IconInfoCircle,
-} from '@tabler/icons-react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
-import { useDisclosure } from '@mantine/hooks';
-import { usePrevious } from '../hooks/utils';
-import { createTxFeeEstimate } from '../bitcoin/txFeeCalculation';
+import { UtxoTable } from './utxoTable';
+import { TxMode } from '../pages/Home';
 
 type UtxosDisplayProps = {
   utxos: Utxo[];
@@ -66,7 +50,8 @@ type UtxosDisplayProps = {
   btcPrice: number;
   signaturesNeeded: number;
   numberOfXpubs: number;
-  isCreateBatchTx: boolean;
+  txMode: TxMode;
+  consolidationFeeRate: number;
 };
 
 export const UtxosDisplay = ({
@@ -82,12 +67,65 @@ export const UtxosDisplay = ({
   btcPrice,
   signaturesNeeded,
   numberOfXpubs,
-  isCreateBatchTx,
+  txMode,
+  consolidationFeeRate,
 }: UtxosDisplayProps) => {
-  const estimateVBtyePerInput = 125;
-  const estimateVBtyeOverheadAndOutput = walletType === 'P2PKH' ? 175 : 10;
+  const startingReceivingOutputCount = txMode === TxMode.CONSOLIDATE ? 1 : 2;
+  const [receivingOutputCount, setReceivingOutputCount] = useState(
+    startingReceivingOutputCount,
+  );
+  const [consolidationUtxo, setConsolidationUtxo] = useState<Utxo[]>([]);
+  const [isSavePSBTEnabled, setIsSavePSBTEnabled] = useState(false);
 
-  const [receivingOutputCount, setReceivingOutputCount] = useState(2);
+  const [selectedUtxos, setSelectedUtxos] = useState<
+    UtxoRequestParamWithAmount[]
+  >([]);
+
+  const onCreateBatchTxError = () => {
+    notifications.show({
+      title: 'Error creating batch tx fee estimate.',
+      message: 'Please try again',
+      color: 'red',
+    });
+  };
+
+  const {
+    data: batchedTxData,
+    mutateAsync,
+    isLoading: batchIsLoading,
+    isError: isBatchTxRequestError,
+  } = useCreateTxFeeEstimate(
+    selectedUtxos,
+    txMode === TxMode.CONSOLIDATE ? consolidationFeeRate : feeRate,
+    txMode === TxMode.CONSOLIDATE ? 1 : receivingOutputCount,
+    onCreateBatchTxError,
+    txMode === TxMode.CONSOLIDATE ? true : false,
+  );
+
+  useEffect(() => {
+    setCurrentBatchedTxData(batchedTxData);
+  }, [batchedTxData]);
+
+  // switching selectedUtxos should clear current batchTxData
+  useEffect(() => {
+    setCurrentBatchedTxData(null);
+  }, [selectedUtxos]);
+
+  // switching to consolidation mode, should clear the consolidation data.
+  // changing seelctedUtxos length or the consolidationFeeRate should also clear the consolidation data.
+  useEffect(() => {
+    if (txMode === TxMode.CONSOLIDATE) {
+      setIsSavePSBTEnabled(false);
+      setConsolidationUtxo([]);
+    }
+  }, [consolidationFeeRate, selectedUtxos.length, txMode]);
+
+  const savePsbt = () => {
+    window.electron.ipcRenderer.sendMessage(
+      'save-psbt',
+      currentBatchedTxData?.psbt || '',
+    );
+  };
 
   const onReceivingOutputChange = (value: number) => {
     setReceivingOutputCount(value);
@@ -95,28 +133,6 @@ export const UtxosDisplay = ({
     // since a new output count will change the batch fee estimate
     // and thefore the current fee estimate will be invalid.
     setCurrentBatchedTxData(null);
-  };
-
-  const avgInputCost = estimateVBtyePerInput * feeRate;
-  const avgBaseCost = estimateVBtyeOverheadAndOutput * feeRate;
-
-  const totalVBtyes = createTxFeeEstimate(
-    1,
-    walletType,
-    signaturesNeeded,
-    numberOfXpubs,
-    receivingOutputCount,
-  );
-  const totalCost = totalVBtyes * feeRate;
-
-  const calculateFeePercent = (amount: number) => {
-    const percentOfAmount = (totalCost / amount) * 100;
-    const formatted =
-      percentOfAmount > 1
-        ? percentOfAmount.toFixed(2)
-        : percentOfAmount.toFixed(4);
-
-    return formatted;
   };
 
   const getFeeRateColor = (amount: number) => {
@@ -136,371 +152,27 @@ export const UtxosDisplay = ({
     }
     return selectedColor;
   };
-  const columns = useMemo(
-    () => [
-      {
-        header: 'Txid',
-        accessorKey: 'txid',
-        Cell: ({ row }: { row: any }) => {
-          const prefix = row.original.txid.substring(0, 7);
-          const suffix = row.original.txid.substring(
-            row.original.txid.length - 7,
-          );
-          const abrv = `${prefix}....${suffix}`;
-          return (
-            <div className="flex justify-center items-center">
-              <Tooltip label={row.original.txid}>
-                <p className="mr-2">{abrv}</p>
-              </Tooltip>
-              <CopyButton value={row.original.txid} timeout={2000}>
-                {({ copied, copy }) => (
-                  <Tooltip
-                    label={copied ? 'Copied' : 'Copy'}
-                    withArrow
-                    position="right"
-                  >
-                    <ActionIcon
-                      color={copied ? 'teal' : 'gray'}
-                      variant="subtle"
-                      onClick={copy}
-                    >
-                      {copied ? (
-                        <IconCheck style={{ width: rem(16) }} />
-                      ) : (
-                        <IconCopy style={{ width: rem(16) }} />
-                      )}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </div>
-          );
-        },
-      },
-      {
-        header: 'Amount',
-        accessorKey: 'amount',
-        size: 100,
-        Cell: ({ row }: { row: any }) => {
-          const amount = btcSatHandler(
-            Number(row.original.amount).toFixed(2).toLocaleString(),
-            btcMetric,
-          );
-          return (
-            <div>
-              <p>
-                {btcMetric === BtcMetric.BTC
-                  ? amount
-                  : Number(amount).toLocaleString()}
-              </p>
-            </div>
-          );
-        },
-      },
-      {
-        header: '$ Amount',
-        accessorKey: 'amountUSD',
-        size: 100,
-        Cell: ({ row }: { row: any }) => {
-          let amountUSD: string | undefined;
 
-          const btcAmount = btcSatHandler(
-            Number(row.original.amount).toLocaleString(),
-            BtcMetric.BTC,
-          );
-
-          try {
-            amountUSD = Big(btcPrice).times(btcAmount).toFixed(0, Big.ROUND_UP);
-          } catch (e) {
-            console.log('Error calculating amountUSD', e);
-          }
-          const amountUSDDisplay = amountUSD
-            ? `$${Number(amountUSD).toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}`
-            : '...';
-          return (
-            <div>
-              <p>{amountUSDDisplay}</p>
-            </div>
-          );
-        },
-      },
-      {
-        header: '~ Fee %',
-        accessorKey: 'selfCost',
-        size: 100,
-        Cell: ({ row }: { row: any }) => {
-          const feePct = row.original.amount
-            ? `${calculateFeePercent(row.original.amount)}%`
-            : '...';
-          return (
-            <div>
-              <p> {feePct}</p>
-            </div>
-          );
-        },
-      },
-      {
-        header: '$ Fee',
-        accessorKey: 'feeUSD',
-        size: 100,
-        Cell: () => {
-          let amountUSD: number | string | undefined;
-
-          const btcAmount = btcSatHandler(
-            Number(totalCost).toLocaleString(),
-            BtcMetric.BTC,
-          );
-
-          try {
-            amountUSD = Big(btcPrice).times(btcAmount).toFixed(0, Big.ROUND_UP);
-          } catch (e) {
-            console.log('error', e);
-          }
-
-          amountUSD = Number(amountUSD) < 1 ? 1 : Number(amountUSD);
-
-          const amountUSDDisplay = amountUSD
-            ? `$${amountUSD.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}`
-            : '...';
-          return (
-            <div>
-              <p>{amountUSDDisplay}</p>
-            </div>
-          );
-        },
-      },
-      {
-        header: 'Spendable',
-        accessorKey: 'Spendable',
-        size: 50,
-        Cell: ({ row }: { row: any }) => {
-          const feePct = row.original.amount
-            ? calculateFeePercent(row.original.amount)
-            : null;
-
-          const isSpendable = feePct === null ? '...' : Number(feePct) < 100;
-          return (
-            <div className="flex items-center justify-center">
-              {isSpendable ? (
-                <IconCircleCheck data-testid="spendable-icon" color="green" />
-              ) : (
-                <IconCircleX data-testid="not-spendable-icon" color="red" />
-              )}
-            </div>
-          );
-        },
-      },
-    ],
-    [avgBaseCost, avgInputCost, btcMetric, btcPrice, totalCost],
-  );
-
-  const getSelectedUtxos = React.useCallback(
-    (selectedTxRows: MRT_RowSelectionState) => {
-      const selectedUtxosFromatted: UtxoRequestParamWithAmount[] = [];
-      utxos.forEach((utxo) => {
-        if (selectedTxRows[utxo.txid]) {
-          selectedUtxosFromatted.push({
-            id: utxo.txid,
-            vout: utxo.vout,
-            amount: utxo.amount,
-          });
-        }
-      });
-      return selectedUtxosFromatted;
-    },
-    [utxos],
-  );
-
-  const DisplaySelectedUtxosData = React.memo(
-    ({
-      selectedRows,
-      showing,
-    }: {
-      selectedRows: MRT_RowSelectionState;
-      showing: boolean;
-    }) => {
-      const totalUtxosSelected = Object.keys(selectedRows).length;
-      const utxosWithData = getSelectedUtxos(selectedRows);
-      const totalAmount: number = utxosWithData.reduce(
-        (total, utxo) => total + utxo.amount,
-        0,
-      );
-
-      const totalAmountInBTC = btcSatHandler(
-        totalAmount.toLocaleString(),
-        BtcMetric.BTC,
-      );
-      const totalAmountUsd = Big(btcPrice).times(totalAmountInBTC).toFixed(2);
-
-      const amountUSDDisplay = totalAmountUsd
-        ? `$${Number(totalAmountUsd).toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          })}`
-        : '...';
-
-      return (
-        <>
-          <Collapse
-            in={showing && isCreateBatchTx}
-            transitionDuration={300}
-            transitionTimingFunction="linear"
-          >
-            <div>
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className=" font-semibold text-lg"
-              >
-                Count: {totalUtxosSelected}{' '}
-              </p>
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className="font-semibold text-lg"
-              >
-                {btcMetric === BtcMetric.BTC ? ' BTC' : ' Sats'}:{' '}
-                {' ' + btcSatHandler(totalAmount.toLocaleString(), btcMetric)}
-              </p>
-
-              <p
-                style={{
-                  color: sectionColor,
-                }}
-                className="font-semibold text-lg"
-              >
-                USD: {amountUSDDisplay}
-              </p>
-            </div>
-          </Collapse>
-        </>
-      );
-    },
-  );
-
-  const table = useMaterialReactTable({
-    columns,
-    data: utxos,
-    enableRowSelection: isCreateBatchTx,
-    enableDensityToggle: false,
-    enableFullScreenToggle: false,
-    enableFilters: false,
-    enableColumnFilters: false,
-    enableColumnActions: false,
-    enableHiding: false,
-    enablePagination: false,
-    enableTableFooter: false,
-    enableBottomToolbar: false,
-    muiTableContainerProps: {
-      className: 'overflow-auto transition-all duration-300 ease-in-out',
-      style: { maxHeight: isCreateBatchTx ? '24rem' : '30rem' },
-    },
-    enableStickyHeader: true,
-    enableTopToolbar: true,
-    positionToolbarAlertBanner: 'none',
-    positionToolbarDropZone: 'top',
-    renderTopToolbarCustomActions: ({ table }) => {
-      const isShowing = Object.keys(table.getState().rowSelection).length > 0;
-      const previousShowing = usePrevious(isShowing);
-      const [opened, { toggle }] = useDisclosure(false);
-
-      useEffect(() => {
-        if (isShowing !== previousShowing && previousShowing !== undefined) {
-          toggle();
-        }
-      }, [isShowing]);
-      return (
-        <div className="ml-2">
-          <p
-            style={{
-              color: sectionColor,
-            }}
-            className="text-2xl font-semibold"
-          >
-            Inputs<span className="text-lg"> (utxos)</span>
-          </p>
-
-          <DisplaySelectedUtxosData
-            selectedRows={table.getState().rowSelection}
-            showing={opened}
-          />
-        </div>
-      );
-    },
-    muiSelectCheckboxProps: {
-      color: 'primary',
-    },
-    initialState: {
-      sorting: [
-        {
-          id: 'amount',
-          desc: false,
-        },
-      ],
-    },
-    // @ts-ignore
-    muiTableBodyRowProps: { classes: { root: { after: 'bg-green-100' } } },
-    muiTableBodyCellProps: ({ row }) => {
-      const feeRatePct = row.original.amount
-        ? calculateFeePercent(row.original.amount)
-        : 0;
-      const color = getFeeRateColor(Number(feeRatePct));
-
-      return {
-        style: { backgroundColor: color },
-      };
-    },
-
-    getRowId: (originalRow) => {
-      return originalRow.txid;
-    },
-  });
-
-  const selectedTxs = table.getState().rowSelection;
-
-  const selectedUtxos: UtxoRequestParamWithAmount[] = useMemo(() => {
-    return getSelectedUtxos(selectedTxs);
-  }, [selectedTxs, getSelectedUtxos]);
-
-  const onCreateBatchTxError = () => {
-    notifications.show({
-      title: 'Error creating batch tx fee estimate.',
-      message: 'Please try again',
-      color: 'red',
-    });
+  const onRowSelection = (utxosSelected: UtxoRequestParamWithAmount[]) => {
+    setSelectedUtxos(utxosSelected);
   };
-
-  const {
-    data: batchedTxData,
-    mutateAsync,
-    isLoading: batchIsLoading,
-    isError: isBatchTxRequestError,
-  } = useCreateTxFeeEstimate(
-    selectedUtxos,
-    feeRate,
-    receivingOutputCount,
-    onCreateBatchTxError,
-  );
-
-  useEffect(() => {
-    setCurrentBatchedTxData(batchedTxData);
-  }, [batchedTxData]);
-
-  useEffect(() => {
-    setCurrentBatchedTxData(null);
-  }, [selectedUtxos]);
 
   const calculateFeeEstimate = async () => {
     try {
-      await mutateAsync();
+      const response = await mutateAsync();
+      if (txMode === TxMode.CONSOLIDATE) {
+        setIsSavePSBTEnabled(true);
+
+        const totalAmount =
+          selectedUtxos.reduce((accumulator, currentObject) => {
+            return accumulator + currentObject.amount;
+          }, 0) - response?.fee;
+        const batchedUtxos =
+          selectedUtxos.length > 1 && response
+            ? [{ amount: totalAmount, vout: 0, txid: 'mockTxId' }]
+            : [];
+        setConsolidationUtxo(batchedUtxos);
+      }
     } catch (e) {
       console.log('Error calculating fee estimate', e);
     }
@@ -525,8 +197,6 @@ export const UtxosDisplay = ({
       (total, utxo) => total + utxo.amount,
       0,
     );
-
-    //const inputSigFees = batchedSigInputEstimateFeeTotal * selectedUtxos.length;
 
     const fee = !isBatchTxRequestError ? Number(batchedTxData?.fee) : undefined;
     const percentOfTxFee = fee
@@ -567,133 +237,184 @@ export const UtxosDisplay = ({
     );
   };
 
+  const containerClassNames = txMode === TxMode.CONSOLIDATE ? 'px-4' : 'px-20';
+
   return (
-    <div className="px-20">
-      <ThemeProvider
-        theme={createTheme({
-          palette: {
-            secondary: {
-              main: '#339AF0',
-              light: '#fff',
-            },
-          },
-          components: {
-            MuiTableRow: {
-              styleOverrides: {
-                root: {
-                  '&.MuiTableRow-root td:after': {
-                    backgroundColor: 'rgb(255,255,255, 0.0)', // make the opcity 0 so that the color doesn't even show, it clashes too much with the color of the cell anyways so it isn't really needed
-                  },
-                  '&.MuiTableRow-root:hover td:after': {
-                    backgroundColor: 'rgb(225,225,225, 0.5)', // white with an opacity
-                  },
-                },
-              },
-            },
-          },
-        })}
-      >
-        <div className="relative flex flex-row ">
-          <LoadingOverlay
-            visible={isLoading}
-            zIndex={1000}
-            overlayProps={{ radius: 'sm', blur: 2 }}
+    <div className={containerClassNames}>
+      <div className="relative flex flex-row ">
+        <LoadingOverlay
+          visible={isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+        />
+
+        <LoadingOverlay
+          visible={isError && !isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 5 }}
+          loaderProps={{
+            children: (
+              <p className="text-red-700 font-bold text-lg">
+                Error fetching utxos, please log out and try again.
+              </p>
+            ),
+          }}
+        />
+        <div className="flex flex-row">
+          <UtxoTable
+            utxos={utxos}
+            areRowsSelectable={
+              txMode === TxMode.BATCH || txMode === TxMode.CONSOLIDATE
+            }
+            onRowSelection={onRowSelection}
+            walletType={walletType}
+            signaturesNeeded={signaturesNeeded}
+            numberOfXpubs={numberOfXpubs}
+            receivingOutputCount={receivingOutputCount}
+            feeRate={feeRate}
+            getFeeRateColor={getFeeRateColor}
+            btcPrice={btcPrice}
+            btcMetric={btcMetric}
           />
 
-          <LoadingOverlay
-            visible={isError && !isLoading}
-            zIndex={1000}
-            overlayProps={{ radius: 'sm', blur: 5 }}
-            loaderProps={{
-              children: (
-                <p className="text-red-700 font-bold text-lg">
-                  Error fetching utxos, please log out and try again.
-                </p>
-              ),
-            }}
-          />
-          <MaterialReactTable table={table} />
+          {txMode === TxMode.CONSOLIDATE && (
+            <div className="ml-4 flex flex-col justify-between">
+              <UtxoTable
+                utxos={consolidationUtxo}
+                areRowsSelectable={false}
+                onRowSelection={() => {}}
+                walletType={walletType}
+                signaturesNeeded={signaturesNeeded}
+                numberOfXpubs={numberOfXpubs}
+                receivingOutputCount={1}
+                feeRate={feeRate}
+                getFeeRateColor={getFeeRateColor}
+                btcPrice={btcPrice}
+                btcMetric={btcMetric}
+                title="Output"
+                isShowTxId={false}
+              />
 
-          <div style={{ minWidth: '275px' }} className="ml-6 flex flex-col">
-            <InputLabel
-              style={sectionHeaderStyles}
-              className="font-semibold mt-0 mr-1"
-            >
-              Outputs
-            </InputLabel>
-            <div className={`flex flex-row items-center`}>
-              <InputLabel
-                style={sectionLabelStyles}
-                className="font-semibold mt-0 mr-1"
-              >
-                Count
-              </InputLabel>
-
-              <Tooltip
-                withArrow
-                w={300}
-                multiline
-                label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number. If you are estimating a consolidation transaction you can set the count to 1.
-                "
-              >
-                <IconInfoCircle
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    color: sectionColor,
-                  }}
-                />
-              </Tooltip>
-            </div>
-            <NumberInput
-              data-testid="output-count"
-              className={`mb-4 w-40 mt-2`}
-              style={sectionLabelStyles}
-              allowNegative={false}
-              clampBehavior="strict"
-              value={receivingOutputCount}
-              onChange={onReceivingOutputChange}
-              thousandSeparator=","
-              min={1}
-              max={5000}
-            />
-
-            <div className="mt-auto">
-              <Collapse
-                in={isCreateBatchTx}
-                transitionDuration={300}
-                transitionTimingFunction="linear"
-              >
+              <div className="mt-auto">
                 <InputLabel
                   style={sectionHeaderStyles}
                   className="font-semibold mt-0 mr-1"
                 >
+                  {txMode === TxMode.CONSOLIDATE ? 'Consolidation ' : ''}
                   Fees
                 </InputLabel>
 
                 <DisplayBatchTxData />
-              </Collapse>
+              </div>
             </div>
+          )}
+        </div>
+
+        <div
+          style={{ minWidth: txMode !== TxMode.CONSOLIDATE ? '275px' : '0px' }}
+          className="ml-6 flex flex-col"
+        >
+          <Collapse
+            in={txMode !== TxMode.CONSOLIDATE}
+            transitionDuration={300}
+            transitionTimingFunction="linear"
+          >
+            <>
+              <InputLabel
+                style={sectionHeaderStyles}
+                className="font-semibold mt-0 mr-1"
+              >
+                Outputs
+              </InputLabel>
+              <div className={`flex flex-row items-center`}>
+                <InputLabel
+                  style={sectionLabelStyles}
+                  className="font-semibold mt-0 mr-1"
+                >
+                  Count
+                </InputLabel>
+
+                <Tooltip
+                  withArrow
+                  w={300}
+                  multiline
+                  label="A bitcoin transaction typically has 2 outputs, one to the payee's address and one back to the payer's change address. If you are estimating sending to multiple payees, you can increase this number. If you are estimating a consolidation transaction you can set the count to 1.
+                "
+                >
+                  <IconInfoCircle
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      color: sectionColor,
+                    }}
+                  />
+                </Tooltip>
+              </div>
+              <NumberInput
+                data-testid="output-count"
+                className={`mb-4 w-40 mt-2`}
+                style={sectionLabelStyles}
+                allowNegative={false}
+                clampBehavior="strict"
+                value={receivingOutputCount}
+                onChange={onReceivingOutputChange}
+                thousandSeparator=","
+                min={1}
+                max={5000}
+              />
+            </>
+          </Collapse>
+
+          <div className="mt-auto">
+            <Collapse
+              in={txMode === TxMode.BATCH}
+              transitionDuration={300}
+              transitionTimingFunction="linear"
+            >
+              <InputLabel
+                style={sectionHeaderStyles}
+                className="font-semibold mt-0 mr-1"
+              >
+                Fees
+              </InputLabel>
+
+              <DisplayBatchTxData />
+            </Collapse>
           </div>
         </div>
-      </ThemeProvider>
+      </div>
 
       <Collapse
-        in={isCreateBatchTx}
+        in={txMode === TxMode.BATCH || txMode === TxMode.CONSOLIDATE}
         transitionDuration={300}
         transitionTimingFunction="linear"
       >
-        <div className="flex flex-row mt-4 mb-4 h-14">
+        <div className="flex flex-row mt-4 mb-4 h-14 mr-6">
           <Button
             loading={batchIsLoading}
             fullWidth
-            disabled={selectedUtxos.length < 2}
+            disabled={
+              selectedUtxos?.length < 2 ||
+              (txMode === TxMode.CONSOLIDATE && isSavePSBTEnabled)
+            }
             onClick={calculateFeeEstimate}
             size="xl"
             style={{ height: '100%' }}
           >
-            Estimate Batch
+            {txMode === TxMode.CONSOLIDATE ? 'Consolidate' : 'Estimate Batch'}
           </Button>
+
+          {txMode === TxMode.CONSOLIDATE && (
+            <Button
+              fullWidth
+              disabled={!isSavePSBTEnabled}
+              onClick={savePsbt}
+              size="xl"
+              style={{ height: '100%', marginLeft: '1rem' }}
+            >
+              Save PSBT
+            </Button>
+          )}
         </div>
       </Collapse>
     </div>

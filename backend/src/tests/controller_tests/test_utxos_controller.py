@@ -1,10 +1,12 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
+
+from unittest.mock import MagicMock, Mock
 from src.app import AppCreator
 from src.services.wallet.wallet import GetFeeEstimateForUtxoResponseType, WalletService
 from src.types import FeeDetails
 from src.types import GetUtxosRequestDto
 from src.tests.mocks import local_utxo_mock
+from bdkpython import bdk
 import json
 
 
@@ -41,7 +43,7 @@ class TestUtxosController(TestCase):
         self.mock_fee_details = FeeDetails(0.1, 100)
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
             return_value=GetFeeEstimateForUtxoResponseType(
-                "success", self.mock_fee_details
+                "success", self.mock_fee_details, psbt=None
             )
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
@@ -78,11 +80,118 @@ class TestUtxosController(TestCase):
             assert json.loads(response.data) == {
                 "spendable": True,
                 "fee": self.mock_fee_details.fee,
+                "psbt": None,
+            }
+
+    def test_get_fee_for_utxo_success_with_psbt(self):
+        self.mock_fee_details = FeeDetails(0.1, 100)
+
+        mock_psbt = Mock(bdk.PartiallySignedTransaction)
+        mock_psbt_base64 = "mock_psbt_base64"
+        mock_psbt.serialize.return_value = mock_psbt_base64
+        mock_get_fee_estimate_for_utxos_from_request = MagicMock(
+            return_value=GetFeeEstimateForUtxoResponseType(
+                "success", self.mock_fee_details, psbt=mock_psbt
+            )
+        )
+        with self.app.container.wallet_service.override(self.mock_wallet_service):
+            self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (
+                mock_get_fee_estimate_for_utxos_from_request
+            )
+
+            fee_rate = "5"
+            outputCount = "2"
+
+            # /{transaction_id}/{vout} put this in the request args
+            transactions = [
+                {
+                    "id": f"{local_utxo_mock.outpoint.txid}",
+                    "vout": f"{local_utxo_mock.outpoint.vout}",
+                },
+            ]
+            response = self.test_client.post(
+                "/utxos/fees",
+                query_string={
+                    "feeRate": fee_rate,
+                    "outputCount": outputCount,
+                    "includePsbt": True,
+                },
+                json=transactions,
+            )
+
+            mock_get_fee_estimate_for_utxos_from_request.assert_called_with(
+                GetUtxosRequestDto.model_validate(
+                    dict(
+                        transactions=transactions,
+                        fee_rate=fee_rate,
+                        output_count=outputCount,
+                        include_psbt=True,
+                    )
+                )
+            )
+
+            assert json.loads(response.data) == {
+                "spendable": True,
+                "fee": self.mock_fee_details.fee,
+                "psbt": mock_psbt_base64,
+            }
+
+    def test_get_fee_for_utxo_success_with_includePsbt_false(self):
+        self.mock_fee_details = FeeDetails(0.1, 100)
+
+        mock_psbt = Mock(bdk.PartiallySignedTransaction)
+        mock_psbt_base64 = "mock_psbt_base64"
+        mock_psbt.serialize.return_value = mock_psbt_base64
+        mock_get_fee_estimate_for_utxos_from_request = MagicMock(
+            return_value=GetFeeEstimateForUtxoResponseType(
+                "success", self.mock_fee_details, psbt=mock_psbt
+            )
+        )
+        with self.app.container.wallet_service.override(self.mock_wallet_service):
+            self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (
+                mock_get_fee_estimate_for_utxos_from_request
+            )
+
+            fee_rate = "5"
+            outputCount = "2"
+
+            # /{transaction_id}/{vout} put this in the request args
+            transactions = [
+                {
+                    "id": f"{local_utxo_mock.outpoint.txid}",
+                    "vout": f"{local_utxo_mock.outpoint.vout}",
+                },
+            ]
+            response = self.test_client.post(
+                "/utxos/fees",
+                query_string={
+                    "feeRate": fee_rate,
+                    "outputCount": outputCount,
+                    "includePsbt": False,
+                },
+                json=transactions,
+            )
+
+            mock_get_fee_estimate_for_utxos_from_request.assert_called_with(
+                GetUtxosRequestDto.model_validate(
+                    dict(
+                        transactions=transactions,
+                        fee_rate=fee_rate,
+                        output_count=outputCount,
+                        include_psbt=False,
+                    )
+                )
+            )
+
+            assert json.loads(response.data) == {
+                "spendable": True,
+                "fee": self.mock_fee_details.fee,
+                "psbt": None,
             }
 
     def test_get_fee_for_utxo_unspendable_error(self):
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
-            return_value=GetFeeEstimateForUtxoResponseType("unspendable", None)
+            return_value=GetFeeEstimateForUtxoResponseType("unspendable", None, None)
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (
@@ -121,7 +230,7 @@ class TestUtxosController(TestCase):
 
     def test_get_fee_for_utxo_error(self):
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
-            return_value=GetFeeEstimateForUtxoResponseType("error", None)
+            return_value=GetFeeEstimateForUtxoResponseType("error", None, None)
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (

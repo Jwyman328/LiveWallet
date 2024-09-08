@@ -15,12 +15,14 @@ import {
   SegmentedControl,
   ActionIcon,
   NumberInput,
+  Tooltip,
+  Collapse,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { SettingsSlideout } from '../components/SettingsSlideout';
-import { IconAdjustments } from '@tabler/icons-react';
+import { IconAdjustments, IconInfoCircle } from '@tabler/icons-react';
 import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
 import {
   CreateTxFeeEstimationResponseType,
@@ -37,7 +39,11 @@ export type ScaleOption = {
 };
 
 export type FeeRateColor = [number, string];
-
+export enum TxMode {
+  SINGLE = 'SINGLE',
+  BATCH = 'BATCH',
+  CONSOLIDATE = 'CONSOLIDATE',
+}
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
   const navigate = useNavigate();
@@ -52,7 +58,9 @@ function Home() {
   >(null);
   const [btcMetric, setBtcMetric] = useState(BtcMetric.BTC);
   const [btcPrice, setBtcPrice] = useState(0);
-  const [isCreateBatchTx, setIsCreateBatchTx] = useState(false);
+
+  const [txMode, setTxMode] = useState(TxMode.SINGLE);
+  const isCreateBatchTx = txMode === TxMode.BATCH;
 
   const location = useLocation();
   const { numberOfXpubs, signaturesNeeded } = location.state as {
@@ -115,14 +123,21 @@ function Home() {
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
 
-  // Initially set the current custom fee rate to the current medium fee rate
-  // if it was not set by an imported wallet
+  // Initially set the current future fee rate to the current medium fee rate
+  // if it was not set by an imported wallet.
+  // Also always set the consolidation fee rate to the current medium fee rate.
   useEffect(() => {
     if (
       getCurrentFeesQueryRequest.isSuccess &&
       feeRate.toString() === minFeeScale.value
     ) {
       setFeeRate(parseInt(`${getCurrentFeesQueryRequest.data?.medium}`));
+    }
+
+    if (getCurrentFeesQueryRequest.isSuccess) {
+      setConsolidationFeeRate(
+        parseInt(`${getCurrentFeesQueryRequest.data?.medium}`),
+      );
     }
   }, [getCurrentFeesQueryRequest.isSuccess]);
 
@@ -196,7 +211,6 @@ function Home() {
       setMinFeeScale(walletData.minFeeScale!);
       setBtcMetric(walletData.btcMetric!);
       setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
-      setIsCreateBatchTx(!!walletData?.isCreateBatchTx!);
     }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };
@@ -304,8 +318,16 @@ function Home() {
 
   const handleFeeRateChange = (value: number) => {
     setFeeRate(value);
-    setCurrentBatchedTxData(null);
+    if (txMode === TxMode.BATCH) {
+      setCurrentBatchedTxData(null);
+    }
   };
+
+  // switching txMode should clear batchTxData
+  useEffect(() => {
+    setCurrentBatchedTxData(null);
+  }, [txMode]);
+
   const saveWallet = () => {
     window.electron.ipcRenderer.sendMessage('save-wallet-data-from-dialog');
   };
@@ -327,6 +349,12 @@ function Home() {
       : [];
 
   const [isShowSettingsSlideout, setIsShowSettingsSlideout] = useState(false);
+  const [consolidationFeeRate, setConsolidationFeeRate] = useState(1);
+
+  const onConsolidationFeeRate = (consolidationFeeRate: string | number) => {
+    setConsolidationFeeRate(Number(consolidationFeeRate));
+    setCurrentBatchedTxData(null);
+  };
 
   const onBtcPriceChange = (netBtcPrice: string | number) => {
     setBtcPrice(Number(netBtcPrice));
@@ -353,12 +381,11 @@ function Home() {
 
           <SegmentedControl
             className="mb-4"
-            value={isCreateBatchTx ? 'BATCH' : 'SINGLE'}
-            onChange={(value) => {
-              const isBatch = value === 'BATCH';
-              setIsCreateBatchTx(isBatch);
+            value={txMode}
+            onChange={(value: TxMode) => {
+              setTxMode(value);
             }}
-            data={['SINGLE', 'BATCH']}
+            data={[TxMode.SINGLE, TxMode.BATCH, TxMode.CONSOLIDATE]}
           />
           <div className="h-full">
             <div className="flex flex-row justify-between mb-4">
@@ -444,9 +471,31 @@ function Home() {
       <div className="flex flex-row justify-evenly"></div>
       <div className="ml-4 flex flex-col items-center">
         <div className="flex flex-row">
+          <Collapse
+            in={txMode === TxMode.CONSOLIDATE}
+            transitionDuration={300}
+            transitionTimingFunction="linear"
+          >
+            <div className="flex flex-col items-center">
+              <h1 className="text-center font-bold text-xl mt-4 mr-4 mb-2">
+                Consolidation Tx Fee Rate (sat/vB)
+              </h1>
+              <NumberInput
+                data-testid="consolidation-fee-rate-input"
+                className={`mb-4 w-40 mt-2`}
+                allowNegative={false}
+                clampBehavior="strict"
+                value={consolidationFeeRate}
+                onChange={onConsolidationFeeRate}
+                thousandSeparator=","
+                min={1}
+                max={10000000}
+              />
+            </div>
+          </Collapse>
           <div>
             <h1 className="text-center font-bold text-xl mt-4">
-              Custom Fee Environment (sat/vB)
+              Future Fee Environment (sat/vB)
             </h1>
             <div className="mb-10">
               <div className="flex flex-row items-center">
@@ -517,7 +566,8 @@ function Home() {
           btcPrice={btcPrice}
           numberOfXpubs={numberOfXpubs || 1}
           signaturesNeeded={signaturesNeeded || 1}
-          isCreateBatchTx={isCreateBatchTx}
+          txMode={txMode}
+          consolidationFeeRate={consolidationFeeRate}
         />
       </div>
     </div>

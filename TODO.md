@@ -23,8 +23,6 @@
 
 
 # Feature Ideas
-- consolidation comparison, and create psbt at end of process.
-  - ability to toggle fee rate comparing the prevous utxos vs. the hypothetical new one and how they fare in different fee rates
 - consolidation recommendation support.
 - utxo cost breakdown.
 - individual non wallet fee estimation.

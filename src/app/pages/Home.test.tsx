@@ -4,20 +4,19 @@ import {
   waitFor,
   act,
   within,
+  RenderResult,
 } from '@testing-library/react';
-
-import userEvent from '@testing-library/user-event';
-
 import { WrappedInAppWrappers, mockElectron } from '../testingUtils';
 import '@testing-library/jest-dom';
 import { ApiClient } from '../api/api';
-import Home from './Home';
+import Home, { TxMode } from './Home';
 import {
   mockGetBtcPriceResponse,
   mockImportedWalletData,
   mockImportedWalletDataWithoutConfigs,
 } from '../../__tests__/mocks';
 import { Pages } from '../../renderer/pages';
+import userEvent from '@testing-library/user-event';
 
 const mockNavigate = jest.fn();
 let getBalanceSpy: jest.SpyInstance;
@@ -53,6 +52,18 @@ const mockUtXos = [
   },
 ];
 
+const createTxFeeEstimateMock = {
+  spendable: true,
+  fee: '15000000',
+  psbt: undefined,
+};
+
+const currentFeesMock = {
+  low: 5,
+  medium: 10,
+  high: 15,
+};
+
 describe('Home', () => {
   beforeEach(() => {
     getBalanceSpy = jest.spyOn(ApiClient, 'getBalance');
@@ -73,13 +84,10 @@ describe('Home', () => {
     deleteCurrentWalletSpy.mockResolvedValue({ message: 'Success' });
 
     getCurrentFeesSpy = jest.spyOn(ApiClient, 'getCurrentFees');
-    getCurrentFeesSpy.mockResolvedValue({ low: 5, medium: 10, high: 15 });
+    getCurrentFeesSpy.mockResolvedValue(currentFeesMock);
 
     createTxFeeEstimateSpy = jest.spyOn(ApiClient, 'createTxFeeEstimation');
-    createTxFeeEstimateSpy.mockResolvedValue({
-      spendable: true,
-      fee: '15000000',
-    });
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMock);
 
     getBtcPriceSpy = jest.spyOn(ApiClient, 'getCurrentBtcPrice');
     getBtcPriceSpy.mockResolvedValue(mockGetBtcPriceResponse);
@@ -127,7 +135,7 @@ describe('Home', () => {
     expect(getUtxosSpy).toHaveBeenCalled();
     expect(getCurrentFeesSpy).toHaveBeenCalled();
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     const feeTitle = await screen.findByText('Current fees');
 
     const btcPriceTitle = await screen.findByText('BTC Price');
@@ -137,43 +145,87 @@ describe('Home', () => {
     const mediumFeeTitle = await screen.findByText('Medium');
     const highFeeTitle = await screen.findByText('High');
 
-    const lowFeeAmount = await screen.findByText('5');
-    const mediumFeeAmount = await screen.findByText('10');
-    const highFeeAmount = await screen.findByText('15');
+    const lowFeeAmount = await screen.findByText(
+      currentFeesMock.low.toString(),
+    );
+    const mediumFeeAmount = await screen.findByText(
+      currentFeesMock.medium.toString(),
+    );
+    const highFeeAmount = await screen.findByText(
+      currentFeesMock.high.toString(),
+    );
 
     const balance = await screen.findByText('Balance: 3.00000001 BTC');
-    const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
+    const customFeeRate = await screen.findByText(
+      `Fee rate: ${currentFeesMock.medium} sat/vB`,
+    );
 
     const outputsTitle = await screen.findByText('Outputs');
     const countTitle = await screen.findByText('Count');
     const outputCountInput = await screen.findByTestId('output-count');
 
     const utxoTableTitle = await screen.findByText('Inputs');
-    const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
-    const utxoTxIdTwo = await screen.findByText('1f6fb0b....8dfd724');
-    const utxoOneAmount = await screen.findByText('1.00000000');
-    const utxoTwoAmount = await screen.findByText('2.00000000');
+
+    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoOneAmount = '1.00000000';
 
     // since btc price is 100k and amount 1btc
-    const utxoOneAmountUSD = await screen.findByText('$100,000');
-    // since btc price is 100k and amount 2btc
-    const utxoTwoAmountUSD = await screen.findByText('$200,000');
+    const utxoOneAmountUSD = '100,000';
+    const utxoOneFeeEstimate = '0.0015';
+    const utxoFeeUsd = '2';
 
-    const utxoOneFeeEstimate = await screen.findByText('0.0015%');
-    const utxoTwoFeeEstimate = await screen.findByText('0.0008%');
-    const utxoFeeUsd = await screen.findAllByText('$2');
-    const utxoThreeFeeEstimate = await screen.findByText('153000.00%');
-    const utxoThreeAmount = await screen.findByText('0.00000001');
-    const spendableIcons = await screen.findAllByTestId('spendable-icon');
-    const notSpendableIcons =
-      await screen.findAllByTestId('not-spendable-icon');
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const utxoTxIdTwo = '1f6fb0b....8dfd724';
+    const utxoTwoAmount = '2.00000000';
+    // since btc price is 100k and amount 2btc
+    const utxoTwoAmountUSD = '200,000';
+    const utxoTwoFeeEstimate = '0.0008';
+
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdTwo,
+      utxoTwoAmount,
+      utxoTwoAmountUSD,
+      utxoTwoFeeEstimate,
+      utxoFeeUsd,
+      1,
+      true,
+      1,
+    );
+
+    const utxoTxIdThree = '9d83163....666a36b';
+    const utxoThreeFeeEstimate = '153000.00';
+    const utxoThreeAmountUSD = '0';
+    const utxoThreeAmount = '0.00000001';
+
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdThree,
+      utxoThreeAmount,
+      utxoThreeAmountUSD,
+      utxoThreeFeeEstimate,
+      utxoFeeUsd,
+      0,
+      false,
+      0,
+    );
 
     const estimateBatchTxButton = screen.queryByRole('button', {
       name: 'Estimate Batch',
     });
 
-    const batchTotalFees = screen.getByText('Total fees: ...');
-    const batchFeePct = screen.getByText('Fee cost: ...');
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
 
     expect(title).toBeInTheDocument();
     expect(feeTitle).toBeInTheDocument();
@@ -193,22 +245,6 @@ describe('Home', () => {
     expect(countTitle).toBeInTheDocument();
     expect(outputCountInput).toHaveValue('2');
     expect(utxoTableTitle).toBeInTheDocument();
-    expect(utxoTxIdOne).toBeInTheDocument();
-    expect(utxoTxIdTwo).toBeInTheDocument();
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    expect(utxoTwoFeeEstimate).toBeInTheDocument();
-    // a utxo fee usd for all three utxos
-    expect(utxoFeeUsd.length).toBe(3);
-    expect(utxoThreeFeeEstimate).toBeInTheDocument();
-    expect(utxoOneAmount).toBeInTheDocument();
-    expect(utxoTwoAmount).toBeInTheDocument();
-    expect(utxoOneAmountUSD).toBeInTheDocument();
-    expect(utxoTwoAmountUSD).toBeInTheDocument();
-    expect(utxoThreeAmount).toBeInTheDocument();
-    expect(spendableIcons.length).toBe(2);
-    expect(notSpendableIcons.length).toBe(1);
-    expect(batchTotalFees).toBeInTheDocument();
-    expect(batchFeePct).toBeInTheDocument();
     // batch not showing since BATCH tx type is not selected by default, SINGLE is
     expect(estimateBatchTxButton).not.toBeInTheDocument();
   });
@@ -221,7 +257,6 @@ describe('Home', () => {
     );
     act(() => {
       // make sure the wallet-data callback runs
-      //
       const higherFeeConfig = {
         ...mockImportedWalletData,
         feeRate: '500',
@@ -232,30 +267,34 @@ describe('Home', () => {
       handleWalletDataFunction(higherFeeConfig);
     });
     const utxoTableTitle = await screen.findByText('Inputs');
-    const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
-    const utxoOneAmount = await screen.findByText('1.00000000');
+    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoOneAmount = '1.00000000';
 
     // since price is 100k and amount 1btc, new fee rate should not change the amount usd
-    const utxoOneAmountUSD = await screen.findByText('$100,000');
-    // since price is 100k and amount 2btc, new fee rate should not change the amount usd
-    const utxoTwoAmountUSD = await screen.findByText('$200,000');
-
-    const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
+    const utxoOneAmountUSD = '100,000';
 
     // now a higher estimated rate and usd value to spend this utxo should now be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0382%');
-    const utxoFeeUsd = await screen.findAllByText('$77');
+    let utxoFeeUsd = '77';
+    let utxoOneFeeEstimate = '0.0382';
 
-    expect(utxoTableTitle).toBeInTheDocument();
-    expect(utxoTableTitle).toBeInTheDocument();
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    expect(utxoTxIdOne).toBeInTheDocument();
-    expect(utxoOneAmountUSD).toBeInTheDocument();
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
+    // since price is 100k and amount 2btc, new fee rate should not change the amount usd
+    const utxoTwoAmountUSD = await screen.findByText('$200,000');
     expect(utxoTwoAmountUSD).toBeInTheDocument();
+    expect(utxoTableTitle).toBeInTheDocument();
     expect(customFeeRate).toBeInTheDocument();
-    expect(utxoFeeUsd.length).toBe(3);
-
-    expect(utxoOneAmount).toBeInTheDocument();
   });
 
   it('Changing btc price changes the usd amount and usd fee estimation for each utxo', async () => {
@@ -264,30 +303,46 @@ describe('Home', () => {
         <Home />
       </WrappedInAppWrappers>,
     );
-    let utxoOneAmount = await screen.findByText('1.00000000');
-    let utxoTwoAmount = await screen.findByText('2.00000000');
+
+    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoTxIdTwo = '1f6fb0b....8dfd724';
+    let utxoOneAmount = '1.00000000';
+    let utxoTwoAmount = '2.00000000';
 
     // since price is 100k and amount 1btc
-    let utxoOneAmountUSD = await screen.findByText('$100,000');
+    let utxoOneAmountUSD = '100,000';
     // since price is 100k and amount 2btc
-    let utxoTwoAmountUSD = await screen.findByText('$200,000');
+    let utxoTwoAmountUSD = '200,000';
 
-    let utxoOneFeeEstimate = await screen.findByText('0.0015%');
-    let utxoTwoFeeEstimate = await screen.findByText('0.0008%');
-    let utxoFeeUsd = await screen.findAllByText('$2');
-    let utxoThreeFeeEstimate = await screen.findByText('153000.00%');
-    let utxoThreeAmount = await screen.findByText('0.00000001');
+    let utxoOneFeeEstimate = '0.0015';
+    let utxoTwoFeeEstimate = '0.0008';
+    let utxoFeeUsd = '2';
+    let utxoThreeFeeEstimate = '153000.00';
+    let utxoThreeAmount = '0.00000001';
 
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    expect(utxoOneAmountUSD).toBeInTheDocument();
-    expect(utxoTwoFeeEstimate).toBeInTheDocument();
-    expect(utxoThreeFeeEstimate).toBeInTheDocument();
-    expect(utxoThreeAmount).toBeInTheDocument();
-    expect(utxoTwoAmount).toBeInTheDocument();
-    expect(utxoTwoAmountUSD).toBeInTheDocument();
-    expect(utxoFeeUsd.length).toBe(3);
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
 
-    expect(utxoOneAmount).toBeInTheDocument();
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdTwo,
+      utxoTwoAmount,
+      utxoTwoAmountUSD,
+      utxoTwoFeeEstimate,
+      utxoFeeUsd,
+      1,
+      true,
+      1,
+    );
 
     // now change btc price and see the  difference
     const btcPriceInput = await screen.findByTestId('btc-price-input');
@@ -295,30 +350,43 @@ describe('Home', () => {
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
     // no change in non usd values
-    utxoOneFeeEstimate = await screen.findByText('0.0015%');
-    utxoTwoFeeEstimate = await screen.findByText('0.0008%');
-    utxoThreeFeeEstimate = await screen.findByText('153000.00%');
-    utxoThreeAmount = await screen.findByText('0.00000001');
-    utxoOneAmount = await screen.findByText('1.00000000');
-    utxoTwoAmount = await screen.findByText('2.00000000');
+    utxoOneFeeEstimate = '0.0015';
+    utxoTwoFeeEstimate = '0.0008';
+    utxoThreeFeeEstimate = '153000.00';
+    utxoThreeAmount = '0.00000001';
+    utxoOneAmount = '1.00000000';
+    utxoTwoAmount = '2.00000000';
 
     // Fee usd should now be 10x higher
-    utxoFeeUsd = await screen.findAllByText('$15');
+    utxoFeeUsd = '15';
     // since price is now 1M and amount 1btc
-    utxoOneAmountUSD = await screen.findByText('$1,000,000');
+    utxoOneAmountUSD = '1,000,000';
     // since price is now 1M and amount 2btc
-    utxoTwoAmountUSD = await screen.findByText('$2,000,000');
+    utxoTwoAmountUSD = '2,000,000';
 
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    expect(utxoOneAmountUSD).toBeInTheDocument();
-    expect(utxoTwoFeeEstimate).toBeInTheDocument();
-    expect(utxoThreeFeeEstimate).toBeInTheDocument();
-    expect(utxoThreeAmount).toBeInTheDocument();
-    expect(utxoTwoAmount).toBeInTheDocument();
-    expect(utxoTwoAmountUSD).toBeInTheDocument();
-    expect(utxoFeeUsd.length).toBe(3);
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
 
-    expect(utxoOneAmount).toBeInTheDocument();
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdTwo,
+      utxoTwoAmount,
+      utxoTwoAmountUSD,
+      utxoTwoFeeEstimate,
+      utxoFeeUsd,
+      1,
+      true,
+      1,
+    );
   });
 
   it('Test changing btc price, fee rate', async () => {
@@ -345,30 +413,35 @@ describe('Home', () => {
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
     const utxoTableTitle = await screen.findByText('Inputs');
-    const utxoTxIdOne = await screen.findByText('f2f8f15....e3d70ba');
-    const utxoOneAmount = await screen.findByText('1.00000000');
+    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoOneAmount = '1.00000000';
 
     // since price is 1M and amount 1btc
-    const utxoOneAmountUSD = await screen.findByText('$1,000,000');
+    const utxoOneAmountUSD = '1,000,000';
     // since price is 1M and amount 2btc
-    const utxoTwoAmountUSD = await screen.findByText('$2,000,000');
+    const utxoTwoAmountUSD = '2,000,000';
+
+    // now a higher estimated rate and usd value to spend this utxo should be showing
+    const utxoOneFeeEstimate = '0.0382';
+    const utxoFeeUsd = '765';
+
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      1,
+      true,
+      1,
+    );
 
     const customFeeRate = await screen.findByText('Fee rate: 500 sat/vB');
 
-    // now a higher estimated rate and usd value to spend this utxo should be showing
-    const utxoOneFeeEstimate = await screen.findByText('0.0382%');
-    const utxoFeeUsd = await screen.findAllByText('$765');
-
     expect(utxoTableTitle).toBeInTheDocument();
     expect(utxoTableTitle).toBeInTheDocument();
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    expect(utxoTxIdOne).toBeInTheDocument();
-    expect(utxoOneAmountUSD).toBeInTheDocument();
-    expect(utxoTwoAmountUSD).toBeInTheDocument();
     expect(customFeeRate).toBeInTheDocument();
-    expect(utxoFeeUsd.length).toBe(3);
-
-    expect(utxoOneAmount).toBeInTheDocument();
   });
 
   it('Test changing output count effects dollar fee and percent fee', async () => {
@@ -395,24 +468,46 @@ describe('Home', () => {
     expect(getCurrentFeesSpy).toHaveBeenCalled();
 
     const customFeeRate = await screen.findByText('Fee rate: 10 sat/vB');
-    const utxoOneAmount = await screen.findByText('1.00000000');
 
-    let utxoOneFeeEstimate = await screen.findByText('0.0015%');
-    let utxoFeeUsd = await screen.findAllByText('$2');
+    const utxoOneAmount = '1.00000000';
+    const utxoOneAmountUSD = '100,000';
+    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    let utxoOneFeeEstimate = '0.0015';
+    let utxoFeeUsd = '2';
+
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
 
     expect(customFeeRate).toBeInTheDocument();
-    expect(utxoOneFeeEstimate).toBeInTheDocument();
-    // a utxo fee usd for all three utxos
-    expect(utxoFeeUsd.length).toBe(3);
-    expect(utxoOneAmount).toBeInTheDocument();
 
-    const outputCountInput = screen.getByTestId('output-count');
+    const outputCountInput = await screen.findByTestId('output-count');
     expect(outputCountInput).toHaveValue('2');
 
     fireEvent.change(outputCountInput, { target: { value: 500 } });
     // now higher usd fee and fee rate % showing
-    utxoOneFeeEstimate = await screen.findByText('0.0929%');
-    utxoFeeUsd = await screen.findAllByText('$186');
+    utxoOneFeeEstimate = '0.0929';
+    utxoFeeUsd = '186';
+
+    await expectUtxoTableValues(
+      screen,
+      utxoTxIdOne,
+      utxoOneAmount,
+      utxoOneAmountUSD,
+      utxoOneFeeEstimate,
+      utxoFeeUsd,
+      0,
+      true,
+      0,
+    );
   });
 
   it('Test default settings slideout', async () => {
@@ -422,7 +517,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -449,6 +544,12 @@ describe('Home', () => {
     const batchOption = within(slideout).getByRole('radio', {
       name: 'BATCH',
     });
+
+    const consolidateOption = within(slideout).getByRole('radio', {
+      name: 'CONSOLIDATE',
+    });
+
+    expect(consolidateOption).not.toBeChecked();
     expect(batchOption).not.toBeChecked();
     expect(singleOption).toBeChecked();
 
@@ -508,7 +609,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -587,7 +688,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -625,7 +726,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     const slideoutButton = screen.getByTestId('settings-button');
@@ -672,7 +773,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -688,7 +789,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -703,7 +804,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
@@ -711,21 +812,11 @@ describe('Home', () => {
     //  open settings slideout and set batch tx to true
     await setTxTypeToBatched(screen);
 
-    let txCheckBoxes;
-
-    await waitFor(async () => {
-      txCheckBoxes = screen.getAllByRole('checkbox');
-      // three txs so should be three tx checkboxes to be able to include
-      // in our batched tx, as well as a 4th button to include all txs.
-      expect(txCheckBoxes?.length).toBe(4);
-    });
-
-    const includeAllUtxosButton = txCheckBoxes[0];
-    fireEvent.click(includeAllUtxosButton);
+    await selectAllUtxos(screen);
 
     // set output count to 5
     const outputCountMock = 5;
-    const outputCountInput = screen.getByTestId('output-count');
+    const outputCountInput = await screen.findByTestId('output-count');
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -734,14 +825,15 @@ describe('Home', () => {
 
     expect(estimateBatchTxButton).toBeEnabled();
 
-    const selectedTotal = screen.getByText('Count: 3');
-    expect(selectedTotal).toBeInTheDocument();
-
-    const BTCSelectedTotal = screen.getByText('BTC: 3.00000001');
-    expect(BTCSelectedTotal).toBeInTheDocument();
-
-    const USDSelectedTotal = screen.getByText('USD: $300,000');
-    expect(USDSelectedTotal).toBeInTheDocument();
+    const selectedTotal = '3';
+    const BTCSelectedTotal = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      BTCSelectedTotal,
+      USDSelectedTotal,
+    );
 
     fireEvent.click(estimateBatchTxButton);
 
@@ -756,15 +848,20 @@ describe('Home', () => {
         expectedData,
         10,
         outputCountMock,
+        false,
       );
     });
 
-    let totalFees = await screen.findByText('Total fees: ~0.15000000 BTC');
-    let totalFeeCost = await screen.findByText('Fee cost: $15,000');
-    let totalFeePct = await screen.findByText('(5.0000%)');
-    expect(totalFees).toBeInTheDocument();
-    expect(totalFeeCost).toBeInTheDocument();
-    expect(totalFeePct).toBeInTheDocument();
+    const btcFeeCost = '0.15000000';
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+    );
 
     // change btc price should change the usd fee cost of the batch tx
     const btcPriceInput = await screen.findByTestId('btc-price-input');
@@ -772,16 +869,15 @@ describe('Home', () => {
     // increase price by a factor of 10
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
-    // should not change
-    totalFees = await screen.findByText('Total fees: ~0.15000000 BTC');
-    // should not change
-    totalFeePct = await screen.findByText('(5.0000%)');
     // should be higher by around a factor of 10
-    totalFeeCost = await screen.findByText('Fee cost: $150,000');
+    const higherUsdFeeCost = '150,000';
 
-    expect(totalFees).toBeInTheDocument();
-    expect(totalFeeCost).toBeInTheDocument();
-    expect(totalFeePct).toBeInTheDocument();
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      higherUsdFeeCost,
+      feePct,
+    );
   });
 
   it('Changing output count after batch tx estimate should remove batch tx estimate', async () => {
@@ -791,7 +887,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
@@ -799,21 +895,11 @@ describe('Home', () => {
     //  open settings slideout and set batch tx to true
     await setTxTypeToBatched(screen);
 
-    let txCheckBoxes;
-
-    await waitFor(async () => {
-      txCheckBoxes = screen.getAllByRole('checkbox');
-      // three txs so should be three tx checkboxes to be able to include
-      // in our batched tx, as well as a 4th button to include all txs.
-      expect(txCheckBoxes?.length).toBe(4);
-    });
-
-    const includeAllUtxosButton = txCheckBoxes[0];
-    fireEvent.click(includeAllUtxosButton);
+    await selectAllUtxos(screen);
 
     // set output count to 5
     const outputCountMock = 5;
-    let outputCountInput = screen.getByTestId('output-count');
+    const outputCountInput = await screen.findByTestId('output-count');
     fireEvent.change(outputCountInput, { target: { value: outputCountMock } });
 
     let estimateBatchTxButton = screen.getByRole('button', {
@@ -822,14 +908,15 @@ describe('Home', () => {
 
     expect(estimateBatchTxButton).toBeEnabled();
 
-    const selectedTotal = screen.getByText('Count: 3');
-    expect(selectedTotal).toBeInTheDocument();
-
-    const BTCSelectedTotal = screen.getByText('BTC: 3.00000001');
-    expect(BTCSelectedTotal).toBeInTheDocument();
-
-    const USDSelectedTotal = screen.getByText('USD: $300,000');
-    expect(USDSelectedTotal).toBeInTheDocument();
+    const selectedTotal = '3';
+    const BTCSelectedTotal = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      BTCSelectedTotal,
+      USDSelectedTotal,
+    );
 
     fireEvent.click(estimateBatchTxButton);
 
@@ -844,26 +931,27 @@ describe('Home', () => {
         expectedData,
         10,
         outputCountMock,
+        false,
       );
     });
 
-    let totalFees = await screen.findByText('Total fees: ~0.15000000 BTC');
-    let totalFeeCost = await screen.findByText('Fee cost: $15,000');
-    let totalFeePct = await screen.findByText('(5.0000%)');
-    expect(totalFees).toBeInTheDocument();
-    expect(totalFeeCost).toBeInTheDocument();
-    expect(totalFeePct).toBeInTheDocument();
+    const btcFeeCost = '0.15000000';
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+    );
 
     // change outputs count
     const newOutputCount = outputCountMock + 10;
     fireEvent.change(outputCountInput, { target: { value: newOutputCount } });
 
     // Fees should now be removed
-    totalFees = await screen.findByText('Total fees: ...');
-    totalFeeCost = await screen.findByText('Fee cost: ...');
-
-    expect(totalFees).toBeInTheDocument();
-    expect(totalFeeCost).toBeInTheDocument();
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
   });
 
   it('Importing in wallet data with configs', async () => {
@@ -873,7 +961,7 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const title = await screen.findByText('Custom Fee Environment (sat/vB)');
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
     expect(title).toBeInTheDocument();
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
@@ -942,11 +1030,443 @@ describe('Home', () => {
     expect(secondPercentColor).toBeInTheDocument();
   });
 
-  // test changing config sends update? / other / all main thread calls
+  it('Test consolidate mode', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    const title = await screen.findByText('Future Fee Environment (sat/vB)');
+    expect(title).toBeInTheDocument();
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    const inputsTitle = screen.getByText('Inputs');
+    const outputsTitle = await screen.findByText('Output');
+    const emptyOutputTable = await screen.findByText('No records to display');
+    const consolidationTxFeeRateTitle = screen.getByText(
+      'Consolidation Tx Fee Rate (sat/vB)',
+    );
+    const consolidationTxFeeRate = await screen.findByTestId(
+      'consolidation-fee-rate-input',
+    );
+    expect(inputsTitle).toBeInTheDocument();
+    expect(outputsTitle).toBeInTheDocument();
+    expect(emptyOutputTable).toBeInTheDocument();
+    expect(consolidationTxFeeRateTitle).toBeInTheDocument();
+    expect(consolidationTxFeeRate).toHaveValue('10');
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    await selectAllUtxos(screen);
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+
+    const selectedTotal = '3';
+    const totalUTxoBtcAmount = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      totalUTxoBtcAmount,
+      USDSelectedTotal,
+    );
+
+    fireEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    fireEvent.click(savePsbtButton);
+    await waitFor(() => {
+      expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
+        'save-psbt',
+        createTxFeeEstimateMockWithPsbt.psbt,
+      );
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
+    });
+
+    //output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = '285,000';
+    let consolidatationUtxoFeeUsd = '1';
+    let consolidatationUtxoFeePct = '0.0004';
+
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+
+    expect(consolidationFeesTitle).toBeInTheDocument();
+
+    const btcFeeCost = totalFeesAmount;
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+
+    // change btc price should change the usd fee cost of the batch tx
+    const btcPriceInput = await screen.findByTestId('btc-price-input');
+
+    // increase price by a factor of 10
+    fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
+
+    // should be higher by around a factor of 10
+    const higherUsdFeeCost = '150,000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      higherUsdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+    // individual output utxo usd values should have changed as well
+    consolidationAmountUsd = '2,850,000';
+    consolidatationUtxoFeeUsd = '12';
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+  });
+
+  it('Test consolidate mode changing consolidate fee rate after consolidation', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    let emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    await selectAllUtxos(screen);
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+
+    const selectedTotal = '3';
+    const totalUTxoBtcAmount = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    await expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      totalUTxoBtcAmount,
+      USDSelectedTotal,
+    );
+
+    userEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
+    });
+
+    //output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = '285,000';
+    let consolidatationUtxoFeeUsd = '1';
+    let consolidatationUtxoFeePct = '0.0004';
+
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+
+    expect(consolidationFeesTitle).toBeInTheDocument();
+
+    const btcFeeCost = totalFeesAmount;
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+
+    // change consolidation fee rate should wipe consolidation fees and output utxo values, and reset buttons
+    const consolidationTxFeeRate = await screen.findByTestId(
+      'consolidation-fee-rate-input',
+    );
+
+    fireEvent.change(consolidationTxFeeRate, { target: { value: '432' } });
+    //
+    emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
+
+    savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+    expect(savePsbtButton).not.toBeEnabled();
+
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+  });
+  it('Test consolidate mode changing txMode clears output and fee data', async () => {
+    const createTxFeeEstimateMockWithPsbt = {
+      ...createTxFeeEstimateMock,
+      psbt: 'mockBase64Psbt',
+    };
+    createTxFeeEstimateSpy.mockResolvedValue(createTxFeeEstimateMockWithPsbt);
+    const screen = render(
+      <WrappedInAppWrappers>
+        <Home />
+      </WrappedInAppWrappers>,
+    );
+
+    await waitFor(() => expect(getUtxosSpy).toHaveBeenCalled());
+
+    //  open settings slideout and set consolidate tx to true
+    await setTxTypeToConsolidate(screen);
+
+    let emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+
+    let consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    let savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+
+    expect(consolidateTxButton).not.toBeEnabled();
+    expect(savePsbtButton).not.toBeEnabled();
+
+    await selectAllUtxos(screen);
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+
+    const selectedTotal = '3';
+    const totalUTxoBtcAmount = '3.00000001';
+    const USDSelectedTotal = '300,000';
+    await expectSelectedUtxoValues(
+      screen,
+      selectedTotal,
+      totalUTxoBtcAmount,
+      USDSelectedTotal,
+    );
+
+    userEvent.click(consolidateTxButton);
+
+    await waitFor(() => {
+      savePsbtButton = screen.getByRole('button', {
+        name: 'Save PSBT',
+      });
+      expect(savePsbtButton).toBeEnabled();
+    });
+
+    const expectedData = mockUtXos.map((utxo) => ({
+      id: utxo.txid,
+      vout: utxo.vout,
+      amount: utxo.amount,
+    }));
+    await waitFor(() => {
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
+    });
+
+    // output table should now be showing single transaction of
+    const totalFeesAmount = '0.15000000';
+    const consolidationOutputUtxoAmount =
+      Number(totalUTxoBtcAmount) - Number(totalFeesAmount);
+    // inputs Amount (300k) minuts Fee cost (15k) = 285k
+    let consolidationAmountUsd = '285,000';
+    let consolidatationUtxoFeeUsd = '1';
+    let consolidatationUtxoFeePct = '0.0004';
+
+    await expectUtxoTableValues(
+      screen,
+      undefined,
+      consolidationOutputUtxoAmount.toString(),
+      consolidationAmountUsd,
+      consolidatationUtxoFeePct,
+      consolidatationUtxoFeeUsd,
+      0,
+      true,
+      0,
+    );
+
+    const consolidationFeesTitle =
+      await screen.findByText('Consolidation Fees');
+
+    expect(consolidationFeesTitle).toBeInTheDocument();
+
+    const btcFeeCost = totalFeesAmount;
+    const usdFeeCost = '15,000';
+    const feePct = '5.0000';
+
+    await expectMultiInputTxFeeEstimateUI(
+      screen,
+      btcFeeCost,
+      usdFeeCost,
+      feePct,
+      TxMode.CONSOLIDATE,
+    );
+
+    // set batch mode
+    await setTxTypeToBatched(screen);
+    // confirm on batch mode
+    const estimateBatchButton = await screen.findByRole('button', {
+      name: 'Estimate Batch',
+    });
+    expect(estimateBatchButton).toBeInTheDocument();
+
+    // set back to consolidate mode
+    await setTxTypeToConsolidate(screen);
+
+    emptyOutputTable = await screen.findByText('No records to display');
+    expect(emptyOutputTable).toBeInTheDocument();
+    await expectEmptyStateMultiInputTxFeeEstimateUI(screen);
+
+    savePsbtButton = screen.getByRole('button', {
+      name: 'Save PSBT',
+    });
+    expect(savePsbtButton).not.toBeEnabled();
+
+    consolidateTxButton = screen.getByRole('button', {
+      name: 'Consolidate',
+    });
+
+    expect(consolidateTxButton).toBeEnabled();
+  }, 100000);
 });
 
 // Open slideout and set batch tx to true, then close slideout
-const setTxTypeToBatched = async (screen: any) => {
+const setTxType = async (screen: RenderResult, txType = 'BATCH') => {
   //open settings and set batch tx to true
   const slideoutButton = screen.getByTestId('settings-button');
   fireEvent.click(slideoutButton);
@@ -956,12 +1476,12 @@ const setTxTypeToBatched = async (screen: any) => {
 
   const slideout = screen.getByTestId('settings-slideout');
   let batchOption = within(slideout).getByRole('radio', {
-    name: 'BATCH',
+    name: txType,
   });
   fireEvent.click(batchOption);
 
   batchOption = within(slideout).getByRole('radio', {
-    name: 'BATCH',
+    name: txType,
   });
   expect(batchOption).toBeChecked();
 
@@ -969,9 +1489,115 @@ const setTxTypeToBatched = async (screen: any) => {
   const closeSlideoutButton = settingsTitle.parentElement
     .nextElementSibling as HTMLButtonElement;
 
-  fireEvent.click(closeSlideoutButton);
+  act(() => fireEvent.click(closeSlideoutButton));
 
-  await waitFor(() => {
-    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  await waitFor(
+    () => {
+      expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+    },
+    { timeout: 10000 },
+  );
+};
+
+const setTxTypeToBatched = async (screen: RenderResult) => {
+  await setTxType(screen, 'BATCH');
+};
+const setTxTypeToConsolidate = async (screen: RenderResult) => {
+  await setTxType(screen, 'CONSOLIDATE');
+};
+
+const selectAllUtxos = async (screen: RenderResult) => {
+  let txCheckBoxes;
+
+  await waitFor(async () => {
+    txCheckBoxes = screen.getAllByRole('checkbox');
+    // three txs so should be three tx checkboxes to be able to include
+    // in our batched tx, as well as a 4th button to include all txs.
+    expect(txCheckBoxes?.length).toBe(4);
   });
+
+  const includeAllUtxosButton = txCheckBoxes[0];
+  fireEvent.click(includeAllUtxosButton);
+};
+
+const expectMultiInputTxFeeEstimateUI = async (
+  screen: RenderResult,
+  btcFeeCost: string,
+  usdFeeCost: string,
+  feePct: string,
+  txType: TxMode = TxMode.BATCH,
+) => {
+  const estimatePosition = txType === TxMode.CONSOLIDATE ? 1 : 0;
+  let totalFees = await screen.findAllByText(`Total fees: ~${btcFeeCost} BTC`);
+  let totalFeeCost = await screen.findAllByText(`Fee cost: $${usdFeeCost}`);
+  let totalFeePct = await screen.findAllByText(`(${feePct}%)`);
+
+  expect(totalFees[estimatePosition]).toBeInTheDocument();
+  expect(totalFeeCost[estimatePosition]).toBeInTheDocument();
+  expect(totalFeePct[estimatePosition]).toBeInTheDocument();
+};
+
+const expectEmptyStateMultiInputTxFeeEstimateUI = async (
+  screen: RenderResult,
+) => {
+  // both batch and consolidation summaryies exists therefore we need findAll
+  const batchTotalFees = await screen.findAllByText('Total fees: ...');
+  const batchFeePct = await screen.findAllByText('Fee cost: ...');
+
+  expect(batchTotalFees[0]).toBeInTheDocument();
+  expect(batchFeePct[0]).toBeInTheDocument();
+};
+
+const expectUtxoTableValues = async (
+  screen: RenderResult,
+  txId: string | undefined,
+  btcAmount: string,
+  usdAmount: string,
+  feePct: string,
+  feeUsd: string,
+  utxoPosition: number,
+  isSpendable: boolean,
+  spendableOrUnspendablePosition: number,
+) => {
+  const utxoAmount = await screen.findByText(btcAmount);
+  const utxoAmountUSD = await screen.findByText(`$${usdAmount}`);
+  const utxoFeeEstimate = await screen.findByText(`${feePct}%`);
+  const utxoFeeUsd = await screen.findAllByText(`$${feeUsd}`);
+
+  if (txId) {
+    const utxoTxId = await screen.findByText(txId);
+    expect(utxoTxId).toBeInTheDocument();
+  }
+
+  expect(utxoFeeEstimate).toBeInTheDocument();
+  expect(utxoAmountUSD).toBeInTheDocument();
+  expect(utxoAmount).toBeInTheDocument();
+  expect(utxoFeeUsd[utxoPosition]).toBeInTheDocument();
+
+  if (isSpendable) {
+    const spendableIcons = await screen.findAllByTestId('spendable-icon');
+    expect(spendableIcons[spendableOrUnspendablePosition]).toBeInTheDocument();
+  } else {
+    const notSpendableIcons =
+      await screen.findAllByTestId('not-spendable-icon');
+    expect(
+      notSpendableIcons[spendableOrUnspendablePosition],
+    ).toBeInTheDocument();
+  }
+};
+
+const expectSelectedUtxoValues = async (
+  screen: RenderResult,
+  count: string,
+  btcAmount: string,
+  usdAmount: string,
+) => {
+  const selectedTotal = screen.getByText(`Count: ${count}`);
+  expect(selectedTotal).toBeInTheDocument();
+
+  const BTCSelectedTotal = screen.getByText(`BTC: ${btcAmount}`);
+  expect(BTCSelectedTotal).toBeInTheDocument();
+
+  const USDSelectedTotal = screen.getByText(`USD: $${usdAmount}`);
+  expect(USDSelectedTotal).toBeInTheDocument();
 };

@@ -27,6 +27,7 @@ def get_fee_for_utxo(
 ):
     """
     Get a fee estimate for any number of utxos as input.
+    Optionally include a psbt in the response.
     To find the utxos, we need to know the txid and vout values.
     """
 
@@ -37,6 +38,7 @@ def get_fee_for_utxo(
                 fee_rate=request.args.get("feeRate"),
                 transactions=json.loads(transactions_request_data),
                 output_count=request.args.get("outputCount"),
+                include_psbt=request.args.get("includePsbt", False),
             )
         )
 
@@ -54,9 +56,15 @@ def get_fee_for_utxo(
             fee_estimate_response.status == "success"
             and fee_estimate_response.data is not None
         ):
+            base_64_psbt = (
+                fee_estimate_response.psbt.serialize()
+                if fee_estimate_response.psbt and get_utxos_request_dto.include_psbt
+                else None
+            )
             return GetUtxosResponseDto(
                 spendable=True,
                 fee=fee_estimate_response.data.fee,
+                psbt=base_64_psbt,
             ).model_dump()
 
         if fee_estimate_response.status == "unspendable":
