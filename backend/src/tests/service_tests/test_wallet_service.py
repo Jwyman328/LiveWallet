@@ -726,7 +726,7 @@ class TestWalletService(TestCase):
         )
 
         mock_fee_estimates_response = GetFeeEstimateForUtxoResponseType(
-            status="success", data=FeeDetails(0.1, 100)
+            status="success", data=FeeDetails(0.1, 100), psbt=None
         )
 
         with (

@@ -41,7 +41,7 @@ class TestUtxosController(TestCase):
         self.mock_fee_details = FeeDetails(0.1, 100)
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
             return_value=GetFeeEstimateForUtxoResponseType(
-                "success", self.mock_fee_details
+                "success", self.mock_fee_details, psbt=None
             )
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
@@ -78,11 +78,12 @@ class TestUtxosController(TestCase):
             assert json.loads(response.data) == {
                 "spendable": True,
                 "fee": self.mock_fee_details.fee,
+                "psbt": None,
             }
 
     def test_get_fee_for_utxo_unspendable_error(self):
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
-            return_value=GetFeeEstimateForUtxoResponseType("unspendable", None)
+            return_value=GetFeeEstimateForUtxoResponseType("unspendable", None, None)
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (
@@ -121,7 +122,7 @@ class TestUtxosController(TestCase):
 
     def test_get_fee_for_utxo_error(self):
         mock_get_fee_estimate_for_utxos_from_request = MagicMock(
-            return_value=GetFeeEstimateForUtxoResponseType("error", None)
+            return_value=GetFeeEstimateForUtxoResponseType("error", None, None)
         )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_fee_estimate_for_utxos_from_request = (
