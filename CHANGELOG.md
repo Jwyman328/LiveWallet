@@ -1,3 +1,5 @@
+# 0.7.0
+- Add consolidation mode.
 
 # 0.6.0
 - Improve fee estimate
