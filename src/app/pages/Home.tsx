@@ -483,7 +483,6 @@ function Home() {
               <NumberInput
                 data-testid="consolidation-fee-rate-input"
                 className={`mb-4 w-40 mt-2`}
-                //style={sectionLabelStyles}
                 allowNegative={false}
                 clampBehavior="strict"
                 value={consolidationFeeRate}

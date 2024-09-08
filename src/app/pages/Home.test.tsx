@@ -848,6 +848,7 @@ describe('Home', () => {
         expectedData,
         10,
         outputCountMock,
+        false,
       );
     });
 
@@ -930,6 +931,7 @@ describe('Home', () => {
         expectedData,
         10,
         outputCountMock,
+        false,
       );
     });
 
@@ -1115,7 +1117,12 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
     });
 
     //output table should now be showing single transaction of
@@ -1252,7 +1259,12 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
     });
 
     //output table should now be showing single transaction of
@@ -1379,7 +1391,12 @@ describe('Home', () => {
     }));
     await waitFor(() => {
       expect(createTxFeeEstimateSpy).toHaveBeenCalledTimes(1);
-      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(expectedData, 10, 1);
+      expect(createTxFeeEstimateSpy).toHaveBeenCalledWith(
+        expectedData,
+        10,
+        1,
+        true,
+      );
     });
 
     // output table should now be showing single transaction of

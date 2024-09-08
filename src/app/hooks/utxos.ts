@@ -24,9 +24,16 @@ export function useCreateTxFeeEstimate(
   feeRate: number,
   outputCount: number,
   onError?: () => void,
+  includePsbtInResponse: boolean = false,
 ) {
   return useMutation(
-    () => ApiClient.createTxFeeEstimation(utxos, feeRate, outputCount),
+    () =>
+      ApiClient.createTxFeeEstimation(
+        utxos,
+        feeRate,
+        outputCount,
+        includePsbtInResponse,
+      ),
     {
       onError: () => {
         onError();

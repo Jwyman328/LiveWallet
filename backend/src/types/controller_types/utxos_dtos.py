@@ -15,6 +15,7 @@ class GetUtxosRequestDto(BaseModel):
     transactions: list[TransactionDto]
     # default to two outputs, one for the recipient and one for the change
     output_count: str = Field(default="2")
+    include_psbt: Optional[bool] = Field(default=False)
 
     @field_validator("transactions")
     def check_empty_transactions_list(cls, v):

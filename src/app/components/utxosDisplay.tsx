@@ -99,6 +99,7 @@ export const UtxosDisplay = ({
     txMode === TxMode.CONSOLIDATE ? consolidationFeeRate : feeRate,
     txMode === TxMode.CONSOLIDATE ? 1 : receivingOutputCount,
     onCreateBatchTxError,
+    txMode === TxMode.CONSOLIDATE ? true : false,
   );
 
   useEffect(() => {
@@ -110,7 +111,8 @@ export const UtxosDisplay = ({
     setCurrentBatchedTxData(null);
   }, [selectedUtxos]);
 
-  // switching to consolidation mode should clear the consolidation data.
+  // switching to consolidation mode, should clear the consolidation data.
+  // changing seelctedUtxos length or the consolidationFeeRate should also clear the consolidation data.
   useEffect(() => {
     if (txMode === TxMode.CONSOLIDATE) {
       setIsSavePSBTEnabled(false);
