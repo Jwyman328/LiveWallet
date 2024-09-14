@@ -3,7 +3,7 @@ from src.services import WalletService
 from dependency_injector.wiring import inject, Provide
 from src.containers.service_container import ServiceContainer
 import structlog
-from src.types import GetBalanceResponseDto, SimpleErrorResponse
+from src.my_types import GetBalanceResponseDto, SimpleErrorResponse
 
 LOGGER = structlog.get_logger()
 

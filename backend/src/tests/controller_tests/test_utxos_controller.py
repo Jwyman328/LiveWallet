@@ -3,8 +3,8 @@ from unittest import TestCase
 from unittest.mock import MagicMock, Mock
 from src.app import AppCreator
 from src.services.wallet.wallet import GetFeeEstimateForUtxoResponseType, WalletService
-from src.types import FeeDetails
-from src.types import GetUtxosRequestDto
+from src.my_types import FeeDetails
+from src.my_types import GetUtxosRequestDto
 from src.tests.mocks import local_utxo_mock
 from bdkpython import bdk
 import json

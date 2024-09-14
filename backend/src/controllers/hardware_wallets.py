@@ -9,7 +9,7 @@ from src.services.hardware_wallet.hardware_wallet import (
     HardwareWalletDetails,
     HardwareWalletService,
 )
-from src.types.controller_types.generic_response_types import ValidationErrorResponse
+from src.my_types.controller_types.generic_response_types import ValidationErrorResponse
 
 hardware_wallet_api = Blueprint(
     "hardware_wallet", __name__, url_prefix="/hardware-wallets"

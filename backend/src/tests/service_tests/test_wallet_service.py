@@ -9,7 +9,7 @@ from src.services.wallet.wallet import (
     BuildTransactionResponseType,
 )
 import bdkpython as bdk
-from src.types import (
+from src.my_types import (
     FeeDetails,
 )
 from src.types import GetUtxosRequestDto
