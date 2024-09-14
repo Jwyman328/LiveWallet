@@ -1,4 +1,4 @@
-cd backend
+cd ../backend
 source environment.sh
 
 bash build_executable.sh

@@ -53,3 +53,42 @@
     - brew install libusb
       - would this be a dependency of the app then?
       - what if a user didn't have this installed on macos
+
+
+
+
+
+# build for linux
+- $ npx electron-builder --linux 
+- I added a section to my package.json build section
+  "linux": {
+    "target": [
+      "AppImage",
+      "deb",
+      "rpm"
+    ],
+    "icon": "path/to/icon.png"
+  }
+
+- right now do I run the electron-builder command?
+  - the postinstall command runs it. do I run the postinstall command?
+  - well right now I am running sudo npm run package
+    - it runs electron-builder build command.
+  - basically I need to run a linux vm on my machine
+    - https://www.reddit.com/r/MacOS/comments/1808wf6/whats_everyones_favorite_vm_software_for_mseries/
+    - VMware Player Fusion
+    - UTM
+    - VirtualBox
+    - VirtualBuddy
+  - running on mac got this error
+    - to build rpm, executable rpmbuild is required, please install: brew install rpm
+
+  - when I create linux builds I should publich both .deb and .rpm files.
+
+
+
+  - vmware was impossible to find
+    - I had to make an account with broadcom,
+      - then download it form here https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Fusion&displayGroup=VMware%20Fusion%2013%20Pro%20for%20Personal%20Use&release=13.6&os=&servicePk=522387&language=EN
+      - https://www.reddit.com/r/vmware/comments/1cma01o/anyone_looking_for_vmware_fusion_player_for_mac/?share_id=tgi0pGYH6Hmp2gy2-dv-d&utm_content=2&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1
+      - https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware%20Fusion
