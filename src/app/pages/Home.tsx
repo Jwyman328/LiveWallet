@@ -221,6 +221,11 @@ function Home() {
     window.electron.ipcRenderer.sendMessage('get-wallet-data');
   }, []);
 
+  useEffect(() => {
+    // @ts-ignore
+    window.electron.ipcRenderer.on('logout', logOut);
+  }, []);
+
   const changeFeeRateColorPercent = (index: number, percent: number) => {
     const feeRateColorItem = feeRateColorMapValues[index];
     const newFeeRateColorItem = [percent, feeRateColorItem[1]] as [
@@ -360,12 +365,12 @@ function Home() {
     setBtcPrice(Number(netBtcPrice));
   };
   return (
-    <div className="h-full">
+    <div className="h-full overflow-y-scroll">
       <SettingsSlideout
         opened={isShowSettingsSlideout}
         onClose={() => setIsShowSettingsSlideout(false)}
       >
-        <div className="flex w-full justify-start mt-4 flex-col">
+        <div className="flex w-full justify-start mt-4 flex-col ">
           <SegmentedControl
             className="mb-4"
             value={btcMetric.toString()}

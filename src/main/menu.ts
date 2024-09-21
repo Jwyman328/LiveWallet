@@ -67,6 +67,16 @@ export default class MenuBuilder {
     const subMenuAbout: DarwinMenuItemConstructorOptions = {
       label: 'UTXO Fee Estimator',
       submenu: [
+{
+          label: 'Logout',
+          id: 'logout',
+          enabled: false,
+          click: () => {
+            // send logout message
+            this.mainWindow.webContents.send("logout")
+          },
+        },
+        { type: 'separator' },
         {
           label: 'Hide',
           accelerator: 'Command+H',

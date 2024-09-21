@@ -236,7 +236,7 @@
         "deb",
         "rpm"
       ],
-      "icon": "assets/icons/256x256.png",
+      "icon": "resources/assets/icons",
       "category": "Development",
       "maintainer": "Barney Rubble <b@rubble.com>"
     },

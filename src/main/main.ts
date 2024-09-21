@@ -41,6 +41,7 @@ ipcMain.on('current-route', (event, currentRoute) => {
   console.log('Current route:', currentRoute);
   const menuImportedWallet = MenuBuilder.menu.getMenuItemById('importWallet');
   const menuSaveWallet = MenuBuilder.menu.getMenuItemById('saveWallet');
+  const menuLogout = MenuBuilder.menu.getMenuItemById('logout');
 
   if (currentRoute === Pages.SIGN_IN || currentRoute === Pages.CHOOSE_PATH) {
     if (menuImportedWallet) {
@@ -50,6 +51,7 @@ ipcMain.on('current-route', (event, currentRoute) => {
     if (menuSaveWallet) {
       console.log('setting save wallet option to disabled');
       menuSaveWallet.enabled = false;
+      menuLogout.enabled = false;
     }
   } else {
     if (menuImportedWallet) {
@@ -60,6 +62,7 @@ ipcMain.on('current-route', (event, currentRoute) => {
     if (menuSaveWallet) {
       console.log('setting save wallet option to enabled');
       menuSaveWallet.enabled = true;
+      menuLogout.enabled = true;
     }
   }
 });
@@ -224,7 +227,9 @@ const createWindow = async () => {
     height: 900,
     minHeight: 874,
     minWidth: 824,
-    icon: getAssetPath('icon.png'),
+    // TODO add logic to detect linux?
+    // test build on mac to see if this still shows icons
+    icon: path.join(__dirname, 'resources/assets/icons'),
     title: 'UXTO Fee Estimator',
     webPreferences: {
       nodeIntegration: true,
