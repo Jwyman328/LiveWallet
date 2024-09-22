@@ -12,11 +12,11 @@ npm_command="run package"
 if [[ "$(uname)" == "Darwin" ]]; then
     # macOS detected
     echo "Running on macOS. Using sudo for npm package."
-    sudo npm $npm_command
+    sudo npm $npm_command:mac
 else
     # Non-macOS detected
     echo "Not running on macOS. Running npm package without sudo."
-    npm $npm_command
+    npm $npm_command:linux
 fi
 
 # also notarize the macOs app via additional commandline tools
