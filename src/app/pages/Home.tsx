@@ -221,6 +221,11 @@ function Home() {
     window.electron.ipcRenderer.sendMessage('get-wallet-data');
   }, []);
 
+  useEffect(() => {
+    // @ts-ignore
+    window.electron.ipcRenderer.on('logout', logOut);
+  }, []);
+
   const changeFeeRateColorPercent = (index: number, percent: number) => {
     const feeRateColorItem = feeRateColorMapValues[index];
     const newFeeRateColorItem = [percent, feeRateColorItem[1]] as [
@@ -359,13 +364,16 @@ function Home() {
   const onBtcPriceChange = (netBtcPrice: string | number) => {
     setBtcPrice(Number(netBtcPrice));
   };
+
+  const maxToggleContainerWidth =
+    txMode !== TxMode.CONSOLIDATE ? { maxWidth: '1000px' } : {};
   return (
-    <div className="h-full">
+    <div className="h-full overflow-y-scroll">
       <SettingsSlideout
         opened={isShowSettingsSlideout}
         onClose={() => setIsShowSettingsSlideout(false)}
       >
-        <div className="flex w-full justify-start mt-4 flex-col">
+        <div className="flex w-full justify-start mt-4 flex-col ">
           <SegmentedControl
             className="mb-4"
             value={btcMetric.toString()}
@@ -469,8 +477,11 @@ function Home() {
       </header>
 
       <div className="flex flex-row justify-evenly"></div>
-      <div className="ml-4 flex flex-col items-center">
-        <div className="flex flex-row">
+      <div className="mx-4 flex flex-col items-center overflow-x-scroll">
+        <div
+          className={`flex flex-row w-full justify-around`}
+          style={maxToggleContainerWidth}
+        >
           <Collapse
             in={txMode === TxMode.CONSOLIDATE}
             transitionDuration={300}
@@ -498,7 +509,7 @@ function Home() {
               Future Fee Environment (sat/vB)
             </h1>
             <div className="mb-10">
-              <div className="flex flex-row items-center">
+              <div className="flex flex-row items-center ">
                 <div
                   style={{ width: '30rem' }}
                   className="ml-8 mr-8 relative top-4"
@@ -529,7 +540,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="ml-20">
+          <div className="ml-2">
             <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
             <NumberInput
               data-testid="btc-price-input"

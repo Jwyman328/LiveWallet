@@ -7,13 +7,13 @@ from dependency_injector.wiring import inject, Provide
 import structlog
 
 from src.testbridge.ngiri import randomly_fund_mock_wallet
-from src.types import ScriptType
+from src.my_types import ScriptType
 from src.services import WalletService
 from src.containers.service_container import ServiceContainer
 
 from pydantic import BaseModel, ValidationError, field_validator
 
-from src.types.controller_types.generic_response_types import (
+from src.my_types.controller_types.generic_response_types import (
     ValidationErrorResponse,
     SimpleErrorResponse,
 )

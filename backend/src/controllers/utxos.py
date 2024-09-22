@@ -7,13 +7,13 @@ import structlog
 import json
 from pydantic import ValidationError
 
-from src.types import (
+from src.my_types import (
     GetUtxosRequestDto,
     GetUtxosResponseDto,
     GetUtxosErrorResponseDto,
     GetAllUtxosResponseDto,
 )
-from src.types.controller_types.generic_response_types import SimpleErrorResponse
+from src.my_types.controller_types.generic_response_types import SimpleErrorResponse
 
 utxo_page = Blueprint("get_utxos", __name__, url_prefix="/utxos")
 

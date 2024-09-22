@@ -9,11 +9,11 @@ from src.services.wallet.wallet import (
     BuildTransactionResponseType,
 )
 import bdkpython as bdk
-from src.types import (
+from src.my_types import (
     FeeDetails,
 )
-from src.types import GetUtxosRequestDto
-from src.types.script_types import ScriptType
+from src.my_types import GetUtxosRequestDto
+from src.my_types.script_types import ScriptType
 from src.tests.mocks import local_utxo_mock, transaction_details_mock
 from typing import cast
 

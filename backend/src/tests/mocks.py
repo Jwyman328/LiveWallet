@@ -1,4 +1,4 @@
-from src.types import (
+from src.my_types import (
     FeeDetails,
 )
 import bdkpython as bdk

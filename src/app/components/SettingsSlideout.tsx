@@ -1,4 +1,4 @@
-import { Drawer } from '@mantine/core';
+import { Drawer, ScrollArea } from '@mantine/core';
 type SettingsSlideoutProps = {
   opened: boolean;
   onClose: () => void;
@@ -23,8 +23,12 @@ export const SettingsSlideout = ({
       onClose={onClose}
       withCloseButton
       position="right"
+      scrollAreaComponent={ScrollArea.Autosize}
     >
-      <div data-testid="settings-slideout" className="h-full">
+      <div
+        data-testid="settings-slideout"
+        className="h-full overflow-y-scroll "
+      >
         {children}
       </div>
     </Drawer>

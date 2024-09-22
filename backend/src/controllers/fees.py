@@ -3,7 +3,7 @@ from dependency_injector.wiring import inject, Provide
 from src.containers.service_container import ServiceContainer
 from src.services import FeeService
 from src.api.fees import FeeEstimates
-from src.types import GetCurrentFeesResponseDto, SimpleErrorResponse
+from src.my_types import GetCurrentFeesResponseDto, SimpleErrorResponse
 import structlog
 
 LOGGER = structlog.get_logger()

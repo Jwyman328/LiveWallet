@@ -7,7 +7,7 @@ from src.services import WalletService
 from src.app import AppCreator
 import json
 
-from src.types.script_types import ScriptType
+from src.my_types.script_types import ScriptType
 
 
 class TestWalletController(TestCase):

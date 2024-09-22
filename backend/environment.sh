@@ -1,7 +1,7 @@
 # Check if the virtual environment directory exists
 if [ ! -d "venv" ]; then
   echo "Creating virtual environment..."
-  virtualenv venv
+  pyenv virtualenv 3.10.1 venv
 else
   echo "Virtual environment already exists."
 fi

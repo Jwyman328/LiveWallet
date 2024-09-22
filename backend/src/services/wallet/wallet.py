@@ -5,7 +5,7 @@ from typing import Literal, Optional, cast, List
 
 from src.database import DB
 from src.models.wallet import Wallet
-from src.types import (
+from src.my_types import (
     ScriptType,
     FeeDetails,
     GetUtxosRequestDto,

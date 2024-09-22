@@ -1,3 +1,7 @@
+# 0.8.0
+- Linux builds and small dynamic style improvements 
+- logout dropdown button
+
 # 0.7.0
 - Add consolidation mode.
 

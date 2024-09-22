@@ -237,10 +237,9 @@ export const UtxosDisplay = ({
     );
   };
 
-  const containerClassNames = txMode === TxMode.CONSOLIDATE ? 'px-4' : 'px-20';
 
   return (
-    <div className={containerClassNames}>
+    <div className={'w-full mb-1 ml-1'}>
       <div className="relative flex flex-row ">
         <LoadingOverlay
           visible={isLoading}
@@ -298,7 +297,7 @@ export const UtxosDisplay = ({
               <div className="mt-auto">
                 <InputLabel
                   style={sectionHeaderStyles}
-                  className="font-semibold mt-0 mr-1"
+                  className="font-semibold mt-2 mr-1"
                 >
                   {txMode === TxMode.CONSOLIDATE ? 'Consolidation ' : ''}
                   Fees
@@ -311,8 +310,8 @@ export const UtxosDisplay = ({
         </div>
 
         <div
-          style={{ minWidth: txMode !== TxMode.CONSOLIDATE ? '275px' : '0px' }}
-          className="ml-6 flex flex-col"
+          style={{ minWidth: txMode !== TxMode.CONSOLIDATE ? '100px' : '0px' }}
+          className=" flex flex-col ml-6"
         >
           <Collapse
             in={txMode !== TxMode.CONSOLIDATE}
@@ -389,7 +388,7 @@ export const UtxosDisplay = ({
         transitionDuration={300}
         transitionTimingFunction="linear"
       >
-        <div className="flex flex-row mt-4 mb-4 h-14 mr-6">
+        <div className="flex flex-row mt-4 mb-4 h-14">
           <Button
             loading={batchIsLoading}
             fullWidth
