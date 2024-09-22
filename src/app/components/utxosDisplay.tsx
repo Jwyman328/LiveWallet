@@ -239,7 +239,7 @@ export const UtxosDisplay = ({
 
 
   return (
-    <div className={'w-full'}>
+    <div className={'w-full mb-1 ml-1'}>
       <div className="relative flex flex-row ">
         <LoadingOverlay
           visible={isLoading}

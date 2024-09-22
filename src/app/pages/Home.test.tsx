@@ -166,7 +166,7 @@ describe('Home', () => {
 
     const utxoTableTitle = await screen.findByText('Inputs');
 
-    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoTxIdOne = 'f2f8....70ba';
     const utxoOneAmount = '1.00000000';
 
     // since btc price is 100k and amount 1btc
@@ -186,7 +186,7 @@ describe('Home', () => {
       0,
     );
 
-    const utxoTxIdTwo = '1f6fb0b....8dfd724';
+    const utxoTxIdTwo = '1f6f....d724';
     const utxoTwoAmount = '2.00000000';
     // since btc price is 100k and amount 2btc
     const utxoTwoAmountUSD = '200,000';
@@ -204,7 +204,7 @@ describe('Home', () => {
       1,
     );
 
-    const utxoTxIdThree = '9d83163....666a36b';
+    const utxoTxIdThree = '9d83....a36b';
     const utxoThreeFeeEstimate = '153000.00';
     const utxoThreeAmountUSD = '0';
     const utxoThreeAmount = '0.00000001';
@@ -267,7 +267,7 @@ describe('Home', () => {
       handleWalletDataFunction(higherFeeConfig);
     });
     const utxoTableTitle = await screen.findByText('Inputs');
-    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoTxIdOne = 'f2f8....70ba';
     const utxoOneAmount = '1.00000000';
 
     // since price is 100k and amount 1btc, new fee rate should not change the amount usd
@@ -304,8 +304,8 @@ describe('Home', () => {
       </WrappedInAppWrappers>,
     );
 
-    const utxoTxIdOne = 'f2f8f15....e3d70ba';
-    const utxoTxIdTwo = '1f6fb0b....8dfd724';
+    const utxoTxIdOne = 'f2f8....70ba';
+    const utxoTxIdTwo = '1f6f....d724';
     let utxoOneAmount = '1.00000000';
     let utxoTwoAmount = '2.00000000';
 
@@ -413,7 +413,7 @@ describe('Home', () => {
     fireEvent.change(btcPriceInput, { target: { value: '1000000' } });
 
     const utxoTableTitle = await screen.findByText('Inputs');
-    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoTxIdOne = 'f2f8....70ba';
     const utxoOneAmount = '1.00000000';
 
     // since price is 1M and amount 1btc
@@ -471,7 +471,7 @@ describe('Home', () => {
 
     const utxoOneAmount = '1.00000000';
     const utxoOneAmountUSD = '100,000';
-    const utxoTxIdOne = 'f2f8f15....e3d70ba';
+    const utxoTxIdOne = 'f2f8....70ba';
     let utxoOneFeeEstimate = '0.0015';
     let utxoFeeUsd = '2';
 

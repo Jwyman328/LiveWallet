@@ -154,11 +154,12 @@ export const UtxoTable = ({
   const columns = useMemo(() => {
     const txIdColumn = {
       header: 'Txid',
+      size: 100,
       accessorKey: 'txid',
       Cell: ({ row }: { row: any }) => {
-        const prefix = row.original.txid.substring(0, 7);
+        const prefix = row.original.txid.substring(0, 4);
         const suffix = row.original.txid.substring(
-          row.original.txid.length - 7,
+          row.original.txid.length - 4,
         );
         const abrv = `${prefix}....${suffix}`;
         return (
@@ -293,7 +294,7 @@ export const UtxoTable = ({
       {
         header: 'Spendable',
         accessorKey: 'Spendable',
-        size: 50,
+        size: 25,
         Cell: ({ row }: { row: any }) => {
           const feePct = row.original.amount
             ? calculateFeePercent(row.original.amount)

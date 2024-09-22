@@ -364,6 +364,9 @@ function Home() {
   const onBtcPriceChange = (netBtcPrice: string | number) => {
     setBtcPrice(Number(netBtcPrice));
   };
+
+  const maxToggleContainerWidth =
+    txMode !== TxMode.CONSOLIDATE ? { maxWidth: '1000px' } : {};
   return (
     <div className="h-full overflow-y-scroll">
       <SettingsSlideout
@@ -475,7 +478,10 @@ function Home() {
 
       <div className="flex flex-row justify-evenly"></div>
       <div className="mx-4 flex flex-col items-center overflow-x-scroll">
-        <div className="flex flex-row w-full justify-around">
+        <div
+          className={`flex flex-row w-full justify-around`}
+          style={maxToggleContainerWidth}
+        >
           <Collapse
             in={txMode === TxMode.CONSOLIDATE}
             transitionDuration={300}
