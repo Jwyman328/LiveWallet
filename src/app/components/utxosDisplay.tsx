@@ -297,7 +297,7 @@ export const UtxosDisplay = ({
               <div className="mt-auto">
                 <InputLabel
                   style={sectionHeaderStyles}
-                  className="font-semibold mt-0 mr-1"
+                  className="font-semibold mt-2 mr-1"
                 >
                   {txMode === TxMode.CONSOLIDATE ? 'Consolidation ' : ''}
                   Fees
