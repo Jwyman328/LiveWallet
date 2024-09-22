@@ -474,8 +474,8 @@ function Home() {
       </header>
 
       <div className="flex flex-row justify-evenly"></div>
-      <div className="ml-4 flex flex-col items-center">
-        <div className="flex flex-row">
+      <div className="mx-4 flex flex-col items-center overflow-x-scroll">
+        <div className="flex flex-row w-full justify-around">
           <Collapse
             in={txMode === TxMode.CONSOLIDATE}
             transitionDuration={300}
@@ -503,7 +503,7 @@ function Home() {
               Future Fee Environment (sat/vB)
             </h1>
             <div className="mb-10">
-              <div className="flex flex-row items-center">
+              <div className="flex flex-row items-center ">
                 <div
                   style={{ width: '30rem' }}
                   className="ml-8 mr-8 relative top-4"
@@ -534,7 +534,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="ml-20">
+          <div className="ml-2">
             <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
             <NumberInput
               data-testid="btc-price-input"
