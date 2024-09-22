@@ -1,5 +1,5 @@
 {
-  "name":"livewallet",
+  "name": "livewallet",
   "description": "An application to understand the health of your Bitcoin wallet.",
   "keywords": [
     "utxo",
@@ -30,6 +30,7 @@
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
+    "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
     "package:mac": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never --mac && npm run build:dll",
     "package:linux": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never --linux && npm run build:dll",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
@@ -236,11 +237,17 @@
       "target": [
         {
           "target": "deb",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "AppImage",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "resources/assets/icons",
