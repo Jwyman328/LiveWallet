@@ -13,18 +13,14 @@
 - Also set the default custom fee rate to the current rate 
 
 # TODOs build
-- reduce startup time.
+- build for rpm redhat linux
+- reduce startup time on macOS.
 - use a random port to run the backend on 
-- build for not just macOS? 
-  - https://github.com/pyinstaller/pyinstaller/wiki/FAQ#features
-  - "Since pyinstaller is not a cross-compiler (which means with pyinstaller you cannot create an executable for any other system than the one you are on), you will have to look for other tools."
-  - use wine?
 - Analyze the build size and try to make it smaller
 - e2e tests
 
 
 # Feature Ideas
-- consolidation recommendation support.
 - utxo cost breakdown.
 - individual non wallet fee estimation.
 - additional hardware wallet support

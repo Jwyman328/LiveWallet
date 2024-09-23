@@ -227,8 +227,6 @@ const createWindow = async () => {
     height: 900,
     minHeight: 874,
     minWidth: 824,
-    // TODO add logic to detect linux?
-    // test build on mac to see if this still shows icons
     icon: path.join(__dirname, 'resources/assets/icons'),
     title: 'UXTO Fee Estimator',
     webPreferences: {
