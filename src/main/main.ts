@@ -282,7 +282,11 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   if (backendProcess) {
     console.log('killing backend process');
-    backendProcess.kill();
+    if (process.platform === 'win32') {
+      backendProcess.kill('SIGTERM');
+    } else {
+      backendProcess.kill();
+    }
   }
 });
 
