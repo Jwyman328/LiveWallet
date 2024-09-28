@@ -213,8 +213,8 @@ const createWindow = async () => {
     }
   }
 
-  if (true) {
-    startupBackend(process.env.NODE_ENV === "production");
+  if (process.env.NODE_ENV === "production") {
+    startupBackend();
   } else {
     console.log(
       'Backend is not starting via electron, please start it separately via backend/start_app.sh',
