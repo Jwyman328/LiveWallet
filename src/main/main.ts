@@ -213,7 +213,7 @@ const createWindow = async () => {
     }
   }
 
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === 'production') {
     startupBackend();
   } else {
     console.log(
