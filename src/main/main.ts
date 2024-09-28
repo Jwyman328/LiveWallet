@@ -213,8 +213,8 @@ const createWindow = async () => {
     }
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    startupBackend();
+  if (true) {
+    startupBackend(process.env.NODE_ENV === "production");
   } else {
     console.log(
       'Backend is not starting via electron, please start it separately via backend/start_app.sh',
@@ -283,7 +283,8 @@ app.on('before-quit', () => {
   if (backendProcess) {
     console.log('killing backend process');
     if (process.platform === 'win32') {
-      backendProcess.kill('SIGTERM');
+      const kill = require("tree-kill")
+      kill(backendProcess.pid, "SIGTERM")
     } else {
       backendProcess.kill();
     }
