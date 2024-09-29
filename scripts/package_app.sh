@@ -2,14 +2,23 @@ cd ../backend
 source environment.sh
 
 
-bash build_executable.sh
+## Check if the first argument is 'windows'
+if [ "$1" == "windows" ]; then
+    bash build_windows_executable.sh
+else
+    bash build_executable.sh
+fi
+
 cd ..
 
 # Define the command to run
 npm_command="run package"
 
 # Check the operating system
-if [[ "$(uname)" == "Darwin" ]]; then
+if [[ "$1" == "windows" ]]; then
+    echo "Detected Windows variable. Running npm package for Windows."
+    npm $npm_command:windows
+elif [[ "$(uname)" == "Darwin" ]]; then
     # macOS detected
     echo "Running on macOS. Using sudo for npm package."
     sudo npm $npm_command:mac
@@ -19,5 +28,5 @@ else
     npm $npm_command:linux
 fi
 
-# also notarize the macOs app via additional commandline tools
+# also notarize the macOs app builds via additional commandline tools
 # For more details view notes # notarizing macOs app

@@ -1,6 +1,6 @@
 {
   "name": "LiveWallet",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "An application to understand the health of your Bitcoin wallet.",
   "license": "MIT",
   "author": {
