@@ -13,7 +13,7 @@
 - Also set the default custom fee rate to the current rate 
 
 # TODOs build
-- build for rpm redhat linux
+- write scripts to help update the versions in the website page.
 - reduce startup time on macOS.
 - use a random port to run the backend on 
 - Analyze the build size and try to make it smaller
