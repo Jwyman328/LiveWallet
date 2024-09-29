@@ -1,3 +1,7 @@
+# 0.9.0
+- Build for redhat linux distributions, and windows. 
+- bugfixes
+
 # 0.8.0
 - Linux builds and small dynamic style improvements 
 - logout dropdown button

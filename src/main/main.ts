@@ -227,8 +227,6 @@ const createWindow = async () => {
     height: 900,
     minHeight: 874,
     minWidth: 824,
-    // TODO add logic to detect linux?
-    // test build on mac to see if this still shows icons
     icon: path.join(__dirname, 'resources/assets/icons'),
     title: 'UXTO Fee Estimator',
     webPreferences: {
@@ -284,7 +282,12 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   if (backendProcess) {
     console.log('killing backend process');
-    backendProcess.kill();
+    if (process.platform === 'win32') {
+      const kill = require("tree-kill")
+      kill(backendProcess.pid, "SIGTERM")
+    } else {
+      backendProcess.kill();
+    }
   }
 });
 

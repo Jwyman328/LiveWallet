@@ -2,7 +2,7 @@
 # This script will update the app version number in all locations, add to the CHANGELOG and then create a new release build.
 
 # example usage
-# $ bash update_app_version.sh "1.2.0" "I am adding another item to the change log"
+# $ bash update_app_version.sh "1.2.0" "I am adding another item to the change log" "windows"
 
 # Function to install jq
 install_jq() {
@@ -31,21 +31,24 @@ if ! command -v jq &> /dev/null; then
 fi
 
 # Check if the correct number of arguments are passed
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <new_version> <changelog_entry>"
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <new_version> <changelog_entry> <os_type>"
   exit 1
 fi
 
 # Assign the new version from the command line argument
 NEW_VERSION="$1"
 CHANGELOG_ENTRY="$2"
+OS_TYPE="$3"
 
 # Define the path to your package-lock.json file
-PACKAGE_LOCK_PATH="./release/app/package-lock.json"
-PACKAGE_PATH="./release/app/package.json"
-SETUP_CFG_PATH="./backend/setup.cfg"
-CHANGELOG_PATH="./CHANGELOG.md"
-TEMP_CHANGELOG_PATH="./temp_changelog.md"
+PACKAGE_LOCK_PATH="../release/app/package-lock.json"
+PACKAGE_PATH="../release/app/package.json"
+SETUP_CFG_PATH="../backend/setup.cfg"
+CHANGELOG_PATH="../CHANGELOG.md"
+TEMP_CHANGELOG_PATH="../temp_changelog.md"
+
+pwd
 
 # Verify that the file exists
 if [ ! -f "$PACKAGE_LOCK_PATH" ]; then
@@ -106,5 +109,5 @@ echo "Version updated to $NEW_VERSION in $PACKAGE_LOCK_PATH and $PACKAGE_PATH an
 
 echo "Creating new release build for $NEW_VERSION"
 
-bash ./scripts/package_app.sh
+bash ./package_app.sh $OS_TYPE
 

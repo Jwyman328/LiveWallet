@@ -445,7 +445,7 @@ describe('WalletSignIn', () => {
 
     expect(mockElectron.ipcRenderer.sendMessage).toHaveBeenCalledWith(
       'current-route',
-      '/signin',
+      Pages.SIGN_IN
     );
 
     expect(mockElectron.ipcRenderer.on).toHaveBeenCalledWith(

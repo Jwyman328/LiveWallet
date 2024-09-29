@@ -546,7 +546,7 @@ export const WalletSignIn = () => {
     // @ts-ignore
     window.electron.ipcRenderer.on('json-wallet', handleImportedWallet);
 
-    window.electron.ipcRenderer.sendMessage('current-route', '/signin');
+    window.electron.ipcRenderer.sendMessage('current-route', Pages.SIGN_IN);
   }, []);
 
   const createKeyInformationTabs = () => {

@@ -143,3 +143,38 @@ The linux system that I build the app with does not have to be the one that I te
 		- $ sudo apt-get install open-vm-tools-desktop -y 
 	- to build the production app via $ npm run package
 		- you must first install rpm $ sudo apt-get install rpm
+
+
+  - Fixing the issue where ubuntu would freeze on refetch.
+    - this was most likely do to not having enough disk space.
+    - a temporary fix is 
+      - https://askubuntu.com/questions/1387469/boot-hangs-when-starting-gdm-service
+    - a permenant solution was to increase disk space.
+      - disk space can not just be allocated to the disk but must then be distributed to the file system.
+      - $lsblk
+        - this will check the current disk space
+      - resize the partition 
+       - sudo apt update
+       - sudo apt install cloud-guest-utils
+       - one of the two commands below
+         - sudo growpart /dev/sda 1
+         - sudo growpart /dev/sda 2
+      - resize the file system
+        - sudo resize2fs /dev/sda1
+      - verify the changes
+        - df -h
+    - an alternative way is to do this is to use parted.
+      - $ sudo parted /dev/sda
+      - $ print
+      - $ resizepart 2 100%
+      - $ exit
+      - sudo resize2fs /dev/sda2
+      - df -h
+
+
+# build for windows
+  - use wine on ubuntu to build the windows executable. 
+  - wine download steps https://gitlab.winehq.org/wine/wine/-/wikis/Debian-Ubuntu 
+  - helpful walk through https://www.makeworld.space/2021/10/linux-wine-pyinstaller.html
+  - after the exe is built you can build with electron-builder targeting the windows build.
+
