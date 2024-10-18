@@ -54,6 +54,17 @@ export class ApiClient {
 
     return data as GetUtxosResponseType;
   }
+
+  static async getTransactions() {
+    const response =
+      await fetchHandler(`${configs.backendServerBaseUrl}/utxos/transactions
+`);
+
+    const data = await response.json();
+
+    // TODO add a type
+    return data; //as GetUtxosResponseType;
+  }
   static async createTxFeeEstimation(
     utxos: UtxoRequestParam[],
     feeRate: number = 1,

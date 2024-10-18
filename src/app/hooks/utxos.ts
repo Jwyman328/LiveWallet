@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'react-query';
 export const uxtoQueryKeys = {
   getBalance: ['getBalance'],
   getUtxos: ['getUtxos'],
+  getTransactions: ['getTransactions'],
   getCurrentFees: ['getCurrentFees'],
 };
 
@@ -15,6 +16,12 @@ export function useGetBalance() {
 }
 export function useGetUtxos() {
   return useQuery(uxtoQueryKeys.getUtxos, () => ApiClient.getUtxos(), {
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useGetTransactions() {
+  return useQuery(uxtoQueryKeys.getTransactions, () => ApiClient.getTxos(), {
     refetchOnWindowFocus: true,
   });
 }

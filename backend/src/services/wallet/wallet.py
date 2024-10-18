@@ -1,6 +1,8 @@
+import json
+import socket
 from dataclasses import dataclass
 import bdkpython as bdk
-from typing import Literal, Optional, cast, List
+from typing import Any, Literal, Optional, cast, List
 
 
 from src.database import DB
@@ -20,6 +22,7 @@ from src.services.wallet.raw_output_script_examples import (
 from dependency_injector.wiring import inject
 
 import structlog
+from bitcoinlib.transactions import Transaction
 
 
 LOGGER = structlog.get_logger()
@@ -36,6 +39,56 @@ class GetFeeEstimateForUtxoResponseType:
     status: Literal["success", "unspendable", "error"]
     data: Optional[FeeDetails]
     psbt: Optional[bdk.PartiallySignedTransaction]
+
+
+def electrum_request(
+    url: str,
+    port: int,
+    method: str,
+    # TODO improve typing here
+    params: None | List[str | bool],
+    request_id: Optional[int] = 1,
+):
+    if params is None:
+        params = []
+    # Create a TCP socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((url, port))
+
+            request = json.dumps(
+                {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}
+            )
+
+            # Send the request
+            s.sendall((request + "\n").encode("utf-8"))
+
+            # Receive the response
+            response = b""
+            while True:
+                part = s.recv(4096)
+                response += part
+                if len(part) < 4096:
+                    break
+
+            # Decode and parse the JSON response
+            response_data = json.loads(response.decode("utf-8").strip())
+            return response_data
+    # TODO improve logging and error handling
+    except socket.error as e:
+        print(f"Socket error: {e}")
+        return {"error": str(e)}
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        return {"error": "Invalid JSON response"}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {"error": str(e)}
+
+
+def parse_electrum_url(electrum_url: str) -> tuple[Optional[str], Optional[str]]:
+    url, port = electrum_url.split(":")
+    return url, port
 
 
 class WalletService:
@@ -136,12 +189,14 @@ class WalletService:
         )
 
         db_config = bdk.DatabaseConfig.MEMORY()
+        cls.url = electrum_url
 
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
             bdk.ElectrumConfig(electrum_url, None, 2, 30, stop_gap, True)
         )
 
         blockchain = bdk.Blockchain(blockchain_config)
+        cls.blockchain = blockchain
 
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
@@ -254,6 +309,48 @@ class WalletService:
 
         utxos = self.wallet.list_unspent()
         return utxos
+
+    # TODO add return typing
+    def get_all_transactions(
+        self,
+    ) -> List[Any]:
+        """Get all transactions for the current wallet."""
+        wallet_details = Wallet.get_current_wallet()
+        if self.wallet is None or wallet_details is None:
+            # TODO should I throw an error here?
+            return []
+
+        electrum_url = wallet_details.electrum_url
+
+        if electrum_url is None:
+            # TODO should I throw an error here?
+            return []
+
+        url, port = parse_electrum_url(electrum_url)
+        if url is None or port is None:
+            # TODO should I throw an error here?
+            return []
+
+        transactions = self.wallet.list_transactions(False)
+
+        all_tx_details = []
+
+        for index, transaction in enumerate(transactions):
+            result = electrum_request(
+                url,
+                int(port),
+                "blockchain.transaction.get",
+                [transaction.txid, False],
+                index,
+            )
+
+            # Decode the transaction
+            transaction = Transaction.parse(result["result"], strict=True)
+            # TODO add logging?
+
+            # TODO return as a dataclass?
+            all_tx_details.append(transaction.as_dict())
+        return all_tx_details
 
     def get_utxos_info(self, utxos_wanted: List[bdk.OutPoint]) -> List[bdk.LocalUtxo]:
         """For a given set of  txids and the vout pointing to a utxo, return the utxos"""

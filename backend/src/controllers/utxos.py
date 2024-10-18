@@ -119,3 +119,35 @@ def get_utxos(
     except Exception as e:
         LOGGER.error("error getting utxos", error=e)
         return SimpleErrorResponse(message="error getting utxos").model_dump()
+
+
+# TODO put this url somehwere else
+@utxo_page.route("/transactions")
+@inject
+def get_txos(
+    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+):
+    """
+    Get all utxos and spend txos in the wallet.
+    """
+    try:
+        txos = wallet_service.get_all_transactions()
+
+        # TODO type response
+        return txos
+    # GetAllUtxosResponseDto.model_validate(
+    #         dict(
+    #             utxos=[
+    #                 {
+    #                     "txid": utxo.outpoint.txid,
+    #                     "vout": utxo.outpoint.vout,
+    #                     "amount": utxo.txout.value,
+    #                 }
+    #                 for utxo in utxos
+    #             ]
+    #         )
+    #     ).model_dump()
+    #
+    except Exception as e:
+        LOGGER.error("error getting txos", error=e)
+        return SimpleErrorResponse(message="error getting txos").model_dump()
