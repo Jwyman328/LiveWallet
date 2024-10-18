@@ -868,3 +868,38 @@ Kruw on bitcoin privacy
 
 - good video showing post mix fail from wasabi
   - https://www.youtube.com/watch?v=alcLdBsoDDg
+
+
+
+
+
+# Electrum notes
+- When I was trying to get all the information about the transactions in a wallet I came across an issue, bdk python has not implemented the get_tx electrum request.
+- They did implement it for esplora though  
+- https://github.com/bitcoindevkit/bdk-ffi/pull/598/files
+- https://github.com/bitcoindevkit/bdk-ffi/pull/601
+- https://github.com/bitcoindevkit/bdk-ffi/issues/596
+- Maybe I can add it to electrum
+    - https://github.com/bitcoindevkit/bdk-ffi/blob/master/bdk-ffi/src/electrum.rs
+
+- I ended up adding it myself by implemnting my own request to electrum
+
+Electrum client is in python
+- https://electrum.readthedocs.io/en/latest/console.html
+- Maybe I can grab code from there?
+- Electrum server code
+    - https://github.com/spesmilo/electrum-server
+- Electrum server docs 
+    - https://electrumx-spesmilo.readthedocs.io/en/latest/HOWTO.html#howto
+
+- But it turns out electrum only returned the raw hex data not nicely formatted data so I had to parse it, to do that I needed to import another bitcoin library
+- Bitcoin lib 
+- https://github.com/1200wd/bitcoinlib
+- https://bitcoinlib.readthedocs.io/en/latest/source/bitcoinlib.transactions.html#bitcoinlib.transactions.Transaction
+- peter todd also had one but it wasn't well documented like the one I am using
+  - https://pypi.org/project/python-bitcoinlib/#history
+  - https://github.com/petertodd/python-bitcoinlib
+
+
+
+
