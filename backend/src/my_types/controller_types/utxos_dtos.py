@@ -118,3 +118,7 @@ class GetAllUtxosResponseDto(BaseModel):
 
 class GetAllTransactionsResponseDto(BaseModel):
     transactions: list[TransactionDetailDto]
+
+
+class GetAllOutputsResponseDto(BaseModel):
+    outputs: list[OutputDto]

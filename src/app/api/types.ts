@@ -170,3 +170,7 @@ export type GetTransactionsResponseType = {
   verified: boolean;
   status: string; // e.g., "new"
 };
+
+export type GetOutputsResponseType = {
+  outputs: TransactionOutputType[];
+};

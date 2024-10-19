@@ -1,6 +1,6 @@
 import { Tabs, rem } from '@mantine/core';
 import { IconCoins, IconArrowsDownUp, IconEye } from '@tabler/icons-react';
-import { useGetTransactions } from '../hooks/utxos';
+import { useGetTransactions, useGetOutputs } from '../hooks/utxos';
 
 export const Privacy = () => {
   const iconStyle = { width: rem(22), height: rem(22) };
@@ -12,6 +12,8 @@ export const Privacy = () => {
 
   const transactionsResponse = useGetTransactions();
   console.log('transactionsResponse', transactionsResponse.data);
+  const outputs = useGetOutputs();
+  console.log('outputs', outputs.data);
   return (
     <div>
       <Tabs

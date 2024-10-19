@@ -7,6 +7,7 @@ export const uxtoQueryKeys = {
   getUtxos: ['getUtxos'],
   getTransactions: ['getTransactions'],
   getCurrentFees: ['getCurrentFees'],
+  getOutputs: ['getOutputs'],
 };
 
 export function useGetBalance() {
@@ -21,7 +22,17 @@ export function useGetUtxos() {
 }
 
 export function useGetTransactions() {
-  return useQuery(uxtoQueryKeys.getTransactions, () => ApiClient.getTransactions(), {
+  return useQuery(
+    uxtoQueryKeys.getTransactions,
+    () => ApiClient.getTransactions(),
+    {
+      refetchOnWindowFocus: true,
+    },
+  );
+}
+
+export function useGetOutputs() {
+  return useQuery(uxtoQueryKeys.getOutputs, () => ApiClient.getOutputs(), {
     refetchOnWindowFocus: true,
   });
 }
