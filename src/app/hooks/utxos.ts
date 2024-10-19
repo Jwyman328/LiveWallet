@@ -21,7 +21,7 @@ export function useGetUtxos() {
 }
 
 export function useGetTransactions() {
-  return useQuery(uxtoQueryKeys.getTransactions, () => ApiClient.getTxos(), {
+  return useQuery(uxtoQueryKeys.getTransactions, () => ApiClient.getTransactions(), {
     refetchOnWindowFocus: true,
   });
 }

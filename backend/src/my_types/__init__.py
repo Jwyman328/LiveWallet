@@ -6,6 +6,7 @@ from src.my_types.controller_types.utxos_dtos import (
     GetUtxosResponseDto,
     GetUtxosErrorResponseDto,
     GetAllUtxosResponseDto,
+    GetAllTransactionsResponseDto,
 )
 
 from src.my_types.controller_types.fees_dtos import GetCurrentFeesResponseDto

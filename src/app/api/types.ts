@@ -103,3 +103,70 @@ export type GetBTCPriceResponseType = {
   AUD: number;
   JPY: number;
 };
+
+type TransactionInputType = {
+  index_n: number;
+  prev_txid: string;
+  output_n: number;
+  script_type: string; // e.g., "sig_pubkey"
+  address: string;
+  value: number;
+  public_keys: string;
+  compressed: boolean;
+  encoding: string; // e.g., "bech32"
+  double_spend: boolean;
+  script: string; // can be an empty string
+  redeemscript: string;
+  sequence: number;
+  signatures: string[];
+  sigs_required: number;
+  locktime_cltv?: string | number;
+  locktime_csv?: string | number;
+  public_hash: string;
+  script_code: string;
+  unlocking_script: string;
+  unlocking_script_unsigned: string;
+  witness_type: string; // e.g., "segwit"
+  witness?: string;
+  sort: boolean;
+  valid?: boolean;
+};
+
+type TransactionOutputType = {
+  value: number; // in sats
+  script: string;
+  script_type: string; // e.g., "p2wpkh"
+  public_key: string;
+  public_hash: string;
+  address: string;
+  output_n: number;
+  spent: boolean;
+  spending_txid: string;
+  spending_index_n?: number;
+};
+
+export type GetTransactionsResponseType = {
+  txid: string;
+  date?: string;
+  network: string; // e.g., "bitcoin"
+  witness_type: string; // e.g., "segwit"
+  coinbase: boolean;
+  flag: number;
+  txhash: string;
+  confirmations?: number;
+  block_height?: number;
+  block_hash?: string;
+  fee?: number;
+  fee_per_kb?: number;
+  inputs: TransactionInputType[];
+  outputs: TransactionOutputType[];
+  input_total: number;
+  output_total: number;
+  version: number;
+  locktime: number;
+  raw: string;
+  size: number;
+  vsize: number;
+  verified: boolean;
+  status: string; // e.g., "new"
+};
