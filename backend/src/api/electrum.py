@@ -47,8 +47,8 @@ def electrum_request(
     params: Optional[ALL_UTXOS_REQUEST_PARAMS],
     request_id: Optional[int] = 1,
 ) -> ElectrumResponse:
-    # Create a TCP socket
     try:
+        # Create a IPv4 TCP socket
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((url, port))
 
