@@ -497,7 +497,7 @@ function Home() {
 
       <div className="flex flex-row justify-evenly"></div>
       {displayType === DisplayType.PRIVACY ? (
-        <Privacy />
+        <Privacy btcMetric={btcMetric} />
       ) : (
         <div className="mx-4 flex flex-col items-center overflow-x-scroll">
           <div

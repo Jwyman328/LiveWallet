@@ -1,8 +1,13 @@
 import { Tabs, rem } from '@mantine/core';
 import { IconCoins, IconArrowsDownUp, IconEye } from '@tabler/icons-react';
 import { useGetTransactions, useGetOutputs } from '../hooks/utxos';
+import { TxosTable } from '../components/privacy/txosTable';
+import { BtcMetric } from '../types/btcSatHandler';
 
-export const Privacy = () => {
+type PrivacyProps = {
+  btcMetric: BtcMetric;
+};
+export const Privacy = ({ btcMetric }: PrivacyProps) => {
   const iconStyle = { width: rem(22), height: rem(22) };
   enum PrivacyTabs {
     UTXOS_STXOS = 'utxos_stxos',
@@ -46,7 +51,12 @@ export const Privacy = () => {
         </Tabs.List>
 
         <Tabs.Panel value={PrivacyTabs.UTXOS_STXOS}>
-          My utxos and stxos
+          <div className="p-14">
+            <TxosTable
+              btcMetric={btcMetric}
+              txos={outputs?.data?.outputs || []}
+            />
+          </div>
         </Tabs.Panel>
 
         <Tabs.Panel value={PrivacyTabs.TRANSACTIONS}>

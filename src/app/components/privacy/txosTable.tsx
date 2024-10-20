@@ -6,24 +6,42 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 
-import { CopyButton, rem, Tooltip, ActionIcon } from '@mantine/core';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
+import {
+  CopyButton,
+  rem,
+  Tooltip,
+  ActionIcon,
+  Chip,
+  ChipGroup,
+} from '@mantine/core';
+import { MdLabelOutline } from 'react-icons/md';
+
+import {
+  IconCheck,
+  IconCircleCheck,
+  IconCircleX,
+  IconCopy,
+} from '@tabler/icons-react';
+import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
-type TxosTableProps = {};
+type TxosTableProps = {
+  txos: any;
+  btcMetric: BtcMetric;
+};
 
-export const TxosTable = ({}: TxosTableProps) => {
+export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
   const columns = useMemo(() => {
     const defaultColumns = [
       {
-        header: 'Txid',
+        header: 'Address',
         size: 100,
-        accessorKey: 'txid',
+        accessorKey: 'address',
         Cell: ({ row }: { row: any }) => {
-          const prefix = row.original.txid.substring(0, 4);
-          const suffix = row.original.txid.substring(
-            row.original.txid.length - 4,
+          const prefix = row.original.address.substring(0, 4);
+          const suffix = row.original.address.substring(
+            row.original?.address?.length - 4,
           );
           const abrv = `${prefix}....${suffix}`;
           return (
@@ -61,45 +79,61 @@ export const TxosTable = ({}: TxosTableProps) => {
         accessorKey: 'amount',
         size: 100,
         Cell: ({ row }: { row: any }) => {
+          const amount = btcSatHandler(
+            Number(row.original.value).toFixed(2).toLocaleString(),
+            btcMetric,
+          );
           return (
             <div>
-              <p>amount</p>
+              <p>
+                {btcMetric === BtcMetric.BTC
+                  ? amount
+                  : Number(amount).toLocaleString()}
+              </p>
             </div>
           );
         },
       },
       {
-        header: '$ Amount',
-        accessorKey: 'amountUSD',
-        size: 100,
-        Cell: ({ row }: { row: any }) => {
-          return (
-            <div>
-              <p>{'amountUSDDisplay'}</p>
-            </div>
-          );
-        },
-      },
-      {
-        header: '~ Fee %',
-        accessorKey: 'selfCost',
-        size: 100,
-        Cell: ({ row }: { row: any }) => {
-          return (
-            <div>
-              <p> {'hi'}</p>
-            </div>
-          );
-        },
-      },
-      {
-        header: '$ Fee',
-        accessorKey: 'feeUSD',
-        size: 100,
+        header: 'Labels',
+        accessorKey: 'label',
+        size: 250,
         Cell: () => {
+          // mock labels for now
+          const allLabels = ['do not spend', 'bad change', "another"];
           return (
-            <div>
-              <p>{'amountUSDDisplay'}</p>
+            <div className="flex flex-row flex-wrap">
+              {allLabels.map((label) => (
+                <Chip
+                  icon={<MdLabelOutline />}
+                  color="red"
+                  checked={true}
+                  variant="light"
+                  className="mr-1"
+                  classNames={{
+                    checkIcon: 'h-0 hidden',
+                  }}
+                >
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          );
+        },
+      },
+      {
+        header: 'Unspent',
+        accessorKey: 'spent',
+        size: 100,
+        Cell: ({ row }) => {
+          const isSpent = row.original.spent === true;
+          return (
+            <div className="flex items-center justify-center">
+              {isSpent ? (
+                <IconCircleX data-testid="spend-icon" color="red" />
+              ) : (
+                <IconCircleCheck data-testid="unspent-icon" color="green" />
+              )}
             </div>
           );
         },
@@ -107,11 +141,11 @@ export const TxosTable = ({}: TxosTableProps) => {
     ];
 
     return defaultColumns;
-  }, []);
+  }, [txos, btcMetric]);
 
   const table = useMaterialReactTable({
     columns,
-    data: [],
+    data: txos,
     enableRowSelection: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
@@ -139,8 +173,7 @@ export const TxosTable = ({}: TxosTableProps) => {
             }}
             className="text-2xl font-semibold"
           >
-            {'mock title'}
-            <span className="text-lg"> (utxos)</span>
+            Outputs
           </p>
         </div>
       );
