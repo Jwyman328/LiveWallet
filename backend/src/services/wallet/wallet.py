@@ -135,8 +135,7 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor,
-                           bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -158,8 +157,7 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(
-            f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -208,8 +206,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -374,8 +371,7 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
-                self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

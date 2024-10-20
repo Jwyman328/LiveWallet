@@ -10,8 +10,13 @@ LOGGER = structlog.get_logger()
 
 
 def parse_electrum_url(electrum_url: str) -> tuple[Optional[str], Optional[str]]:
-    url, port = electrum_url.split(":")
-    return url, port
+    try:
+        url, port = electrum_url.split(":")
+        if url == "" or port == "":
+            return None, None
+        return url, port
+    except ValueError:
+        return None, None
 
 
 class ElectrumMethod(Enum):

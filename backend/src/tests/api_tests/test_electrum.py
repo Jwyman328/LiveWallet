@@ -28,6 +28,12 @@ class TestElectrumApi(TestCase):
         assert port == str(self.mock_port)
         assert url == self.mock_url
 
+    def test_parse_electrum_url_without_port(self):
+        mock_electrum_url = f"{self.mock_url}:"
+        url, port = parse_electrum_url(mock_electrum_url)
+        assert port is None
+        assert url is None
+
     def test_get_transactions_electrum_request_success(self):
         request_method = ElectrumMethod.GET_TRANSACTIONS
 
