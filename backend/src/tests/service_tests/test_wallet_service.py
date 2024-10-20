@@ -973,3 +973,43 @@ class TestWalletService(TestCase):
             mock_wallet.list_transactions.assert_not_called()
             assert mock_electrum_request.call_count == 0
             assert get_all_transactions_response == []
+
+    def test_get_all_outputs(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock()
+        # mark first output as mine and the second as not
+        mock_wallet.is_mine.side_effect = [True, False]
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
+
+        # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
+        assert get_all_outputs_response == [all_transactions_mock[0].outputs[0]]
+
+    def test_get_all_outputs_if_none_are_mine(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock()
+        # mark all as False
+        mock_wallet.is_mine.return_value = False
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
+
+        # no outputs are mine so an empty list should be returned
+        assert get_all_outputs_response == []
