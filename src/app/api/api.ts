@@ -15,6 +15,8 @@ import {
   HardwareWalletSetPassphraseResponseType,
   HardwareWalletCloseAndRemoveResponseType,
   GetBTCPriceResponseType,
+  GetTransactionsResponseType,
+  GetOutputsResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -53,6 +55,26 @@ export class ApiClient {
     const data = await response.json();
 
     return data as GetUtxosResponseType;
+  }
+
+  static async getTransactions() {
+    const response =
+      await fetchHandler(`${configs.backendServerBaseUrl}/transactions/
+`);
+
+    const data = await response.json();
+
+    return data as GetTransactionsResponseType;
+  }
+
+  static async getOutputs() {
+    const response =
+      await fetchHandler(`${configs.backendServerBaseUrl}/transactions/outputs
+`);
+
+    const data = await response.json();
+
+    return data as GetOutputsResponseType;
   }
   static async createTxFeeEstimation(
     utxos: UtxoRequestParam[],

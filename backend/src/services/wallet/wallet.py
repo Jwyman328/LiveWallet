@@ -1,8 +1,13 @@
 from dataclasses import dataclass
 import bdkpython as bdk
-from typing import Literal, Optional, cast, List
+from bitcoinlib.transactions import Output, Transaction
+from typing import Any, Literal, Optional, cast, List
+from src.api import electrum_request, parse_electrum_url
 
-
+from src.api.electrum import (
+    ElectrumMethod,
+    GetTransactionsRequestParams,
+)
 from src.database import DB
 from src.models.wallet import Wallet
 from src.my_types import (
@@ -136,12 +141,14 @@ class WalletService:
         )
 
         db_config = bdk.DatabaseConfig.MEMORY()
+        cls.url = electrum_url
 
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
             bdk.ElectrumConfig(electrum_url, None, 2, 30, stop_gap, True)
         )
 
         blockchain = bdk.Blockchain(blockchain_config)
+        cls.blockchain = blockchain
 
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
@@ -254,6 +261,59 @@ class WalletService:
 
         utxos = self.wallet.list_unspent()
         return utxos
+
+    def get_all_transactions(
+        self,
+    ) -> List[Transaction]:
+        """Get all transactions for the current wallet."""
+        wallet_details = Wallet.get_current_wallet()
+        if self.wallet is None or wallet_details is None:
+            LOGGER.error("No electrum wallet or wallet details found.")
+            return []
+
+        electrum_url = wallet_details.electrum_url
+
+        if electrum_url is None:
+            LOGGER.error("No electrum url found in the wallet details")
+            return []
+
+        url, port = parse_electrum_url(electrum_url)
+        if url is None or port is None:
+            LOGGER.error("No electrum url or port found in the wallet details")
+            return []
+
+        transactions = self.wallet.list_transactions(False)
+
+        all_tx_details: List[Transaction] = []
+
+        for index, transaction in enumerate(transactions):
+            electrum_response = electrum_request(
+                url,
+                int(port),
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams(transaction.txid, False),
+                index,
+            )
+
+            if (
+                electrum_response.status == "success"
+                and electrum_response.data is not None
+            ):
+                transaction: Transaction = electrum_response.data
+                all_tx_details.append(electrum_response.data)
+        return all_tx_details
+
+    def get_all_outputs(self) -> List[Output]:
+        """Get all spent and unspent transaction outputs for the current wallet."""
+        all_transactions = self.get_all_transactions()
+        all_outputs: List[Output] = []
+        for transaction in all_transactions:
+            for output in transaction.outputs:
+                script = bdk.Script(output.script.raw)
+                if self.wallet and self.wallet.is_mine(script):
+                    all_outputs.append(output)
+
+        return all_outputs
 
     def get_utxos_info(self, utxos_wanted: List[bdk.OutPoint]) -> List[bdk.LocalUtxo]:
         """For a given set of  txids and the vout pointing to a utxo, return the utxos"""

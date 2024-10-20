@@ -19,6 +19,7 @@ class AppCreator:
         from src.controllers import (
             balance_page,
             utxo_page,
+            transactions_page,
             fees_api,
             wallet_api,
             health_check_api,
@@ -45,6 +46,7 @@ class AppCreator:
             cls.app.container = container
             cls.app.register_blueprint(balance_page)
             cls.app.register_blueprint(utxo_page)
+            cls.app.register_blueprint(transactions_page)
             cls.app.register_blueprint(fees_api)
             cls.app.register_blueprint(wallet_api)
             cls.app.register_blueprint(health_check_api)

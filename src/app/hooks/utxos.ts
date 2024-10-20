@@ -5,7 +5,9 @@ import { useMutation, useQuery } from 'react-query';
 export const uxtoQueryKeys = {
   getBalance: ['getBalance'],
   getUtxos: ['getUtxos'],
+  getTransactions: ['getTransactions'],
   getCurrentFees: ['getCurrentFees'],
+  getOutputs: ['getOutputs'],
 };
 
 export function useGetBalance() {
@@ -15,6 +17,22 @@ export function useGetBalance() {
 }
 export function useGetUtxos() {
   return useQuery(uxtoQueryKeys.getUtxos, () => ApiClient.getUtxos(), {
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useGetTransactions() {
+  return useQuery(
+    uxtoQueryKeys.getTransactions,
+    () => ApiClient.getTransactions(),
+    {
+      refetchOnWindowFocus: true,
+    },
+  );
+}
+
+export function useGetOutputs() {
+  return useQuery(uxtoQueryKeys.getOutputs, () => ApiClient.getOutputs(), {
     refetchOnWindowFocus: true,
   });
 }
