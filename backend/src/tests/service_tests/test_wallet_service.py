@@ -2,6 +2,12 @@ from unittest.case import TestCase
 import os
 from unittest.mock import MagicMock, call, patch, Mock
 import pytest
+from src.api.electrum import (
+    ElectrumMethod,
+    ElectrumResponse,
+    GetTransactionsRequestParams,
+    GetTransactionsResponse,
+)
 from src.models.wallet import Wallet
 from src.services import WalletService
 from src.services.wallet.wallet import (
@@ -14,7 +20,11 @@ from src.my_types import (
 )
 from src.my_types import GetUtxosRequestDto
 from src.my_types.script_types import ScriptType
-from src.tests.mocks import local_utxo_mock, transaction_details_mock
+from src.tests.mocks import (
+    local_utxo_mock,
+    transaction_details_mock,
+    all_transactions_mock,
+)
 from typing import cast
 
 
@@ -859,3 +869,147 @@ class TestWalletService(TestCase):
 
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
+
+    def test_get_all_transactions_success(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            # mock the transactions that bdk fetches from the wallet
+            mock_wallet.list_transactions.return_value = [
+                Mock(txid="txid1"),
+                Mock(txid="txid2"),
+            ]
+
+            wallet_details_mock = MagicMock()
+            wallet_details_mock.electrum_url = "blockstream:1234"
+
+            all_transactions_from_electrum = [
+                all_transactions_mock[0],
+                all_transactions_mock[0],
+            ]
+            all_transactions_from_electrum[1].txid = "txid2"
+
+            mock_electrum_request.side_effect = [
+                ElectrumResponse(
+                    status="success", data=all_transactions_from_electrum[0]
+                ),
+                ElectrumResponse(
+                    status="success", data=all_transactions_from_electrum[1]
+                ),
+            ]
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_called_with(False)
+
+            assert mock_electrum_request.call_count == 2
+            mock_electrum_request.assert_any_call(
+                "blockstream",
+                1234,
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams("txid1", False),
+                0,
+            )
+
+            mock_electrum_request.assert_any_call(
+                "blockstream",
+                1234,
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams("txid2", False),
+                1,
+            )
+
+            assert get_all_transactions_response == all_transactions_from_electrum
+
+    def test_get_all_transactions_without_url(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            mock_wallet.list_transactions = MagicMock()
+            wallet_details_mock = MagicMock()
+            # set no electrum url
+            wallet_details_mock.electrum_url = None
+
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_not_called()
+            assert mock_electrum_request.call_count == 0
+            assert get_all_transactions_response == []
+
+    def test_get_all_transactions_without_port(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            mock_wallet.list_transactions = MagicMock()
+            wallet_details_mock = MagicMock()
+            # set no electrum port
+            wallet_details_mock.electrum_url = "blockstreamwithoutPort"
+
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_not_called()
+            assert mock_electrum_request.call_count == 0
+            assert get_all_transactions_response == []
+
+    def test_get_all_outputs(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock()
+        # mark first output as mine and the second as not
+        mock_wallet.is_mine.side_effect = [True, False]
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
+
+        # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
+        assert get_all_outputs_response == [all_transactions_mock[0].outputs[0]]
+
+    def test_get_all_outputs_if_none_are_mine(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock()
+        # mark all as False
+        mock_wallet.is_mine.return_value = False
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
+
+        # no outputs are mine so an empty list should be returned
+        assert get_all_outputs_response == []
