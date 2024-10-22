@@ -53,6 +53,12 @@ class OutputDto(BaseModel):
     spending_index_n: Optional[int]
 
 
+class OutputDetailDto(OutputDto):
+    annominity_set: Optional[int]
+    txid: Optional[str]
+    labels: Optional[List[str]]
+
+
 class TransactionDetailDto(BaseModel):
     txid: str
     date: Optional[str]
@@ -121,4 +127,34 @@ class GetAllTransactionsResponseDto(BaseModel):
 
 
 class GetAllOutputsResponseDto(BaseModel):
-    outputs: list[OutputDto]
+    outputs: list[OutputDetailDto]
+
+
+class AddOutputLabelRequestDto(BaseModel):
+    txid: str
+    vout: int
+    labelName: str
+
+
+class RemoveOutputLabelRequestDto(BaseModel):
+    txid: str
+    vout: int
+    labelName: str
+
+
+class OutputLabelDto(BaseModel):
+    label: str
+    display_name: str
+    description: str
+
+
+class RemoveOutputLabelResponseDto(BaseModel):
+    labels: list[OutputLabelDto]
+
+
+class AddOutputLabelResponseDto(BaseModel):
+    labels: list[OutputLabelDto]
+
+
+class GetOutputLabelsResponseDto(BaseModel):
+    labels: list[OutputLabelDto]

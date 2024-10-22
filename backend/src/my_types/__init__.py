@@ -8,6 +8,11 @@ from src.my_types.controller_types.utxos_dtos import (
     GetAllUtxosResponseDto,
     GetAllTransactionsResponseDto,
     GetAllOutputsResponseDto,
+    AddOutputLabelRequestDto,
+    RemoveOutputLabelRequestDto,
+    AddOutputLabelResponseDto,
+    RemoveOutputLabelResponseDto,
+    GetOutputLabelsResponseDto,
 )
 
 from src.my_types.controller_types.fees_dtos import GetCurrentFeesResponseDto

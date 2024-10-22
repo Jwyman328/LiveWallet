@@ -104,7 +104,7 @@ export type GetBTCPriceResponseType = {
   JPY: number;
 };
 
-type TransactionInputType = {
+export type TransactionInputType = {
   index_n: number;
   prev_txid: string;
   output_n: number;
@@ -132,7 +132,7 @@ type TransactionInputType = {
   valid?: boolean;
 };
 
-type TransactionOutputType = {
+export type TransactionOutputType = {
   value: number; // in sats
   script: string;
   script_type: string; // e.g., "p2wpkh"
@@ -143,6 +143,18 @@ type TransactionOutputType = {
   spent: boolean;
   spending_txid: string;
   spending_index_n?: number;
+  txid: string;
+  annominity_set: number;
+  labels: string[];
+};
+
+export type OutputLabelType = {
+  label: string;
+  display_name: string;
+  description: string;
+};
+export type GetOutputLabelsResponseType = {
+  labels: [OutputLabelType];
 };
 
 export type GetTransactionsResponseType = {
@@ -173,4 +185,24 @@ export type GetTransactionsResponseType = {
 
 export type GetOutputsResponseType = {
   outputs: TransactionOutputType[];
+};
+
+export type AddLabelRequestBody = {
+  txid: string;
+  vout: number;
+  labelName: string;
+};
+
+export type AddLabelResponseType = {
+  labels: [OutputLabelType]
+};
+
+export type RemoveLabelRequestParams = {
+  txid: string;
+  vout: number;
+  labelName: string;
+};
+
+export type RemoveLabelResponseType = {
+  labels: [OutputLabelType]
 };

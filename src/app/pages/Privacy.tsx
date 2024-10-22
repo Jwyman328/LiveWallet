@@ -1,6 +1,6 @@
 import { Tabs, rem } from '@mantine/core';
 import { IconCoins, IconArrowsDownUp, IconEye } from '@tabler/icons-react';
-import { useGetTransactions, useGetOutputs } from '../hooks/utxos';
+import { useGetTransactions, useGetOutputs } from '../hooks/transactions';
 import { TxosTable } from '../components/privacy/txosTable';
 import { BtcMetric } from '../types/btcSatHandler';
 

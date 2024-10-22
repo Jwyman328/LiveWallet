@@ -17,6 +17,11 @@ import {
   GetBTCPriceResponseType,
   GetTransactionsResponseType,
   GetOutputsResponseType,
+  GetOutputLabelsResponseType,
+  AddLabelRequestBody,
+  RemoveLabelRequestParams,
+  AddLabelResponseType,
+  RemoveLabelResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -76,6 +81,43 @@ export class ApiClient {
 
     return data as GetOutputsResponseType;
   }
+
+  static async getOutputLabels() {
+    const response =
+      await fetchHandler(`${configs.backendServerBaseUrl}/transactions/outputs/labels
+`);
+
+    const data = await response.json();
+
+    return data as GetOutputLabelsResponseType;
+  }
+  static async addOutputLabel(body: AddLabelRequestBody) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/transactions/outputs/label`,
+      'POST',
+      body,
+    );
+
+    const data = await response.json();
+
+    return data as AddLabelResponseType;
+  }
+
+  static async removeOutputLabel(
+    txid: RemoveLabelRequestParams["txid"],
+    vout:  RemoveLabelRequestParams["vout"],
+    labelName: RemoveLabelRequestParams["labelName"],
+  ) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/transactions/outputs/label?txid=${txid}&vout=${vout}&labelName=${labelName}`,
+      'DELETE',
+    );
+
+    const data = await response.json();
+
+    return data as RemoveLabelResponseType;
+  }
+
   static async createTxFeeEstimation(
     utxos: UtxoRequestParam[],
     feeRate: number = 1,

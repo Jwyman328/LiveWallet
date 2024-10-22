@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 import {
@@ -6,14 +6,7 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 
-import {
-  CopyButton,
-  rem,
-  Tooltip,
-  ActionIcon,
-  Chip,
-  ChipGroup,
-} from '@mantine/core';
+import { CopyButton, rem, Tooltip, ActionIcon, Chip } from '@mantine/core';
 import { MdLabelOutline } from 'react-icons/md';
 
 import {
@@ -21,17 +14,24 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconCopy,
+  IconEdit,
 } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
+import { OutputModal } from '../OutputModal';
+import { TransactionOutputType } from '../../api/types';
+import { useGetOutputLabels } from '../../hooks/transactions';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
 type TxosTableProps = {
-  txos: any;
+  txos: TransactionOutputType[];
   btcMetric: BtcMetric;
 };
 
 export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
+  const getOutputLabelsQuery = useGetOutputLabels();
+  const [isOutputModalShowing, setIsOutputModalShowing] = useState(false);
+  const [selectedOutput, setSelectedOutput] = useState<TransactionOutputType>();
   const columns = useMemo(() => {
     const defaultColumns = [
       {
@@ -46,7 +46,7 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
           const abrv = `${prefix}....${suffix}`;
           return (
             <div className="flex justify-center items-center">
-              <Tooltip label={row.original.txid}>
+              <Tooltip label={row.original?.address}>
                 <p className="mr-2">{abrv}</p>
               </Tooltip>
               <CopyButton value={row.original.txid} timeout={2000}>
@@ -95,28 +95,56 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
         },
       },
       {
+        header: 'Annominity',
+        accessorKey: 'annominity_set',
+        size: 30,
+        Cell: ({ row }) => {
+          return (
+            <div className="flex items-center justify-center">
+              <p>{row.original.annominity_set}</p>
+            </div>
+          );
+        },
+      },
+      {
         header: 'Labels',
-        accessorKey: 'label',
+        accessorKey: 'labels',
         size: 250,
-        Cell: () => {
-          // mock labels for now
-          const allLabels = ['do not spend', 'bad change', "another"];
+        Cell: ({ row }) => {
+          const allLabels = row.original.labels || [];
           return (
             <div className="flex flex-row flex-wrap">
-              {allLabels.map((label) => (
-                <Chip
-                  icon={<MdLabelOutline />}
-                  color="red"
-                  checked={true}
-                  variant="light"
-                  className="mr-1"
-                  classNames={{
-                    checkIcon: 'h-0 hidden',
-                  }}
-                >
-                  {label}
-                </Chip>
-              ))}
+              {allLabels.length > 0 ? (
+                allLabels.map((label) => (
+                  <Chip
+                    icon={<MdLabelOutline />}
+                    color="red"
+                    checked={true}
+                    variant="light"
+                    className="mr-1"
+                  >
+                    {label}
+                  </Chip>
+                ))
+              ) : (
+                <p className="mt-auto">None</p>
+              )}
+
+              <ActionIcon
+                onClick={() => {
+                  setSelectedOutput(row.original);
+                  setIsOutputModalShowing(true);
+                }}
+                variant="outline"
+                aria-label="edit"
+                data-testid="edit-label-button"
+                color="gray"
+                size="sm"
+                className="mt-auto ml-1"
+              >
+                <IconEdit
+                />
+              </ActionIcon>
             </div>
           );
         },
@@ -141,7 +169,7 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
     ];
 
     return defaultColumns;
-  }, [txos, btcMetric]);
+  }, [txos, btcMetric, isOutputModalShowing]);
 
   const table = useMaterialReactTable({
     columns,
@@ -164,6 +192,7 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
     enableTopToolbar: true,
     positionToolbarAlertBanner: 'none',
     positionToolbarDropZone: 'top',
+    enableEditing: false,
     renderTopToolbarCustomActions: ({ table }) => {
       return (
         <div className="ml-2">
@@ -231,6 +260,15 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
       >
         <MaterialReactTable table={table} />
       </ThemeProvider>
+      {isOutputModalShowing && (
+        <OutputModal
+          output={selectedOutput}
+          btcMetric={btcMetric}
+          opened={isOutputModalShowing}
+          onClose={() => setIsOutputModalShowing(false)}
+          labels={getOutputLabelsQuery.data?.labels || []}
+        />
+      )}
     </div>
   );
 };

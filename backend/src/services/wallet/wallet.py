@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import bdkpython as bdk
 from bitcoinlib.transactions import Output, Transaction
+from src.models.label import LabelName, Label
+from src.models.outputs import Output as OutputModel
 from typing import Any, Literal, Optional, cast, List
 from src.api import electrum_request, parse_electrum_url
 
@@ -15,6 +17,8 @@ from src.my_types import (
     FeeDetails,
     GetUtxosRequestDto,
 )
+from src.my_types.controller_types.utxos_dtos import OutputLabelDto
+from src.my_types.transactions import LiveWalletOutput
 from src.services.wallet.raw_output_script_examples import (
     p2pkh_raw_output_script,
     p2pk_raw_output_script,
@@ -303,17 +307,108 @@ class WalletService:
                 all_tx_details.append(electrum_response.data)
         return all_tx_details
 
-    def get_all_outputs(self) -> List[Output]:
-        """Get all spent and unspent transaction outputs for the current wallet."""
+    def get_all_outputs(self) -> List[LiveWalletOutput]:
+        """Get all spent and unspent transaction outputs for the current wallet and mutate them as needed.
+        Calculate the annominity set for each output.
+        Attach the txid to each output.
+        Attach all labels to each output.
+        Sync the database with the incoming outputs.
+        """
         all_transactions = self.get_all_transactions()
-        all_outputs: List[Output] = []
+        all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
+            annominity_sets = self.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
+                db_output = self.sync_local_db_with_incoming_output(
+                    txid=transaction.txid, output=output
+                )
                 script = bdk.Script(output.script.raw)
                 if self.wallet and self.wallet.is_mine(script):
-                    all_outputs.append(output)
+                    annominity_set = annominity_sets.get(output.value, 1)
+
+                    extended_output = LiveWalletOutput(
+                        annominity_set=annominity_set,
+                        base_output=output,
+                        txid=transaction.txid,
+                        labels=[label.display_name for label in db_output.labels],
+                    )
+
+                    all_outputs.append(extended_output)
 
         return all_outputs
+
+    def sync_local_db_with_incoming_output(
+        self, txid: str, output: Output
+    ) -> OutputModel:
+        """Sync the local database with the incoming output.
+
+        If the output is not in the database, add it.
+        """
+
+        db_output = OutputModel.query.filter_by(txid=txid, vout=output.output_n).first()
+        if not db_output:
+            db_output = self.add_output_to_db(txid=txid, output=output)
+        return db_output
+
+    def add_output_to_db(self, output: Output, txid: str) -> OutputModel:
+        db_output = OutputModel(txid=txid, vout=output.output_n, labels=[])
+        DB.session.add(db_output)
+        DB.session.commit()
+        return db_output
+
+    def calculate_output_annominity_sets(
+        self, transaction_outputs: List[Output]
+    ) -> dict[str, int]:  # -> {"value": count }
+        """Calculate the annominity set for a given output in a transaction.
+
+        The annominity set is the number of outputs with the same btc value in a transaction.
+        """
+        # loop through the transaction outputs and
+        # count how many equal outputs there are for each amount
+        # {"value": equal_output_count}
+        output_count = {}
+        for output in transaction_outputs:
+            if output_count.get(output.value):
+                output_count[output.value] += 1
+            else:
+                output_count[output.value] = 1
+        return output_count
+
+    def get_output_labels(self) -> List[OutputLabelDto]:
+        """Get all the labels for the outputs in the wallet."""
+        labels = Label.query.all()
+        return [
+            OutputLabelDto(
+                label=label.name,
+                display_name=label.display_name,
+                description=label.description,
+            )
+            for label in labels
+        ]
+
+    # TODO should this even go here
+    def add_label_to_output(
+        self, txid: str, vout: int, label_display_name: str
+    ) -> list[Label]:
+        """Add a label to an output in the db."""
+        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        label = Label.query.filter_by(display_name=label_display_name).first()
+        db_output.labels.append(label)
+        DB.session.commit()
+        return db_output.labels
+
+    def remove_label_from_output(
+        self, txid: str, vout: int, label_display_name: str
+    ) -> list[Label]:
+        """Remove a label from an output in the db."""
+        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        label = Label.query.filter_by(display_name=label_display_name).first()
+        # Remove the label from the output's labels collection
+        if label in db_output.labels:
+            db_output.labels.remove(label)
+        DB.session.commit()
+
+        return db_output.labels
 
     def get_utxos_info(self, utxos_wanted: List[bdk.OutPoint]) -> List[bdk.LocalUtxo]:
         """For a given set of  txids and the vout pointing to a utxo, return the utxos"""

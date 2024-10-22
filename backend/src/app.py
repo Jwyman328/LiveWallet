@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from src.database import DB
+from src.database import DB, populate_labels
 
 # initialize structlog
 from src.utils import logging  # noqa: F401, E261
@@ -94,6 +94,7 @@ def setup_database(app):
     DB.init_app(app)
     with app.app_context():
         DB.create_all()
+        populate_labels()
 
 
 # for some reason the frontend doesn't run the executable with app.y being __main__
