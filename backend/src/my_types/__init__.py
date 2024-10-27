@@ -13,9 +13,9 @@ from src.my_types.controller_types.utxos_dtos import (
     AddOutputLabelResponseDto,
     RemoveOutputLabelResponseDto,
     GetOutputLabelsResponseDto,
-    GetOutputLabelsUniqueResponseDto,
-    PopulateOutputLabelsUniqueResponseDto,
-    PopulateOutputLabelsUniqueRequestDto,
+    GetOutputLabelsPopulateResponseDto,
+    PopulateOutputLabelsResponseDto,
+    PopulateOutputLabelsRequestDto,
 )
 
 from src.my_types.controller_types.fees_dtos import GetCurrentFeesResponseDto

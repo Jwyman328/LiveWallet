@@ -15,20 +15,18 @@ import {
   SegmentedControl,
   ActionIcon,
   NumberInput,
-  Tooltip,
   Collapse,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { SettingsSlideout } from '../components/SettingsSlideout';
-import { IconAdjustments, IconInfoCircle } from '@tabler/icons-react';
+import { IconAdjustments } from '@tabler/icons-react';
 import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
 import {
   CreateTxFeeEstimationResponseType,
   GetBTCPriceResponseType,
-  GetOutputLabelsUniqueResponseType,
-  OutputLabelType,
+  GetOutputLabelsPopulateResponseType,
 } from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
@@ -134,7 +132,7 @@ function Home() {
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
   // use the labels to populate the backend.
   const [importedOutputLabels, setImportedOutputLabels] =
-    useState<null | GetOutputLabelsUniqueResponseType>(null);
+    useState<null | GetOutputLabelsPopulateResponseType>(null);
 
   // Initially set the current future fee rate to the current medium fee rate
   // if it was not set by an imported wallet.
@@ -246,8 +244,10 @@ function Home() {
       );
     } else if (importedOutputLabels && !populateBackendWithLabels.isSuccess) {
       populateBackendWithLabels.mutate(importedOutputLabels);
-    } else{
-        console.log("there are no output labels to populate the db with, therefore do not make the request.")
+    } else {
+      console.log(
+        'there are no output labels to populate the db with, therefore do not make the request.',
+      );
     }
   }, [importedOutputLabels]);
 

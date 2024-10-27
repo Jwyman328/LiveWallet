@@ -19,7 +19,7 @@ import {
 import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 import { OutputModal } from '../OutputModal';
 import {
-  GetOutputLabelsUniqueResponseType,
+  GetOutputLabelsPopulateResponseType,
   TransactionOutputType,
 } from '../../api/types';
 import {
@@ -37,7 +37,7 @@ type TxosTableProps = {
 export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
   const getOutputLabelsQuery = useGetOutputLabels();
   const saveLabelsInWalletConfig = (
-    data: GetOutputLabelsUniqueResponseType,
+    data: GetOutputLabelsPopulateResponseType,
   ) => {
     window.electron.ipcRenderer.sendMessage('save-labels', data);
   };

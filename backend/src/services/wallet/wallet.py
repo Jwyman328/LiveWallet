@@ -20,7 +20,7 @@ from src.my_types import (
 )
 from src.my_types.controller_types.utxos_dtos import (
     OutputLabelDto,
-    PopulateOutputLabelsUniqueRequestDto,
+    PopulateOutputLabelsRequestDto,
 )
 from src.my_types.transactions import LiveWalletOutput
 from src.services.wallet.raw_output_script_examples import (
@@ -455,10 +455,10 @@ class WalletService:
         return result
 
     def populate_outputs_and_labels(
-        self, unique_output_labels: PopulateOutputLabelsUniqueRequestDto
+        self, populate_output_labels: PopulateOutputLabelsRequestDto
     ) -> None:  # TODO maybe a success of fail reutn type?
         try:
-            model_dump = unique_output_labels.model_dump()
+            model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
                 txid, vout = unique_output_txid_vout.split("-")
                 # db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()

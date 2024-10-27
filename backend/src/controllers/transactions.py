@@ -14,14 +14,13 @@ from src.my_types import (
     RemoveOutputLabelResponseDto,
     AddOutputLabelResponseDto,
     GetOutputLabelsResponseDto,
-    GetOutputLabelsUniqueResponseDto,
-    PopulateOutputLabelsUniqueResponseDto,
-    PopulateOutputLabelsUniqueRequestDto,
+    GetOutputLabelsPopulateResponseDto,
+    PopulateOutputLabelsResponseDto,
+    PopulateOutputLabelsRequestDto,
 )
 from src.my_types.controller_types.generic_response_types import SimpleErrorResponse
 
-transactions_page = Blueprint(
-    "get_transactions", __name__, url_prefix="/transactions")
+transactions_page = Blueprint("get_transactions", __name__, url_prefix="/transactions")
 
 LOGGER = structlog.get_logger()
 
@@ -38,8 +37,7 @@ def get_txos(
         transactions = wallet_service.get_all_transactions()
 
         return GetAllTransactionsResponseDto.model_validate(
-            dict(transactions=[transaction.as_dict()
-                 for transaction in transactions])
+            dict(transactions=[transaction.as_dict() for transaction in transactions])
         ).model_dump()
 
     except Exception as e:
@@ -89,30 +87,29 @@ def get_output_labels(
         ).model_dump()
 
 
-# TODO better name
-@transactions_page.route("/outputs/labels-unique", methods=["GET"])
+@transactions_page.route("/outputs/populate-labels", methods=["GET"])
 @inject
 def get_output_labels_unique(
     wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
 ):
     """
-    Get all labels for each txid-vout
+    Get all labels for each txid-vout, used for being saved locally and
+    eventually repopulating the database.
     """
     try:
         labels = wallet_service.get_output_labels_unique()
 
-        return GetOutputLabelsUniqueResponseDto.model_validate(labels).model_dump()
+        return GetOutputLabelsPopulateResponseDto.model_validate(labels).model_dump()
     except Exception as e:
-        LOGGER.error("error getting all output labels unique", error=e)
+        LOGGER.error("error getting all populate output labels", error=e)
         return SimpleErrorResponse(
-            message="error getting all output labels unique"
+            message="error getting all populate output labels"
         ).model_dump()
 
 
-# TODO better name for endpoint
-@transactions_page.route("/outputs/labels-unique", methods=["POST"])
+@transactions_page.route("/outputs/populate-labels", methods=["POST"])
 @inject
-def populate_output_labels_unique(
+def populate_output_labels(
     wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
 ):
     """
@@ -122,10 +119,10 @@ def populate_output_labels_unique(
     for their wallet's outputs that they have saved.
     """
     try:
-        data = PopulateOutputLabelsUniqueRequestDto(json.loads(request.data))
+        data = PopulateOutputLabelsRequestDto(json.loads(request.data))
         wallet_service.populate_outputs_and_labels(data)
 
-        return PopulateOutputLabelsUniqueResponseDto.model_validate(
+        return PopulateOutputLabelsResponseDto.model_validate(
             {"success": True}
         ).model_dump()
     #

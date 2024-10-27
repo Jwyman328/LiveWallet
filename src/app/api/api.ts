@@ -22,9 +22,9 @@ import {
   RemoveLabelRequestParams,
   AddLabelResponseType,
   RemoveLabelResponseType,
-  GetOutputLabelsUniqueResponseType,
-  PopulateOutputLabelsUniqueBodyType,
-  PopulateOutputLabelsUniqueResponse,
+  GetOutputLabelsPopulateResponseType,
+  PopulateOutputLabelsBodyType,
+  PopulateOutputLabelsResponse,
 } from './types';
 
 import { Network } from '../types/network';
@@ -97,24 +97,26 @@ export class ApiClient {
 
   static async getOutputLabelsUnique() {
     const response = await fetchHandler(
-      `${configs.backendServerBaseUrl}/transactions/outputs/labels-unique`,
+      `${configs.backendServerBaseUrl}/transactions/outputs/populate-labels`,
     );
 
     const data = await response.json();
 
-    return data as GetOutputLabelsUniqueResponseType;
+    return data as GetOutputLabelsPopulateResponseType;
   }
 
-  static async populateOutputLabelsUnique(outputLabels: PopulateOutputLabelsUniqueBodyType) {
+  static async populateOutputLabelsUnique(
+    outputLabels: PopulateOutputLabelsBodyType,
+  ) {
     const response = await fetchHandler(
-      `${configs.backendServerBaseUrl}/transactions/outputs/labels-unique`,
+      `${configs.backendServerBaseUrl}/transactions/outputs/populate-labels`,
       'POST',
-      outputLabels
+      outputLabels,
     );
 
     const data = await response.json();
 
-    return data as PopulateOutputLabelsUniqueResponse;
+    return data as PopulateOutputLabelsResponse;
   }
 
   static async addOutputLabel(body: AddLabelRequestBody) {

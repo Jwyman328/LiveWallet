@@ -156,16 +156,16 @@ export type OutputLabelType = {
 export type GetOutputLabelsResponseType = {
   labels: [OutputLabelType];
 };
-export type GetOutputLabelsUniqueResponseType = {
+export type GetOutputLabelsPopulateResponseType = {
   [key: string]: OutputLabelType;
 };
-export type PopulateOutputLabelsUniqueBodyType = {
+export type PopulateOutputLabelsBodyType = {
   [key: string]: OutputLabelType;
-}
+};
 
-export type PopulateOutputLabelsUniqueResponse = {
+export type PopulateOutputLabelsResponse = {
   success: boolean;
-}
+};
 
 export type GetTransactionsResponseType = {
   txid: string;

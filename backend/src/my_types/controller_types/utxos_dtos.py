@@ -160,13 +160,13 @@ class GetOutputLabelsResponseDto(BaseModel):
     labels: list[OutputLabelDto]
 
 
-class GetOutputLabelsUniqueResponseDto(RootModel):
+class GetOutputLabelsPopulateResponseDto(RootModel):
     root: Dict[str, List[OutputLabelDto]]
 
 
-class PopulateOutputLabelsUniqueRequestDto(RootModel):
+class PopulateOutputLabelsRequestDto(RootModel):
     root: Dict[str, List[OutputLabelDto]]
 
 
-class PopulateOutputLabelsUniqueResponseDto(BaseModel):
+class PopulateOutputLabelsResponseDto(BaseModel):
     success: bool

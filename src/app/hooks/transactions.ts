@@ -2,8 +2,8 @@ import { ApiClient } from '../api/api';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   AddLabelRequestBody,
-  GetOutputLabelsUniqueResponseType,
-  PopulateOutputLabelsUniqueBodyType,
+  GetOutputLabelsPopulateResponseType,
+  PopulateOutputLabelsBodyType,
   RemoveLabelRequestParams,
 } from '../api/types';
 
@@ -41,14 +41,14 @@ export function useGetOutputLabels() {
 }
 
 export function useGetOutputLabelsUnique(
-  handleSuccess: (data: GetOutputLabelsUniqueResponseType) => void,
+  handleSuccess: (data: GetOutputLabelsPopulateResponseType) => void,
 ) {
   return useQuery(
     uxtoQueryKeys.getOutputLabelsUnique,
     () => ApiClient.getOutputLabelsUnique(),
     {
       refetchOnWindowFocus: true,
-      onSuccess: (data: GetOutputLabelsUniqueResponseType) => {
+      onSuccess: (data: GetOutputLabelsPopulateResponseType) => {
         // save in global wallet storage
         // so that when a user saves their wallet the labels are saved
         // and then can later repopulate the db on wallet load/import.
@@ -63,7 +63,7 @@ export function usePopulateOutputLabels(
   onError?: () => void,
 ) {
   return useMutation(
-    (body: PopulateOutputLabelsUniqueBodyType) =>
+    (body: PopulateOutputLabelsBodyType) =>
       ApiClient.populateOutputLabelsUnique(body),
     {
       onSuccess: () => {
