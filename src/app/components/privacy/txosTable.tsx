@@ -18,8 +18,14 @@ import {
 } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 import { OutputModal } from '../OutputModal';
-import { TransactionOutputType } from '../../api/types';
-import { useGetOutputLabels } from '../../hooks/transactions';
+import {
+  GetOutputLabelsUniqueResponseType,
+  TransactionOutputType,
+} from '../../api/types';
+import {
+  useGetOutputLabels,
+  useGetOutputLabelsUnique,
+} from '../../hooks/transactions';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
@@ -30,6 +36,16 @@ type TxosTableProps = {
 
 export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
   const getOutputLabelsQuery = useGetOutputLabels();
+  const saveLabelsInWalletConfig = (
+    data: GetOutputLabelsUniqueResponseType,
+  ) => {
+    window.electron.ipcRenderer.sendMessage('save-labels', data);
+  };
+
+  // get all the output labels in a format that is good for storing
+  // in the global wallet.labels object via the "save-labels" event
+  useGetOutputLabelsUnique(saveLabelsInWalletConfig);
+
   const [isOutputModalShowing, setIsOutputModalShowing] = useState(false);
   const [selectedOutput, setSelectedOutput] = useState<TransactionOutputType>();
   const columns = useMemo(() => {
@@ -142,8 +158,7 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
                 size="sm"
                 className="mt-auto ml-1"
               >
-                <IconEdit
-                />
+                <IconEdit />
               </ActionIcon>
             </div>
           );

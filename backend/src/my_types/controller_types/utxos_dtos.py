@@ -1,5 +1,5 @@
-from typing import Optional, List
-from pydantic import BaseModel, field_validator, Field
+from typing import Optional, List, Dict
+from pydantic import BaseModel, RootModel, field_validator, Field
 import structlog
 
 LOGGER = structlog.get_logger()
@@ -158,3 +158,15 @@ class AddOutputLabelResponseDto(BaseModel):
 
 class GetOutputLabelsResponseDto(BaseModel):
     labels: list[OutputLabelDto]
+
+
+class GetOutputLabelsUniqueResponseDto(RootModel):
+    root: Dict[str, List[OutputLabelDto]]
+
+
+class PopulateOutputLabelsUniqueRequestDto(RootModel):
+    root: Dict[str, List[OutputLabelDto]]
+
+
+class PopulateOutputLabelsUniqueResponseDto(BaseModel):
+    success: bool

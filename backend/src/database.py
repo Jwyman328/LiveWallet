@@ -15,7 +15,8 @@ def populate_labels():
 
         for label_name in LabelName:
             # Check if the label already exists
-            existing_label = DB.session.query(Label).filter_by(name=label_name).first()
+            existing_label = DB.session.query(
+                Label).filter_by(name=label_name).first()
 
             # If it does not exist, create a new one
             if not existing_label:

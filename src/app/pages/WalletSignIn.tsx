@@ -485,6 +485,7 @@ export const WalletSignIn = () => {
       feeScale: importedFeeScale,
       minFeeScale: importedMinFeeScale,
       feeRate: importedFeeRate,
+      labels: importedLabels,
     } = walletData;
     console.log('imported descriptor', importedDefaultDescriptor);
 
@@ -530,6 +531,7 @@ export const WalletSignIn = () => {
       minFeeScale: importedMinFeeScale,
       feeRate: importedFeeRate,
       isCreateBatchTx: importedIsCreateBatchTx,
+      labels: importedLabels,
     };
     window.electron.ipcRenderer.sendMessage(
       'save-wallet-configs',

@@ -114,9 +114,10 @@ def delete_wallet():
     """
     try:
         WalletService.remove_global_wallet_and_details()
+        WalletService.remove_output_and_related_label_data()
 
         return DeleteWalletResponseDto(
-            message="wallet successfully deleted",
+            message="wallet and related data successfully deleted",
         ).model_dump()
 
     except ValidationError as e:

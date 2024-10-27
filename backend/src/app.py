@@ -93,6 +93,9 @@ def setup_database(app):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     DB.init_app(app)
     with app.app_context():
+        # Drop all existing tables
+        DB.drop_all()  # Clear the database, incase anything was left over.
+
         DB.create_all()
         populate_labels()
 
@@ -105,7 +108,8 @@ if __name__ == "__main__":
 
     if is_testing is False:
         # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
-        app.run(host="127.0.0.1", port=5011, debug=is_development, threaded=False)
+        app.run(host="127.0.0.1", port=5011,
+                debug=is_development, threaded=False)
 else:
     # this will run when the app is run from the generated executable
     # which is done in the production app.

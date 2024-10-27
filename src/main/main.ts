@@ -21,6 +21,7 @@ import {
 } from './util';
 import { WalletConfigs } from '../app/types/wallet';
 import { Pages } from '../renderer/pages';
+import { OutputLabelType } from '../app/api/types';
 
 class AppUpdater {
   constructor() {
@@ -65,6 +66,11 @@ ipcMain.on('current-route', (event, currentRoute) => {
       menuLogout.enabled = true;
     }
   }
+});
+
+ipcMain.on('save-labels', async (event, labels: [OutputLabelType]) => {
+  const menu = MenuBuilder.menu;
+  menu.walletDetails.labels = labels;
 });
 
 ipcMain.on('save-wallet', async (event, walletDetails) => {

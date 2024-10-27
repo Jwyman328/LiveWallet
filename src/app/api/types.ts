@@ -156,6 +156,16 @@ export type OutputLabelType = {
 export type GetOutputLabelsResponseType = {
   labels: [OutputLabelType];
 };
+export type GetOutputLabelsUniqueResponseType = {
+  [key: string]: OutputLabelType;
+};
+export type PopulateOutputLabelsUniqueBodyType = {
+  [key: string]: OutputLabelType;
+}
+
+export type PopulateOutputLabelsUniqueResponse = {
+  success: boolean;
+}
 
 export type GetTransactionsResponseType = {
   txid: string;
@@ -194,7 +204,7 @@ export type AddLabelRequestBody = {
 };
 
 export type AddLabelResponseType = {
-  labels: [OutputLabelType]
+  labels: [OutputLabelType];
 };
 
 export type RemoveLabelRequestParams = {
@@ -204,5 +214,5 @@ export type RemoveLabelRequestParams = {
 };
 
 export type RemoveLabelResponseType = {
-  labels: [OutputLabelType]
+  labels: [OutputLabelType];
 };

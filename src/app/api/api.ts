@@ -22,6 +22,9 @@ import {
   RemoveLabelRequestParams,
   AddLabelResponseType,
   RemoveLabelResponseType,
+  GetOutputLabelsUniqueResponseType,
+  PopulateOutputLabelsUniqueBodyType,
+  PopulateOutputLabelsUniqueResponse,
 } from './types';
 
 import { Network } from '../types/network';
@@ -91,6 +94,29 @@ export class ApiClient {
 
     return data as GetOutputLabelsResponseType;
   }
+
+  static async getOutputLabelsUnique() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/transactions/outputs/labels-unique`,
+    );
+
+    const data = await response.json();
+
+    return data as GetOutputLabelsUniqueResponseType;
+  }
+
+  static async populateOutputLabelsUnique(outputLabels: PopulateOutputLabelsUniqueBodyType) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/transactions/outputs/labels-unique`,
+      'POST',
+      outputLabels
+    );
+
+    const data = await response.json();
+
+    return data as PopulateOutputLabelsUniqueResponse;
+  }
+
   static async addOutputLabel(body: AddLabelRequestBody) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/transactions/outputs/label`,
@@ -104,9 +130,9 @@ export class ApiClient {
   }
 
   static async removeOutputLabel(
-    txid: RemoveLabelRequestParams["txid"],
-    vout:  RemoveLabelRequestParams["vout"],
-    labelName: RemoveLabelRequestParams["labelName"],
+    txid: RemoveLabelRequestParams['txid'],
+    vout: RemoveLabelRequestParams['vout'],
+    labelName: RemoveLabelRequestParams['labelName'],
   ) {
     const response = await fetchHandler(
       `${configs.backendServerBaseUrl}/transactions/outputs/label?txid=${txid}&vout=${vout}&labelName=${labelName}`,

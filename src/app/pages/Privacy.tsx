@@ -15,10 +15,9 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
     PREVIEW = 'preview',
   }
 
-  const transactionsResponse = useGetTransactions();
-  console.log('transactionsResponse', transactionsResponse.data);
+  // TODO add back in and use when using the transaction tab
+  // const transactionsResponse = useGetTransactions();
   const outputs = useGetOutputs();
-  console.log('outputs', outputs.data);
   return (
     <div>
       <Tabs

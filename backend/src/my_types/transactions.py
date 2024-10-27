@@ -3,6 +3,11 @@ from bitcoinlib.transactions import Output
 
 
 class LiveWalletOutput(Output):
+    """
+    A bitcoin output which extendes the bitcoinlib Output and adds additional
+    fields unique to live wallet, like annominity_set, txid and labels.
+    """
+
     def __init__(
         self,
         annominity_set: int = 1,

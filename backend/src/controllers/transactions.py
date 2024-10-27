@@ -14,10 +14,14 @@ from src.my_types import (
     RemoveOutputLabelResponseDto,
     AddOutputLabelResponseDto,
     GetOutputLabelsResponseDto,
+    GetOutputLabelsUniqueResponseDto,
+    PopulateOutputLabelsUniqueResponseDto,
+    PopulateOutputLabelsUniqueRequestDto,
 )
 from src.my_types.controller_types.generic_response_types import SimpleErrorResponse
 
-transactions_page = Blueprint("get_transactions", __name__, url_prefix="/transactions")
+transactions_page = Blueprint(
+    "get_transactions", __name__, url_prefix="/transactions")
 
 LOGGER = structlog.get_logger()
 
@@ -34,7 +38,8 @@ def get_txos(
         transactions = wallet_service.get_all_transactions()
 
         return GetAllTransactionsResponseDto.model_validate(
-            dict(transactions=[transaction.as_dict() for transaction in transactions])
+            dict(transactions=[transaction.as_dict()
+                 for transaction in transactions])
         ).model_dump()
 
     except Exception as e:
@@ -81,6 +86,53 @@ def get_output_labels(
         LOGGER.error("error getting all output labels", error=e)
         return SimpleErrorResponse(
             message="error getting all output labels"
+        ).model_dump()
+
+
+# TODO better name
+@transactions_page.route("/outputs/labels-unique", methods=["GET"])
+@inject
+def get_output_labels_unique(
+    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+):
+    """
+    Get all labels for each txid-vout
+    """
+    try:
+        labels = wallet_service.get_output_labels_unique()
+
+        return GetOutputLabelsUniqueResponseDto.model_validate(labels).model_dump()
+    except Exception as e:
+        LOGGER.error("error getting all output labels unique", error=e)
+        return SimpleErrorResponse(
+            message="error getting all output labels unique"
+        ).model_dump()
+
+
+# TODO better name for endpoint
+@transactions_page.route("/outputs/labels-unique", methods=["POST"])
+@inject
+def populate_output_labels_unique(
+    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+):
+    """
+    Populate all labels and outputs for each txid-vout
+
+    This is used when a user loads a wallet and needs to populate the labels
+    for their wallet's outputs that they have saved.
+    """
+    try:
+        data = PopulateOutputLabelsUniqueRequestDto(json.loads(request.data))
+        wallet_service.populate_outputs_and_labels(data)
+
+        return PopulateOutputLabelsUniqueResponseDto.model_validate(
+            {"success": True}
+        ).model_dump()
+    #
+    except Exception as e:
+        LOGGER.error("error populating all labels and outputs.", error=e)
+        return SimpleErrorResponse(
+            message="error populating all labels and outputs."
         ).model_dump()
 
 

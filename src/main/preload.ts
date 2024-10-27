@@ -13,7 +13,8 @@ export type Channels =
   | 'save-wallet-data-from-dialog'
   | 'save-psbt'
   | 'logout'
-  | 'wallet-data';
+  | 'wallet-data'
+  | 'save-labels';
 
 const electronHandler = {
   ipcRenderer: {

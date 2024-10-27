@@ -27,12 +27,15 @@ import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs
 import {
   CreateTxFeeEstimationResponseType,
   GetBTCPriceResponseType,
+  GetOutputLabelsUniqueResponseType,
+  OutputLabelType,
 } from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
 import { Pages } from '../../renderer/pages';
 import { ScriptTypes } from '../types/scriptTypes';
 import { Privacy } from './Privacy';
+import { usePopulateOutputLabels } from '../hooks/transactions';
 
 export type ScaleOption = {
   value: string;
@@ -129,6 +132,9 @@ function Home() {
   const [feeScale, setFeeScale] = useState(scaleOptions[1]);
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
+  // use the labels to populate the backend.
+  const [importedOutputLabels, setImportedOutputLabels] =
+    useState<null | GetOutputLabelsUniqueResponseType>(null);
 
   // Initially set the current future fee rate to the current medium fee rate
   // if it was not set by an imported wallet.
@@ -202,6 +208,8 @@ function Home() {
     isCreateBatchTx,
   ]);
 
+  const populateBackendWithLabels = usePopulateOutputLabels();
+
   const handleWalletData = (walletData?: Wallet) => {
     console.log('walletData loaded', walletData);
     const isConfigDataLoaded =
@@ -219,8 +227,29 @@ function Home() {
       setBtcMetric(walletData.btcMetric!);
       setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
     }
+
+    const isLabelDataLoaded = !!walletData?.labels;
+
+    if (isLabelDataLoaded) {
+      setImportedOutputLabels(walletData.labels);
+    }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };
+
+  useEffect(() => {
+    if (
+      populateBackendWithLabels.isLoading ||
+      populateBackendWithLabels.isSuccess
+    ) {
+      console.log(
+        'The backend has already been populated with labels, therefore do not make the request again.',
+      );
+    } else if (importedOutputLabels && !populateBackendWithLabels.isSuccess) {
+      populateBackendWithLabels.mutate(importedOutputLabels);
+    } else{
+        console.log("there are no output labels to populate the db with, therefore do not make the request.")
+    }
+  }, [importedOutputLabels]);
 
   useEffect(() => {
     // @ts-ignore
