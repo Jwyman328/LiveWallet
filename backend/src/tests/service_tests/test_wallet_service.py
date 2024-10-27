@@ -9,6 +9,7 @@ from src.api.electrum import (
     GetTransactionsResponse,
 )
 from src.models.wallet import Wallet
+from src.my_types.transactions import LiveWalletOutput
 from src.services import WalletService
 from src.services.wallet.wallet import (
     GetFeeEstimateForUtxoResponseType,
@@ -979,37 +980,83 @@ class TestWalletService(TestCase):
         self.wallet_service.wallet = mock_wallet
         mock_wallet.is_mine = Mock()
         # mark first output as mine and the second as not
+        annominity_set_count_mock = 2
         mock_wallet.is_mine.side_effect = [True, False]
         self.wallet_service.get_all_transactions = Mock(
             return_value=all_transactions_mock
         )
+        mock_annominity_sets = {
+            all_transactions_mock[0].outputs[0].value: annominity_set_count_mock,
+            all_transactions_mock[0].outputs[1].value: annominity_set_count_mock,
+        }
+        self.wallet_service.calculate_output_annominity_sets = Mock(
+            return_value=mock_annominity_sets
+        )
+        mock_db_output_1 = Mock()
+        mock_db_output_1.id = 1
+        mock_db_output_1.txid = all_transactions_mock[0].txid
+        mock_db_output_1.vout = all_transactions_mock[0].outputs[0].output_n
+        mock_db_output_1.labels = []
 
-        # call the method we are testing
-        get_all_outputs_response = self.wallet_service.get_all_outputs()
+        # This db output is ignored because of the is_mine call therefore we don't
+        # need to bother mocking all the values
+        mock_db_output_2 = Mock()
 
-        self.wallet_service.get_all_transactions.assert_called()
-
-        assert mock_wallet.is_mine.call_count == 2
-
-        # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
-        assert get_all_outputs_response == [all_transactions_mock[0].outputs[0]]
-
-    def test_get_all_outputs_if_none_are_mine(self):
-        mock_wallet = Mock()
-        self.wallet_service.wallet = mock_wallet
-        mock_wallet.is_mine = Mock()
-        # mark all as False
-        mock_wallet.is_mine.return_value = False
-        self.wallet_service.get_all_transactions = Mock(
-            return_value=all_transactions_mock
+        mock_db_output_synced = [mock_db_output_1, mock_db_output_2]
+        self.wallet_service.sync_local_db_with_incoming_output = Mock(
+            side_effect=mock_db_output_synced
         )
 
         # call the method we are testing
         get_all_outputs_response = self.wallet_service.get_all_outputs()
 
         self.wallet_service.get_all_transactions.assert_called()
+        self.wallet_service.calculate_output_annominity_sets.assert_called()
+        self.wallet_service.sync_local_db_with_incoming_output.assert_called()
+
+        # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
 
         assert mock_wallet.is_mine.call_count == 2
+        assert len(get_all_outputs_response) == 1
 
-        # no outputs are mine so an empty list should be returned
+        assert get_all_outputs_response[0].annominity_set == 2
+        assert get_all_outputs_response[0].txid == all_transactions_mock[0].txid
+        assert get_all_outputs_response[0].labels == []
+
+    def test_get_all_outputs_if_none_are_mine(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock(return_value=False)
+        # mark No outputs as mine
+        annominity_set_count_mock = 2
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+        mock_annominity_sets = {
+            all_transactions_mock[0].outputs[0].value: annominity_set_count_mock,
+            all_transactions_mock[0].outputs[1].value: annominity_set_count_mock,
+        }
+        self.wallet_service.calculate_output_annominity_sets = Mock(
+            return_value=mock_annominity_sets
+        )
+
+        # These db output is ignored because of the is_mine call therefore we don't
+        # need to bother mocking all the values
+
+        mock_db_output_1 = Mock()
+        mock_db_output_2 = Mock()
+
+        mock_db_output_synced = [mock_db_output_1, mock_db_output_2]
+        self.wallet_service.sync_local_db_with_incoming_output = Mock(
+            side_effect=mock_db_output_synced
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+        self.wallet_service.calculate_output_annominity_sets.assert_called()
+        self.wallet_service.sync_local_db_with_incoming_output.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
         assert get_all_outputs_response == []

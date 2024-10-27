@@ -5,6 +5,8 @@ from src.my_types import (
 import json
 import bdkpython as bdk
 
+from src.my_types.transactions import LiveWalletOutput
+
 tx_out_mock = bdk.TxOut(value=1000, script_pubkey="mock_script_pubkey")
 
 outpoint_mock = bdk.OutPoint(txid="txid", vout=0)
@@ -38,7 +40,14 @@ mock_electrum_get_transactions_response_parsed = Transaction.parse(
     mock_electrum_get_transactions_response["result"], strict=True
 )
 
+tx_mock = Transaction.parse(
+    mock_electrum_get_transactions_response["result"], strict=True
+)
 
-all_transactions_mock = [
-    Transaction.parse(mock_electrum_get_transactions_response["result"], strict=True)
+all_transactions_mock = [tx_mock]
+
+all_outputs_mock = [
+    LiveWalletOutput(
+        annominity_set=1, base_output=tx_mock.outputs[0], txid="mock_txid", labels=[]
+    )
 ]

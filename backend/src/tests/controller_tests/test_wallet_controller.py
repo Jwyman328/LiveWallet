@@ -134,30 +134,30 @@ class TestWalletController(TestCase):
     def test_remove_wallet_success(self):
         with patch("src.controllers.wallet.WalletService") as wallet_service_mock:
             wallet_service_mock.remove_global_wallet_and_details = MagicMock()
+            wallet_service_mock.remove_output_and_related_label_data = MagicMock()
 
             wallet_response = self.test_client.delete(
                 "/wallet/remove",
             )
             wallet_service_mock.remove_global_wallet_and_details.assert_called_once()
+            wallet_service_mock.remove_output_and_related_label_data.assert_called_once()
             assert wallet_response.status == "200 OK"
             assert json.loads(wallet_response.data) == {
-                "message": "wallet successfully deleted",
+                "message": "wallet and related data successfully deleted",
             }
 
     def test_spendable_success(self):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -210,16 +210,14 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -281,16 +279,14 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -335,16 +331,14 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
@@ -364,8 +358,7 @@ class TestWalletController(TestCase):
                 WalletService, "create_spendable_wallet", return_value=wallet_mock
             ) as create_spendable_wallet_mock,
         ):
-            randomly_fund_mock_wallet_mock.side_effect = Exception(
-                "mock exception")
+            randomly_fund_mock_wallet_mock.side_effect = Exception("mock exception")
             wallet_response = self.test_client.post(
                 "/wallet/spendable",
                 json={
@@ -393,16 +386,14 @@ class TestWalletController(TestCase):
         self.mock_wallet_service = MagicMock(WalletService)
 
         spendable_descriptor_mock = MagicMock(bdk.Descriptor)
-        spendable_descriptor_mock.as_string = MagicMock(
-            return_value="mock_descriptor")
+        spendable_descriptor_mock.as_string = MagicMock(return_value="mock_descriptor")
         self.mock_wallet_service.create_spendable_descriptor = MagicMock(
             return_value=spendable_descriptor_mock
         )
         wallet_mock = MagicMock(bdk.Wallet)
         get_address_mock = MagicMock()
         address_mock = MagicMock(return_value=get_address_mock)
-        get_address_mock.address.as_string = MagicMock(
-            return_value="mock_address")
+        get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
             return_value=wallet_mock
