@@ -133,7 +133,7 @@ class GetAllOutputsResponseDto(BaseModel):
 class AddOutputLabelRequestDto(BaseModel):
     txid: str
     vout: int
-    labelName: str
+    labelName: str  # TODO change to displayName
 
 
 class RemoveOutputLabelRequestDto(BaseModel):

@@ -87,52 +87,6 @@ def get_output_labels(
         ).model_dump()
 
 
-@transactions_page.route("/outputs/populate-labels", methods=["GET"])
-@inject
-def get_output_labels_unique(
-    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
-):
-    """
-    Get all labels for each txid-vout, used for being saved locally and
-    eventually repopulating the database.
-    """
-    try:
-        labels = wallet_service.get_output_labels_unique()
-
-        return GetOutputLabelsPopulateResponseDto.model_validate(labels).model_dump()
-    except Exception as e:
-        LOGGER.error("error getting all populate output labels", error=e)
-        return SimpleErrorResponse(
-            message="error getting all populate output labels"
-        ).model_dump()
-
-
-@transactions_page.route("/outputs/populate-labels", methods=["POST"])
-@inject
-def populate_output_labels(
-    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
-):
-    """
-    Populate all labels and outputs for each txid-vout
-
-    This is used when a user loads a wallet and needs to populate the labels
-    for their wallet's outputs that they have saved.
-    """
-    try:
-        data = PopulateOutputLabelsRequestDto(json.loads(request.data))
-        wallet_service.populate_outputs_and_labels(data)
-
-        return PopulateOutputLabelsResponseDto.model_validate(
-            {"success": True}
-        ).model_dump()
-    #
-    except Exception as e:
-        LOGGER.error("error populating all labels and outputs.", error=e)
-        return SimpleErrorResponse(
-            message="error populating all labels and outputs."
-        ).model_dump()
-
-
 @transactions_page.route("/outputs/label", methods=["POST"])
 @inject
 def add_output_label(
@@ -145,6 +99,7 @@ def add_output_label(
         add_output_label_request_dto = AddOutputLabelRequestDto.model_validate(
             json.loads(request.data)
         )
+
         labels = wallet_service.add_label_to_output(
             add_output_label_request_dto.txid,
             add_output_label_request_dto.vout,
@@ -210,4 +165,50 @@ def remove_output_label(
         LOGGER.error("Error removing a label from an output.", error=e)
         return SimpleErrorResponse(
             message="Error removing a label from an output."
+        ).model_dump()
+
+
+@transactions_page.route("/outputs/populate-labels", methods=["GET"])
+@inject
+def get_output_labels_unique(
+    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+):
+    """
+    Get all labels for each txid-vout, used for being saved locally and
+    eventually repopulating the database.
+    """
+    try:
+        labels = wallet_service.get_output_labels_unique()
+
+        return GetOutputLabelsPopulateResponseDto.model_validate(labels).model_dump()
+    except Exception as e:
+        LOGGER.error("error getting all populate output labels", error=e)
+        return SimpleErrorResponse(
+            message="error getting all populate output labels"
+        ).model_dump()
+
+
+@transactions_page.route("/outputs/populate-labels", methods=["POST"])
+@inject
+def populate_output_labels(
+    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+):
+    """
+    Populate all labels and outputs for each txid-vout
+
+    This is used when a user loads a wallet and needs to populate the labels
+    for their wallet's outputs that they have saved.
+    """
+    try:
+        data = PopulateOutputLabelsRequestDto(json.loads(request.data))
+        wallet_service.populate_outputs_and_labels(data)
+
+        return PopulateOutputLabelsResponseDto.model_validate(
+            {"success": True}
+        ).model_dump()
+    #
+    except Exception as e:
+        LOGGER.error("error populating all labels and outputs.", error=e)
+        return SimpleErrorResponse(
+            message="error populating all labels and outputs."
         ).model_dump()
