@@ -1,5 +1,6 @@
 from unittest.case import TestCase
 import os
+import copy
 from unittest.mock import MagicMock, call, patch, Mock
 import pytest
 from src.api.electrum import (
@@ -25,6 +26,7 @@ from src.tests.mocks import (
     local_utxo_mock,
     transaction_details_mock,
     all_transactions_mock,
+    tx_mock,
 )
 from typing import cast
 
@@ -109,7 +111,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -180,7 +183,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -284,7 +288,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -333,7 +338,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=None)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=None)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -373,7 +379,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=None)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=None)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -413,7 +420,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=MagicMock)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=MagicMock)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -581,7 +589,8 @@ class TestWalletService(TestCase):
                 output_count,
             )
 
-            amount_in_each_output = (local_utxo_mock.txout.value / 2) / output_count
+            amount_in_each_output = (
+                local_utxo_mock.txout.value / 2) / output_count
             tx_builder_mock.add_recipient.assert_called_with(
                 script_mock, amount_in_each_output
             )
@@ -689,8 +698,10 @@ class TestWalletService(TestCase):
 
             assert fee_estimate_response.status == "success"
             fee: int = cast(int, transaction_details_mock.fee)
-            expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
-            assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
+            expected_fee_percent = (
+                fee / (transaction_details_mock.sent + fee)) * 100
+            assert fee_estimate_response.data == FeeDetails(
+                expected_fee_percent, fee)
             assert fee_estimate_response.psbt == "mock_psbt"
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
@@ -710,7 +721,8 @@ class TestWalletService(TestCase):
             assert get_fee_estimate_response.data == None
 
     def test_get_fee_estimate_for_utxo_with_build_tx_error(self):
-        build_transaction_error_response = BuildTransactionResponseType("error", None)
+        build_transaction_error_response = BuildTransactionResponseType(
+            "error", None)
         with patch.object(
             WalletService,
             "build_transaction",
@@ -855,7 +867,8 @@ class TestWalletService(TestCase):
             )
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 electrum_url_mock, None, 2, 30, 100, True
             )
@@ -1040,7 +1053,7 @@ class TestWalletService(TestCase):
             return_value=mock_annominity_sets
         )
 
-        # These db output is ignored because of the is_mine call therefore we don't
+        # These db outputs are ignored because of the is_mine call therefore we don't
         # need to bother mocking all the values
 
         mock_db_output_1 = Mock()
@@ -1060,3 +1073,22 @@ class TestWalletService(TestCase):
 
         assert mock_wallet.is_mine.call_count == 2
         assert get_all_outputs_response == []
+
+    def test_calculate_output_annominity_sets(self):
+        first_output_value = tx_mock.outputs[0].value
+        second_output_value = tx_mock.outputs[1].value
+        first_output_copy = copy.deepcopy(tx_mock.outputs[0])
+        mock_transaction_outputs = [
+            tx_mock.outputs[0],
+            first_output_copy,
+            tx_mock.outputs[1],
+        ]
+        response = self.wallet_service.calculate_output_annominity_sets(
+            mock_transaction_outputs
+        )
+
+        # since the first output and the copy have the same value
+        # the set should be 2.
+        assert response[first_output_value] == 2
+        # since the second output is unique it should only have a count of 1
+        assert response[second_output_value] == 1
