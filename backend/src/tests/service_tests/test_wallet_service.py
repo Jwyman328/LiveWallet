@@ -10,6 +10,7 @@ from src.api.electrum import (
     GetTransactionsResponse,
 )
 from src.models.wallet import Wallet
+from src.my_types.controller_types.utxos_dtos import OutputLabelDto
 from src.my_types.transactions import LiveWalletOutput
 from src.services import WalletService
 from src.services.wallet.wallet import (
@@ -1092,3 +1093,29 @@ class TestWalletService(TestCase):
         assert response[first_output_value] == 2
         # since the second output is unique it should only have a count of 1
         assert response[second_output_value] == 1
+
+    def test_get_output_labels(self):
+        with patch("src.services.wallet.wallet.Label") as label_model_patch:
+            mock_label_one = Mock()
+            mock_label_one.name = "label_one"
+            mock_label_one.display_name = "display_one"
+            mock_label_one.description = "description_one"
+
+            mock_label_two = Mock()
+            mock_label_two.name = "label_two"
+            mock_label_two.display_name = "display_two"
+            mock_label_two.description = "description_two"
+            label_mocks = [mock_label_one, mock_label_two]
+            label_model_patch.query.all = Mock(return_value=label_mocks)
+
+            response = self.wallet_service.get_output_labels()
+            assert isinstance(response[0], OutputLabelDto)
+            assert isinstance(response[1], OutputLabelDto)
+
+            assert response[0].label == "label_one"
+            assert response[0].display_name == "display_one"
+            assert response[0].description == "description_one"
+
+            assert response[1].label == "label_two"
+            assert response[1].display_name == "display_two"
+            assert response[1].description == "description_two"
