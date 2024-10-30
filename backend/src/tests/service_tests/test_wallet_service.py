@@ -2,6 +2,7 @@ from unittest.case import TestCase
 import os
 import copy
 from unittest.mock import MagicMock, call, patch, Mock
+from src.models.outputs import Output as OutputModel
 import pytest
 from src.api.electrum import (
     ElectrumMethod,
@@ -10,7 +11,10 @@ from src.api.electrum import (
     GetTransactionsResponse,
 )
 from src.models.wallet import Wallet
-from src.my_types.controller_types.utxos_dtos import OutputLabelDto
+from src.my_types.controller_types.utxos_dtos import (
+    OutputLabelDto,
+    PopulateOutputLabelsRequestDto,
+)
 from src.my_types.transactions import LiveWalletOutput
 from src.services import WalletService
 from src.services.wallet.wallet import (
@@ -29,7 +33,7 @@ from src.tests.mocks import (
     all_transactions_mock,
     tx_mock,
 )
-from typing import cast
+from typing import List, cast
 
 
 wallet_descriptor = os.getenv("WALLET_DESCRIPTOR", "")
@@ -1159,3 +1163,113 @@ class TestWalletService(TestCase):
 
             assert isinstance(response["txid_one-0"][0], OutputLabelDto)
             assert isinstance(response["txid_one-0"][1], OutputLabelDto)
+
+    def test_populate_outputs_and_labels(self):
+        mock_label_one = dict(
+            label="label_one", display_name="display_one", description="description_one"
+        )
+
+        mock_label_two = dict(
+            label="label_two", display_name="display_two", description="description_two"
+        )
+
+        output_labels_in_populate_format = (
+            PopulateOutputLabelsRequestDto.model_validate(
+                {
+                    "txidone-0": [mock_label_one, mock_label_two],
+                    "txidone-1": [mock_label_one, mock_label_two],
+                    "txidtwo-0": [mock_label_one],
+                }
+            )
+        )
+        mock_add_label_to_output = Mock(return_value=None)
+        self.wallet_service.add_label_to_output = mock_add_label_to_output
+        mock_sync_local_db_with_incoming_output = Mock(return_value=None)
+        self.wallet_service.sync_local_db_with_incoming_output = (
+            mock_sync_local_db_with_incoming_output
+        )
+
+        # call the method we are testing
+        populate_outputs_and_labels_response = (
+            self.wallet_service.populate_outputs_and_labels(
+                output_labels_in_populate_format
+            )
+        )
+
+        # called once for each output
+        assert mock_sync_local_db_with_incoming_output.call_count == 3
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidone", 0)
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidone", 1)
+
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidtwo", 0)
+
+        mock_add_label_to_output.assert_any_call(
+            "txidone", 0, mock_label_one["display_name"]
+        )
+
+        mock_add_label_to_output.assert_any_call(
+            "txidone", 1, mock_label_two["display_name"]
+        )
+        mock_add_label_to_output.assert_any_call(
+            "txidtwo", 0, mock_label_one["display_name"]
+        )
+
+        assert populate_outputs_and_labels_response == None
+
+    def test_get_utxos_info(self):
+        mock_outpoint_one = Mock()
+        mock_outpoint_one.txid = "mock_txid_one"
+        mock_outpoint_one.vout = 0
+
+        mock_outpoint_two = Mock()
+        mock_outpoint_two.txid = "mock_txid_two"
+        mock_outpoint_two.vout = 0
+
+        mock_all_utxos_one = Mock()
+        mock_all_utxos_one.outpoint = mock_outpoint_one
+
+        mock_all_utxos_two = Mock()
+        mock_all_utxos_two.outpoint = mock_outpoint_two
+
+        mock_all_utxos_three = Mock()
+        mock_all_utxos_three.outpoint = Mock()
+
+        all_utxos_mock = [mock_all_utxos_one,
+                          mock_all_utxos_two, mock_all_utxos_three]
+        mock_get_all_utxos = Mock(return_value=all_utxos_mock)
+        self.wallet_service.get_all_utxos = mock_get_all_utxos
+
+        utxos_wanted_mock = [mock_outpoint_one]
+        response = self.wallet_service.get_utxos_info(
+            cast(List[bdk.OutPoint], utxos_wanted_mock)
+        )
+        assert response[0] == mock_all_utxos_one
+
+    def test_sync_local_db_with_incoming_output_for_new_output(self):
+        with patch("src.services.wallet.wallet.OutputModel") as mock_output_model:
+            mock_new_output_model = Mock()
+            # return None, as if we did not find this OutputModel in the db
+            mock_output_model.query.filter_by.return_value.first.return_value = None
+            mock_add_output_to_db = Mock(return_value=mock_new_output_model)
+
+            self.wallet_service.add_output_to_db = mock_add_output_to_db
+            response = self.wallet_service.sync_local_db_with_incoming_output(
+                "txid", 0)
+            mock_add_output_to_db.assert_called_with(txid="txid", vout=0)
+            assert response == mock_new_output_model
+
+    def test_sync_local_db_with_incoming_output_for_existing_output(self):
+        with patch("src.services.wallet.wallet.OutputModel") as mock_output_model:
+            mock_existing_output_model = Mock()
+            # return None, as if we did not find this OutputModel in the db
+            mock_output_model.query.filter_by.return_value.first.return_value = (
+                mock_existing_output_model
+            )
+            mock_add_output_to_db = Mock()
+
+            self.wallet_service.add_output_to_db = mock_add_output_to_db
+            response = self.wallet_service.sync_local_db_with_incoming_output(
+                "txid", 0)
+            # since the output already exists in the db we should not call add_output_to_db
+            mock_add_output_to_db.assert_not_called()
+            assert response == mock_existing_output_model
