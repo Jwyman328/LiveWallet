@@ -1119,3 +1119,43 @@ class TestWalletService(TestCase):
             assert response[1].label == "label_two"
             assert response[1].display_name == "display_two"
             assert response[1].description == "description_two"
+
+    def test_get_output_labels_unique(self):
+        with patch("src.services.wallet.wallet.DB.session") as mock_db_session:
+            mock_label_one = Mock()
+            mock_label_one.name = "label_one"
+            mock_label_one.display_name = "display_one"
+            mock_label_one.description = "description_one"
+
+            mock_label_two = Mock()
+            mock_label_two.name = "label_two"
+            mock_label_two.display_name = "display_two"
+            mock_label_two.description = "description_two"
+            mock_outputlabel = [
+                Mock(txid="txid_one", vout=0, labels=[
+                     mock_label_one, mock_label_two]),
+                Mock(txid="txid_two", vout=1, labels=[mock_label_one]),
+            ]
+
+            mock_query = mock_db_session.query.return_value
+            mock_query.join.return_value = mock_query
+            mock_query.group_by.return_value = mock_query
+            mock_query.having.return_value = mock_query
+            mock_query.all.return_value = mock_outputlabel
+
+            response = self.wallet_service.get_output_labels_unique()
+            print("what r", response)
+            assert response["txid_one-0"][0].label == mock_label_one.name
+            assert response["txid_one-0"][0].display_name == mock_label_one.display_name
+            assert response["txid_one-0"][0].description == mock_label_one.description
+
+            assert response["txid_one-0"][1].label == mock_label_two.name
+            assert response["txid_one-0"][1].display_name == mock_label_two.display_name
+            assert response["txid_one-0"][1].description == mock_label_two.description
+
+            assert response["txid_two-1"][0].label == mock_label_one.name
+            assert response["txid_two-1"][0].display_name == mock_label_one.display_name
+            assert response["txid_two-1"][0].description == mock_label_one.description
+
+            assert isinstance(response["txid_one-0"][0], OutputLabelDto)
+            assert isinstance(response["txid_one-0"][1], OutputLabelDto)
