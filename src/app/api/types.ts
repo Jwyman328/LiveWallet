@@ -166,8 +166,7 @@ export type PopulateOutputLabelsBodyType = {
 export type PopulateOutputLabelsResponse = {
   success: boolean;
 };
-
-export type GetTransactionsResponseType = {
+export type Transaction = {
   txid: string;
   date?: string;
   network: string; // e.g., "bitcoin"
@@ -192,6 +191,7 @@ export type GetTransactionsResponseType = {
   verified: boolean;
   status: string; // e.g., "new"
 };
+export type GetTransactionsResponseType = { transactions: [Transaction] };
 
 export type GetOutputsResponseType = {
   outputs: TransactionOutputType[];

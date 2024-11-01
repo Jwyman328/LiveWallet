@@ -9,6 +9,8 @@
 
 # TODOs backend
 - add mypy
+- add testing system that tests the database, allowing for more integration level tests, especially in services, I shouldn't have to mock out db calls in the services.
+  - using sqllite should be easy to setup and teardown the db each run.
 - add a pyproject.toml to manage ruff line length stuff so that ruff formatting is inline with the lsp?
 - Also set the default custom fee rate to the current rate 
 

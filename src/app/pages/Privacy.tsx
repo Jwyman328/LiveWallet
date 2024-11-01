@@ -3,6 +3,7 @@ import { IconCoins, IconArrowsDownUp, IconEye } from '@tabler/icons-react';
 import { useGetTransactions, useGetOutputs } from '../hooks/transactions';
 import { TxosTable } from '../components/privacy/txosTable';
 import { BtcMetric } from '../types/btcSatHandler';
+import { TransactionsTable } from '../components/privacy/transactionsTable';
 
 type PrivacyProps = {
   btcMetric: BtcMetric;
@@ -16,7 +17,7 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
   }
 
   // TODO add back in and use when using the transaction tab
-  // const transactionsResponse = useGetTransactions();
+  const transactionsResponse = useGetTransactions();
   const outputs = useGetOutputs();
   return (
     <div>
@@ -59,7 +60,12 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
         </Tabs.Panel>
 
         <Tabs.Panel value={PrivacyTabs.TRANSACTIONS}>
-          My transactions
+          <div className="p-14">
+            <TransactionsTable
+              btcMetric={btcMetric}
+              transactions={transactionsResponse?.data?.transactions || []}
+            />
+          </div>
         </Tabs.Panel>
 
         <Tabs.Panel value={PrivacyTabs.PREVIEW}>My preview area</Tabs.Panel>

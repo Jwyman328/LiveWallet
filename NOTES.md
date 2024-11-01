@@ -826,6 +826,8 @@ What would the ideal utxo structure look like for privacy?
 - no-kyced.
 - maybe custom label
 - do I need the dust attack label?
+-  coinjoin change
+  - bad bank or uncoinjoined amount in a wasabi mix. 
 
 
 # Initial thoughts on how v1 UI will look 
