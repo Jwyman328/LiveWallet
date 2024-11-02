@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 import {
@@ -7,14 +7,13 @@ import {
 } from 'material-react-table';
 
 import { CopyButton, rem, Tooltip, ActionIcon } from '@mantine/core';
+import { TbListDetails } from 'react-icons/tb';
 
-import {
-  IconCheck,
-  IconCopy,
-} from '@tabler/icons-react';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 import { Transaction } from '../../api/types';
 import PrivacyIcon from './privacySvg';
+import { TransactionDetailsModal } from '../TransactionDetailsModal';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
@@ -27,22 +26,57 @@ export const TransactionsTable = ({
   transactions,
   btcMetric,
 }: TransactionsTableProps) => {
+  const [isTransactionModalShowing, setIsTransactionModalShowing] =
+    useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
+
+  const [isPrivacyModalShowing, setIsPrivacyModalShowing] = useState(false);
+
   const columns = useMemo(() => {
     const defaultColumns = [
       {
         header: 'Analyze Privacy',
         size: 50,
-        accessorKey: 'date',
+        accessorKey: 'privacy',
         Cell: ({ row }: { row: any }) => {
+          const transactionDetails = row.original as Transaction;
           return (
-            <div className="ml-9">
+            <div className="flex items-center justify-center">
               <ActionIcon
                 color={'blue'}
                 variant="subtle"
                 size={42}
-                onClick={() => {}}
+                onClick={() => {
+                  setSelectedTransaction(transactionDetails);
+                  setIsPrivacyModalShowing(true);
+                }}
               >
                 <PrivacyIcon />
+              </ActionIcon>
+            </div>
+          );
+        },
+      },
+
+      {
+        header: 'View details',
+        size: 50,
+        accessorKey: 'details',
+        Cell: ({ row }: { row: any }) => {
+          const transactionDetails = row.original as Transaction;
+          return (
+            <div className="ml-9">
+              <ActionIcon
+                color={'black'}
+                variant="subtle"
+                size={42}
+                onClick={() => {
+                  setSelectedTransaction(transactionDetails);
+                  setIsTransactionModalShowing(true);
+                }}
+              >
+                <TbListDetails size={32} />
               </ActionIcon>
             </div>
           );
@@ -68,10 +102,10 @@ export const TransactionsTable = ({
           const abrv = `${prefix}....${suffix}`;
           return (
             <div className="flex">
-              <Tooltip label={row.original?.address}>
+              <Tooltip label={row.original?.txid}>
                 <p className="mr-2">{abrv}</p>
               </Tooltip>
-              <CopyButton value={row.original.txid} timeout={2000}>
+              <CopyButton value={row.original?.txid} timeout={2000}>
                 {({ copied, copy }) => (
                   <Tooltip
                     label={copied ? 'Copied' : 'Copy'}
@@ -97,7 +131,6 @@ export const TransactionsTable = ({
         },
       },
       // TODO add oclumn for my amount?
-      // add column for opening
       // add additional values to transaction api response like
       // how much I sent, how much I received, if a send, recieve or both.
       {
@@ -199,6 +232,24 @@ export const TransactionsTable = ({
       >
         <MaterialReactTable table={table} />
       </ThemeProvider>
+
+      {isTransactionModalShowing && (
+        <TransactionDetailsModal
+          transactionDetails={selectedTransaction}
+          btcMetric={btcMetric}
+          opened={isTransactionModalShowing}
+          onClose={() => setIsTransactionModalShowing(false)}
+        />
+      )}
+
+      {isPrivacyModalShowing && (
+        <TransactionDetailsModal
+          transactionDetails={selectedTransaction}
+          btcMetric={btcMetric}
+          opened={isPrivacyModalShowing}
+          onClose={() => setIsPrivacyModalShowing(false)}
+        />
+      )}
     </div>
   );
 };
