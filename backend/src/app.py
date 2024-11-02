@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from src.database import DB, populate_labels
+from src.database import DB, populate_labels, populate_privacy_metrics
 
 # initialize structlog
 from src.utils import logging  # noqa: F401, E261
@@ -24,6 +24,7 @@ class AppCreator:
             wallet_api,
             health_check_api,
             hardware_wallet_api,
+            privacy_metrics_api,
         )
         from src.containers.service_container import ServiceContainer
 
@@ -51,6 +52,7 @@ class AppCreator:
             cls.app.register_blueprint(wallet_api)
             cls.app.register_blueprint(health_check_api)
             cls.app.register_blueprint(hardware_wallet_api)
+            cls.app.register_blueprint(privacy_metrics_api)
 
             return cls.app
 
@@ -98,6 +100,7 @@ def setup_database(app):
 
         DB.create_all()
         populate_labels()
+        populate_privacy_metrics()
 
 
 # for some reason the frontend doesn't run the executable with app.y being __main__

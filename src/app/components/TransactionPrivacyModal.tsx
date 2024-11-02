@@ -2,6 +2,7 @@ import { Accordion, Checkbox, Modal } from '@mantine/core';
 import { Transaction } from '../api/types';
 import { BtcMetric } from '../types/btcSatHandler';
 import { useState } from 'react';
+import { useGetPrivacyMetrics } from '../hooks/privacyMetrics';
 type TransactionDetailsModalProps = {
   opened: boolean;
   onClose: () => void;
@@ -14,8 +15,9 @@ export const TransactionPrivacyModal = ({
   transactionDetails,
   btcMetric,
 }: TransactionDetailsModalProps) => {
+  const getPRivacyMetricsResponse = useGetPrivacyMetrics();
   // TODO get from backend
-  const privacyMetrics = [
+  const privacyMetricsOne = [
     {
       value: 'Apples',
       description:
@@ -33,22 +35,23 @@ export const TransactionPrivacyModal = ({
     },
   ];
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const privacyMetrics = getPRivacyMetricsResponse?.data?.metrics || [];
   const items = privacyMetrics.map((item) => (
-    <Accordion.Item key={item.value} value={item.value}>
+    <Accordion.Item key={item.name} value={item.name}>
       <div className="flex flex-row">
         <div className="flex justify-center items-center">
           <Checkbox
-            checked={selectedMetrics.includes(item.value)}
+            checked={selectedMetrics.includes(item.name)}
             onChange={(event) => {
               const newMetrics = [...selectedMetrics];
 
               if (event.currentTarget.checked) {
-                newMetrics.push(item.value);
+                newMetrics.push(item.name);
 
                 setSelectedMetrics(newMetrics);
               } else {
                 // remove the item from the array
-                const index = newMetrics.indexOf(item.value);
+                const index = newMetrics.indexOf(item.name);
                 if (index > -1) {
                   newMetrics.splice(index, 1);
                   setSelectedMetrics(newMetrics);
@@ -58,7 +61,7 @@ export const TransactionPrivacyModal = ({
           />
         </div>
         <div className="w-full">
-          <Accordion.Control>{item.value}</Accordion.Control>
+          <Accordion.Control>{item.display_name}</Accordion.Control>
           <Accordion.Panel>{item.description}</Accordion.Panel>
         </div>
       </div>

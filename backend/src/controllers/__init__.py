@@ -7,3 +7,5 @@ from .wallet import wallet_api
 from .health_check import health_check_api
 
 from .hardware_wallets import hardware_wallet_api
+
+from .privacy_metrics import privacy_metrics_api

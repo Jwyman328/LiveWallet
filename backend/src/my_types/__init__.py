@@ -25,3 +25,9 @@ from src.my_types.controller_types.generic_response_types import (
     SimpleErrorResponse,
     ValidationErrorResponse,
 )
+
+
+from src.my_types.controller_types.privacy_metrics_dtos import (
+    GetAllPrivacyMetricsResponseDto,
+    PrivacyMetricDto,
+)

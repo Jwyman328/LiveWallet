@@ -214,5 +214,15 @@ export type RemoveLabelRequestParams = {
 };
 
 export type RemoveLabelResponseType = {
-  labels: [OutputLabelType];
+  labels: OutputLabelType[];
+};
+
+export type PrivacyMetric = {
+  name: string;
+  display_name: string;
+  description: string;
+};
+
+export type GetPrivacyMetricsResponseType = {
+  metrics: PrivacyMetric[];
 };

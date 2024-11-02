@@ -25,6 +25,7 @@ import {
   GetOutputLabelsPopulateResponseType,
   PopulateOutputLabelsBodyType,
   PopulateOutputLabelsResponse,
+  GetPrivacyMetricsResponseType,
 } from './types';
 
 import { Network } from '../types/network';
@@ -320,6 +321,16 @@ export class ApiClient {
     );
 
     const data = (await response.json()) as GetBTCPriceResponseType;
+    return data;
+  }
+
+  static async getAllPrivacyMetrics() {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/privacy-metrics`,
+      'GET',
+    );
+
+    const data = (await response.json()) as GetPrivacyMetricsResponseType;
     return data;
   }
 }

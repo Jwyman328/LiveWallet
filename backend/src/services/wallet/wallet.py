@@ -4,7 +4,7 @@ from bitcoinlib.transactions import Output, Transaction
 from sqlalchemy import func
 from src.models.label import Label
 from src.models.outputs import Output as OutputModel
-from typing import Literal, Optional, cast, List, Dict
+from typing import Literal, Optional, List, Dict
 from src.api import electrum_request, parse_electrum_url
 
 from src.api.electrum import (
