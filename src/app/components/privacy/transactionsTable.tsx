@@ -14,6 +14,7 @@ import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 import { Transaction } from '../../api/types';
 import PrivacyIcon from './privacySvg';
 import { TransactionDetailsModal } from '../TransactionDetailsModal';
+import { TransactionPrivacyModal } from '../TransactionPrivacyModal';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
@@ -243,7 +244,7 @@ export const TransactionsTable = ({
       )}
 
       {isPrivacyModalShowing && (
-        <TransactionDetailsModal
+        <TransactionPrivacyModal
           transactionDetails={selectedTransaction}
           btcMetric={btcMetric}
           opened={isPrivacyModalShowing}
