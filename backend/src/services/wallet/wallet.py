@@ -1,8 +1,16 @@
 from dataclasses import dataclass
 import bdkpython as bdk
-from typing import Literal, Optional, cast, List
+from bitcoinlib.transactions import Output, Transaction
+from sqlalchemy import func
+from src.models.label import Label
+from src.models.outputs import Output as OutputModel
+from typing import Literal, Optional, List, Dict
+from src.api import electrum_request, parse_electrum_url
 
-
+from src.api.electrum import (
+    ElectrumMethod,
+    GetTransactionsRequestParams,
+)
 from src.database import DB
 from src.models.wallet import Wallet
 from src.my_types import (
@@ -10,6 +18,11 @@ from src.my_types import (
     FeeDetails,
     GetUtxosRequestDto,
 )
+from src.my_types.controller_types.utxos_dtos import (
+    OutputLabelDto,
+    PopulateOutputLabelsRequestDto,
+)
+from src.my_types.transactions import LiveWalletOutput
 from src.services.wallet.raw_output_script_examples import (
     p2pkh_raw_output_script,
     p2pk_raw_output_script,
@@ -81,6 +94,24 @@ class WalletService:
         DB.session.commit()
 
     @classmethod
+    def remove_output_and_related_label_data(cls):
+        # make this reusable since it is used twice?
+        outputs_with_label = (
+            DB.session.query(OutputModel)
+            .join(OutputModel.labels)
+            .group_by(OutputModel.id)
+            .having(func.count(Label.id) > 0)
+            .all()
+        )
+        # remove all rows in the output_labels table
+        for output in outputs_with_label:
+            output.labels = []
+            DB.session.flush()
+        # remove all rows in the OutputModel table
+        DB.session.query(OutputModel).delete()
+        DB.session.commit()
+
+    @classmethod
     def remove_global_wallet_and_details(cls):
         DB.session.query(Wallet).delete()
         DB.session.commit()
@@ -130,18 +161,21 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor,
+                           bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
 
         db_config = bdk.DatabaseConfig.MEMORY()
+        cls.url = electrum_url
 
         blockchain_config = bdk.BlockchainConfig.ELECTRUM(
             bdk.ElectrumConfig(electrum_url, None, 2, 30, stop_gap, True)
         )
 
         blockchain = bdk.Blockchain(blockchain_config)
+        cls.blockchain = blockchain
 
         wallet = bdk.Wallet(
             descriptor=wallet_descriptor,
@@ -150,7 +184,8 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(
+            f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -199,7 +234,8 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(
+            network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -255,9 +291,218 @@ class WalletService:
         utxos = self.wallet.list_unspent()
         return utxos
 
+    def get_all_transactions(
+        self,
+    ) -> List[Transaction]:
+        """Get all transactions for the current wallet."""
+        wallet_details = Wallet.get_current_wallet()
+        if self.wallet is None or wallet_details is None:
+            LOGGER.error("No electrum wallet or wallet details found.")
+            return []
+
+        electrum_url = wallet_details.electrum_url
+
+        if electrum_url is None:
+            LOGGER.error("No electrum url found in the wallet details")
+            return []
+
+        url, port = parse_electrum_url(electrum_url)
+        if url is None or port is None:
+            LOGGER.error("No electrum url or port found in the wallet details")
+            return []
+
+        transactions = self.wallet.list_transactions(False)
+
+        all_tx_details: List[Transaction] = []
+
+        for index, transaction in enumerate(transactions):
+            electrum_response = electrum_request(
+                url,
+                int(port),
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams(transaction.txid, False),
+                index,
+            )
+
+            if (
+                electrum_response.status == "success"
+                and electrum_response.data is not None
+            ):
+                transaction: Transaction = electrum_response.data
+                all_tx_details.append(electrum_response.data)
+        return all_tx_details
+
+    def get_all_outputs(self) -> List[LiveWalletOutput]:
+        """Get all spent and unspent transaction outputs for the current wallet and mutate them as needed.
+        Calculate the annominity set for each output.
+        Attach the txid to each output.
+        Attach all labels to each output.
+        Sync the database with the incoming outputs.
+        """
+        all_transactions = self.get_all_transactions()
+        all_outputs: List[LiveWalletOutput] = []
+        for transaction in all_transactions:
+            annominity_sets = self.calculate_output_annominity_sets(
+                transaction.outputs)
+            for output in transaction.outputs:
+                db_output = self.sync_local_db_with_incoming_output(
+                    txid=transaction.txid, vout=output.output_n
+                )
+                script = bdk.Script(output.script.raw)
+                if self.wallet and self.wallet.is_mine(script):
+                    annominity_set = annominity_sets.get(output.value, 1)
+
+                    extended_output = LiveWalletOutput(
+                        annominity_set=annominity_set,
+                        base_output=output,
+                        txid=transaction.txid,
+                        labels=[label.display_name for label in db_output.labels],
+                    )
+
+                    all_outputs.append(extended_output)
+
+        return all_outputs
+
+    # TODO add a better name since this is just adding the output to the db
+    def sync_local_db_with_incoming_output(
+        self,
+        txid: str,
+        vout: int,
+    ) -> OutputModel:
+        """Sync the local database with the incoming output.
+
+        If the output is not in the database, add it.
+        """
+
+        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        if not db_output:
+            db_output = self.add_output_to_db(txid=txid, vout=vout)
+        return db_output
+
+    def add_output_to_db(self, vout: int, txid: str) -> OutputModel:
+        db_output = OutputModel(txid=txid, vout=vout, labels=[])
+        DB.session.add(db_output)
+        DB.session.commit()
+        return db_output
+
+    def calculate_output_annominity_sets(
+        self, transaction_outputs: List[Output]
+    ) -> dict[str, int]:  # -> {"value": count }
+        """Calculate the annominity set for a given output in a transaction.
+
+        The annominity set is the number of outputs with the same btc value in a transaction.
+        """
+        # loop through the transaction outputs and
+        # count how many equal outputs there are for each amount
+        # {"value": equal_output_count}
+        output_count = {}
+        for output in transaction_outputs:
+            if output_count.get(output.value):
+                output_count[output.value] += 1
+            else:
+                output_count[output.value] = 1
+        return output_count
+
+    def get_output_labels(self) -> List[OutputLabelDto]:
+        """Get all the possible labels."""
+        labels = Label.query.all()
+        return [
+            OutputLabelDto(
+                label=label.name,
+                display_name=label.display_name,
+                description=label.description,
+            )
+            for label in labels
+        ]
+
+    # TODO name this better
+    def get_output_labels_unique(
+        self,
+    ) -> Dict[str, List[OutputLabelDto]]:
+        """Get all the labels for the outputs in the wallet
+        and return them as a dictionary of the key-id
+        mapped to an array of labels.
+        """
+        outputs_with_label = (
+            DB.session.query(OutputModel)
+            .join(OutputModel.labels)
+            .group_by(OutputModel.id)
+            .having(func.count(Label.id) > 0)
+            .all()
+        )
+
+        result = {}
+
+        for output in outputs_with_label:
+            for label in output.labels:
+                key = f"{output.txid}-{output.vout}"
+                if result.get(key, None) is None:
+                    result[key] = [
+                        OutputLabelDto(
+                            label=label.name,
+                            display_name=label.display_name,
+                            description=label.description,
+                        )
+                    ]
+                else:
+                    result[key].append(
+                        OutputLabelDto(
+                            label=label.name,
+                            display_name=label.display_name,
+                            description=label.description,
+                        )
+                    )
+
+        return result
+
+    def populate_outputs_and_labels(
+        self, populate_output_labels: PopulateOutputLabelsRequestDto
+    ) -> None:  # TODO maybe a success of fail reutn type?
+        try:
+            model_dump = populate_output_labels.model_dump()
+            for unique_output_txid_vout in model_dump.keys():
+                txid, vout = unique_output_txid_vout.split("-")
+                self.sync_local_db_with_incoming_output(txid, int(vout))
+                output_labels = model_dump[unique_output_txid_vout]
+                for label in output_labels:
+                    display_name = label["display_name"]
+                    self.add_label_to_output(txid, int(vout), display_name)
+        except Exception as e:
+            LOGGER.error("Error populating outputs and labels", error=e)
+            DB.session.rollback()
+
+    # TODO should this even go here or in its own service?
+    def add_label_to_output(
+        self, txid: str, vout: int, label_display_name: str
+    ) -> list[Label]:
+        """Add a label to an output in the db."""
+        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        label = Label.query.filter_by(display_name=label_display_name).first()
+        if db_output is None or label is None:
+            return []
+        db_output.labels.append(label)
+        DB.session.commit()
+        return db_output.labels
+
+    def remove_label_from_output(
+        self, txid: str, vout: int, label_display_name: str
+    ) -> list[Label]:
+        """Remove a label from an output in the db."""
+        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        label = Label.query.filter_by(display_name=label_display_name).first()
+        # Remove the label from the output's labels collection
+        if label in db_output.labels:
+            db_output.labels.remove(label)
+        DB.session.commit()
+
+        return db_output.labels
+
     def get_utxos_info(self, utxos_wanted: List[bdk.OutPoint]) -> List[bdk.LocalUtxo]:
-        """For a given set of  txids and the vout pointing to a utxo, return the utxos"""
-        existing_utxos = cast(List[bdk.LocalUtxo], self.get_all_utxos())
+        """Get only the specified utxos from the users entire set of utxos.
+
+        The wanted utxos are specificed via a list of Outpoints which are just the txid and vout.
+        """
+        existing_utxos = self.get_all_utxos()
         utxo_dict = {
             f"{utxo.outpoint.txid}_{utxo.outpoint.vout}": utxo
             for utxo in existing_utxos
@@ -311,7 +556,8 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
+                self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(

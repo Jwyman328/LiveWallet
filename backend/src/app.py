@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from src.database import DB
+from src.database import DB, populate_labels, populate_privacy_metrics
 
 # initialize structlog
 from src.utils import logging  # noqa: F401, E261
@@ -19,10 +19,12 @@ class AppCreator:
         from src.controllers import (
             balance_page,
             utxo_page,
+            transactions_page,
             fees_api,
             wallet_api,
             health_check_api,
             hardware_wallet_api,
+            privacy_metrics_api,
         )
         from src.containers.service_container import ServiceContainer
 
@@ -45,10 +47,12 @@ class AppCreator:
             cls.app.container = container
             cls.app.register_blueprint(balance_page)
             cls.app.register_blueprint(utxo_page)
+            cls.app.register_blueprint(transactions_page)
             cls.app.register_blueprint(fees_api)
             cls.app.register_blueprint(wallet_api)
             cls.app.register_blueprint(health_check_api)
             cls.app.register_blueprint(hardware_wallet_api)
+            cls.app.register_blueprint(privacy_metrics_api)
 
             return cls.app
 
@@ -91,7 +95,12 @@ def setup_database(app):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     DB.init_app(app)
     with app.app_context():
+        # Drop all existing tables
+        DB.drop_all()  # Clear the database, incase anything was left over.
+
         DB.create_all()
+        populate_labels()
+        populate_privacy_metrics()
 
 
 # for some reason the frontend doesn't run the executable with app.y being __main__
@@ -102,7 +111,8 @@ if __name__ == "__main__":
 
     if is_testing is False:
         # hwi will fail on macos unless it is run in a single thread, threrefore set threaded to False
-        app.run(host="127.0.0.1", port=5011, debug=is_development, threaded=False)
+        app.run(host="127.0.0.1", port=5011,
+                debug=is_development, threaded=False)
 else:
     # this will run when the app is run from the generated executable
     # which is done in the production app.

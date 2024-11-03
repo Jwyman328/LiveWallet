@@ -1,3 +1,4 @@
+import { GetOutputLabelsResponseType, OutputLabelType } from '../api/types';
 import { PolicyTypeOption } from '../components/formOptions';
 import { FeeRateColor, ScaleOption } from '../pages/Home';
 import { BtcMetric } from './btcSatHandler';
@@ -24,6 +25,7 @@ export type Wallet = {
   feeScale?: ScaleOption;
   minFeeScale?: ScaleOption;
   feeRate?: string | number;
+  labels?: GetOutputLabelsResponseType;
 };
 
 export type WalletConfigs = {

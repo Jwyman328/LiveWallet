@@ -1,8 +1,21 @@
 from unittest.case import TestCase
 import os
+import copy
 from unittest.mock import MagicMock, call, patch, Mock
+from src.models.outputs import Output as OutputModel
 import pytest
+from src.api.electrum import (
+    ElectrumMethod,
+    ElectrumResponse,
+    GetTransactionsRequestParams,
+    GetTransactionsResponse,
+)
 from src.models.wallet import Wallet
+from src.my_types.controller_types.utxos_dtos import (
+    OutputLabelDto,
+    PopulateOutputLabelsRequestDto,
+)
+from src.my_types.transactions import LiveWalletOutput
 from src.services import WalletService
 from src.services.wallet.wallet import (
     GetFeeEstimateForUtxoResponseType,
@@ -14,8 +27,13 @@ from src.my_types import (
 )
 from src.my_types import GetUtxosRequestDto
 from src.my_types.script_types import ScriptType
-from src.tests.mocks import local_utxo_mock, transaction_details_mock
-from typing import cast
+from src.tests.mocks import (
+    local_utxo_mock,
+    transaction_details_mock,
+    all_transactions_mock,
+    tx_mock,
+)
+from typing import List, cast
 
 
 wallet_descriptor = os.getenv("WALLET_DESCRIPTOR", "")
@@ -98,7 +116,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -169,7 +188,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -273,7 +293,8 @@ class TestWalletService(TestCase):
             descriptor_patch.assert_has_calls(expected_calls)
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 wallet_details_mock.electrum_url, None, 2, 30, 100, True
             )
@@ -322,7 +343,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=None)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=None)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -362,7 +384,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=None)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=None)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -402,7 +425,8 @@ class TestWalletService(TestCase):
         ):
             mock_wallet = MagicMock()
             wallet_model_patch.return_value = mock_wallet
-            wallet_model_patch.get_current_wallet = MagicMock(return_value=MagicMock)
+            wallet_model_patch.get_current_wallet = MagicMock(
+                return_value=MagicMock)
 
             add_mock = MagicMock()
             commit_mock = MagicMock()
@@ -570,7 +594,8 @@ class TestWalletService(TestCase):
                 output_count,
             )
 
-            amount_in_each_output = (local_utxo_mock.txout.value / 2) / output_count
+            amount_in_each_output = (
+                local_utxo_mock.txout.value / 2) / output_count
             tx_builder_mock.add_recipient.assert_called_with(
                 script_mock, amount_in_each_output
             )
@@ -678,8 +703,10 @@ class TestWalletService(TestCase):
 
             assert fee_estimate_response.status == "success"
             fee: int = cast(int, transaction_details_mock.fee)
-            expected_fee_percent = (fee / (transaction_details_mock.sent + fee)) * 100
-            assert fee_estimate_response.data == FeeDetails(expected_fee_percent, fee)
+            expected_fee_percent = (
+                fee / (transaction_details_mock.sent + fee)) * 100
+            assert fee_estimate_response.data == FeeDetails(
+                expected_fee_percent, fee)
             assert fee_estimate_response.psbt == "mock_psbt"
 
     def test_get_fee_estimate_for_utxo_with_build_tx_unspendable(self):
@@ -699,7 +726,8 @@ class TestWalletService(TestCase):
             assert get_fee_estimate_response.data == None
 
     def test_get_fee_estimate_for_utxo_with_build_tx_error(self):
-        build_transaction_error_response = BuildTransactionResponseType("error", None)
+        build_transaction_error_response = BuildTransactionResponseType(
+            "error", None)
         with patch.object(
             WalletService,
             "build_transaction",
@@ -844,7 +872,8 @@ class TestWalletService(TestCase):
             )
 
             database_config_memory_patch.assert_called()
-            block_chain_config_electrum_mock.assert_called_with(electrum_config_mock)
+            block_chain_config_electrum_mock.assert_called_with(
+                electrum_config_mock)
             electrum_config_patch.assert_called_with(
                 electrum_url_mock, None, 2, 30, 100, True
             )
@@ -859,3 +888,388 @@ class TestWalletService(TestCase):
 
             assert response == wallet_mock
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
+
+    def test_get_all_transactions_success(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            # mock the transactions that bdk fetches from the wallet
+            mock_wallet.list_transactions.return_value = [
+                Mock(txid="txid1"),
+                Mock(txid="txid2"),
+            ]
+
+            wallet_details_mock = MagicMock()
+            wallet_details_mock.electrum_url = "blockstream:1234"
+
+            all_transactions_from_electrum = [
+                all_transactions_mock[0],
+                all_transactions_mock[0],
+            ]
+            all_transactions_from_electrum[1].txid = "txid2"
+
+            mock_electrum_request.side_effect = [
+                ElectrumResponse(
+                    status="success", data=all_transactions_from_electrum[0]
+                ),
+                ElectrumResponse(
+                    status="success", data=all_transactions_from_electrum[1]
+                ),
+            ]
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_called_with(False)
+
+            assert mock_electrum_request.call_count == 2
+            mock_electrum_request.assert_any_call(
+                "blockstream",
+                1234,
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams("txid1", False),
+                0,
+            )
+
+            mock_electrum_request.assert_any_call(
+                "blockstream",
+                1234,
+                ElectrumMethod.GET_TRANSACTIONS,
+                GetTransactionsRequestParams("txid2", False),
+                1,
+            )
+
+            assert get_all_transactions_response == all_transactions_from_electrum
+
+    def test_get_all_transactions_without_url(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            mock_wallet.list_transactions = MagicMock()
+            wallet_details_mock = MagicMock()
+            # set no electrum url
+            wallet_details_mock.electrum_url = None
+
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_not_called()
+            assert mock_electrum_request.call_count == 0
+            assert get_all_transactions_response == []
+
+    def test_get_all_transactions_without_port(self):
+        with (
+            patch("src.services.wallet.wallet.Wallet") as wallet_model_patch,
+            patch(
+                "src.services.wallet.wallet.electrum_request"
+            ) as mock_electrum_request,
+        ):
+            mock_wallet = MagicMock()
+            mock_wallet.list_transactions = MagicMock()
+            wallet_details_mock = MagicMock()
+            # set no electrum port
+            wallet_details_mock.electrum_url = "blockstreamwithoutPort"
+
+            wallet_model_patch.get_current_wallet.return_value = wallet_details_mock
+            self.wallet_service.wallet = mock_wallet
+
+            # call the method we are testing
+            get_all_transactions_response = self.wallet_service.get_all_transactions()
+
+            mock_wallet.list_transactions.assert_not_called()
+            assert mock_electrum_request.call_count == 0
+            assert get_all_transactions_response == []
+
+    def test_get_all_outputs(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock()
+        # mark first output as mine and the second as not
+        annominity_set_count_mock = 2
+        mock_wallet.is_mine.side_effect = [True, False]
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+        mock_annominity_sets = {
+            all_transactions_mock[0].outputs[0].value: annominity_set_count_mock,
+            all_transactions_mock[0].outputs[1].value: annominity_set_count_mock,
+        }
+        self.wallet_service.calculate_output_annominity_sets = Mock(
+            return_value=mock_annominity_sets
+        )
+        mock_db_output_1 = Mock()
+        mock_db_output_1.id = 1
+        mock_db_output_1.txid = all_transactions_mock[0].txid
+        mock_db_output_1.vout = all_transactions_mock[0].outputs[0].output_n
+        mock_db_output_1.labels = []
+
+        # This db output is ignored because of the is_mine call therefore we don't
+        # need to bother mocking all the values
+        mock_db_output_2 = Mock()
+
+        mock_db_output_synced = [mock_db_output_1, mock_db_output_2]
+        self.wallet_service.sync_local_db_with_incoming_output = Mock(
+            side_effect=mock_db_output_synced
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+        self.wallet_service.calculate_output_annominity_sets.assert_called()
+        self.wallet_service.sync_local_db_with_incoming_output.assert_called()
+
+        # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
+
+        assert mock_wallet.is_mine.call_count == 2
+        assert len(get_all_outputs_response) == 1
+
+        assert get_all_outputs_response[0].annominity_set == 2
+        assert get_all_outputs_response[0].txid == all_transactions_mock[0].txid
+        assert get_all_outputs_response[0].labels == []
+
+    def test_get_all_outputs_if_none_are_mine(self):
+        mock_wallet = Mock()
+        self.wallet_service.wallet = mock_wallet
+        mock_wallet.is_mine = Mock(return_value=False)
+        # mark No outputs as mine
+        annominity_set_count_mock = 2
+        self.wallet_service.get_all_transactions = Mock(
+            return_value=all_transactions_mock
+        )
+        mock_annominity_sets = {
+            all_transactions_mock[0].outputs[0].value: annominity_set_count_mock,
+            all_transactions_mock[0].outputs[1].value: annominity_set_count_mock,
+        }
+        self.wallet_service.calculate_output_annominity_sets = Mock(
+            return_value=mock_annominity_sets
+        )
+
+        # These db outputs are ignored because of the is_mine call therefore we don't
+        # need to bother mocking all the values
+
+        mock_db_output_1 = Mock()
+        mock_db_output_2 = Mock()
+
+        mock_db_output_synced = [mock_db_output_1, mock_db_output_2]
+        self.wallet_service.sync_local_db_with_incoming_output = Mock(
+            side_effect=mock_db_output_synced
+        )
+
+        # call the method we are testing
+        get_all_outputs_response = self.wallet_service.get_all_outputs()
+
+        self.wallet_service.get_all_transactions.assert_called()
+        self.wallet_service.calculate_output_annominity_sets.assert_called()
+        self.wallet_service.sync_local_db_with_incoming_output.assert_called()
+
+        assert mock_wallet.is_mine.call_count == 2
+        assert get_all_outputs_response == []
+
+    def test_calculate_output_annominity_sets(self):
+        first_output_value = tx_mock.outputs[0].value
+        second_output_value = tx_mock.outputs[1].value
+        first_output_copy = copy.deepcopy(tx_mock.outputs[0])
+        mock_transaction_outputs = [
+            tx_mock.outputs[0],
+            first_output_copy,
+            tx_mock.outputs[1],
+        ]
+        response = self.wallet_service.calculate_output_annominity_sets(
+            mock_transaction_outputs
+        )
+
+        # since the first output and the copy have the same value
+        # the set should be 2.
+        assert response[first_output_value] == 2
+        # since the second output is unique it should only have a count of 1
+        assert response[second_output_value] == 1
+
+    def test_get_output_labels(self):
+        with patch("src.services.wallet.wallet.Label") as label_model_patch:
+            mock_label_one = Mock()
+            mock_label_one.name = "label_one"
+            mock_label_one.display_name = "display_one"
+            mock_label_one.description = "description_one"
+
+            mock_label_two = Mock()
+            mock_label_two.name = "label_two"
+            mock_label_two.display_name = "display_two"
+            mock_label_two.description = "description_two"
+            label_mocks = [mock_label_one, mock_label_two]
+            label_model_patch.query.all = Mock(return_value=label_mocks)
+
+            response = self.wallet_service.get_output_labels()
+            assert isinstance(response[0], OutputLabelDto)
+            assert isinstance(response[1], OutputLabelDto)
+
+            assert response[0].label == "label_one"
+            assert response[0].display_name == "display_one"
+            assert response[0].description == "description_one"
+
+            assert response[1].label == "label_two"
+            assert response[1].display_name == "display_two"
+            assert response[1].description == "description_two"
+
+    def test_get_output_labels_unique(self):
+        with patch("src.services.wallet.wallet.DB.session") as mock_db_session:
+            mock_label_one = Mock()
+            mock_label_one.name = "label_one"
+            mock_label_one.display_name = "display_one"
+            mock_label_one.description = "description_one"
+
+            mock_label_two = Mock()
+            mock_label_two.name = "label_two"
+            mock_label_two.display_name = "display_two"
+            mock_label_two.description = "description_two"
+            mock_outputlabel = [
+                Mock(txid="txid_one", vout=0, labels=[
+                     mock_label_one, mock_label_two]),
+                Mock(txid="txid_two", vout=1, labels=[mock_label_one]),
+            ]
+
+            mock_query = mock_db_session.query.return_value
+            mock_query.join.return_value = mock_query
+            mock_query.group_by.return_value = mock_query
+            mock_query.having.return_value = mock_query
+            mock_query.all.return_value = mock_outputlabel
+
+            response = self.wallet_service.get_output_labels_unique()
+            print("what r", response)
+            assert response["txid_one-0"][0].label == mock_label_one.name
+            assert response["txid_one-0"][0].display_name == mock_label_one.display_name
+            assert response["txid_one-0"][0].description == mock_label_one.description
+
+            assert response["txid_one-0"][1].label == mock_label_two.name
+            assert response["txid_one-0"][1].display_name == mock_label_two.display_name
+            assert response["txid_one-0"][1].description == mock_label_two.description
+
+            assert response["txid_two-1"][0].label == mock_label_one.name
+            assert response["txid_two-1"][0].display_name == mock_label_one.display_name
+            assert response["txid_two-1"][0].description == mock_label_one.description
+
+            assert isinstance(response["txid_one-0"][0], OutputLabelDto)
+            assert isinstance(response["txid_one-0"][1], OutputLabelDto)
+
+    def test_populate_outputs_and_labels(self):
+        mock_label_one = dict(
+            label="label_one", display_name="display_one", description="description_one"
+        )
+
+        mock_label_two = dict(
+            label="label_two", display_name="display_two", description="description_two"
+        )
+
+        output_labels_in_populate_format = (
+            PopulateOutputLabelsRequestDto.model_validate(
+                {
+                    "txidone-0": [mock_label_one, mock_label_two],
+                    "txidone-1": [mock_label_one, mock_label_two],
+                    "txidtwo-0": [mock_label_one],
+                }
+            )
+        )
+        mock_add_label_to_output = Mock(return_value=None)
+        self.wallet_service.add_label_to_output = mock_add_label_to_output
+        mock_sync_local_db_with_incoming_output = Mock(return_value=None)
+        self.wallet_service.sync_local_db_with_incoming_output = (
+            mock_sync_local_db_with_incoming_output
+        )
+
+        # call the method we are testing
+        populate_outputs_and_labels_response = (
+            self.wallet_service.populate_outputs_and_labels(
+                output_labels_in_populate_format
+            )
+        )
+
+        # called once for each output
+        assert mock_sync_local_db_with_incoming_output.call_count == 3
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidone", 0)
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidone", 1)
+
+        mock_sync_local_db_with_incoming_output.assert_any_call("txidtwo", 0)
+
+        mock_add_label_to_output.assert_any_call(
+            "txidone", 0, mock_label_one["display_name"]
+        )
+
+        mock_add_label_to_output.assert_any_call(
+            "txidone", 1, mock_label_two["display_name"]
+        )
+        mock_add_label_to_output.assert_any_call(
+            "txidtwo", 0, mock_label_one["display_name"]
+        )
+
+        assert populate_outputs_and_labels_response == None
+
+    def test_get_utxos_info(self):
+        mock_outpoint_one = Mock()
+        mock_outpoint_one.txid = "mock_txid_one"
+        mock_outpoint_one.vout = 0
+
+        mock_outpoint_two = Mock()
+        mock_outpoint_two.txid = "mock_txid_two"
+        mock_outpoint_two.vout = 0
+
+        mock_all_utxos_one = Mock()
+        mock_all_utxos_one.outpoint = mock_outpoint_one
+
+        mock_all_utxos_two = Mock()
+        mock_all_utxos_two.outpoint = mock_outpoint_two
+
+        mock_all_utxos_three = Mock()
+        mock_all_utxos_three.outpoint = Mock()
+
+        all_utxos_mock = [mock_all_utxos_one,
+                          mock_all_utxos_two, mock_all_utxos_three]
+        mock_get_all_utxos = Mock(return_value=all_utxos_mock)
+        self.wallet_service.get_all_utxos = mock_get_all_utxos
+
+        utxos_wanted_mock = [mock_outpoint_one]
+        response = self.wallet_service.get_utxos_info(
+            cast(List[bdk.OutPoint], utxos_wanted_mock)
+        )
+        assert response[0] == mock_all_utxos_one
+
+    def test_sync_local_db_with_incoming_output_for_new_output(self):
+        with patch("src.services.wallet.wallet.OutputModel") as mock_output_model:
+            mock_new_output_model = Mock()
+            # return None, as if we did not find this OutputModel in the db
+            mock_output_model.query.filter_by.return_value.first.return_value = None
+            mock_add_output_to_db = Mock(return_value=mock_new_output_model)
+
+            self.wallet_service.add_output_to_db = mock_add_output_to_db
+            response = self.wallet_service.sync_local_db_with_incoming_output(
+                "txid", 0)
+            mock_add_output_to_db.assert_called_with(txid="txid", vout=0)
+            assert response == mock_new_output_model
+
+    def test_sync_local_db_with_incoming_output_for_existing_output(self):
+        with patch("src.services.wallet.wallet.OutputModel") as mock_output_model:
+            mock_existing_output_model = Mock()
+            # return None, as if we did not find this OutputModel in the db
+            mock_output_model.query.filter_by.return_value.first.return_value = (
+                mock_existing_output_model
+            )
+            mock_add_output_to_db = Mock()
+
+            self.wallet_service.add_output_to_db = mock_add_output_to_db
+            response = self.wallet_service.sync_local_db_with_incoming_output(
+                "txid", 0)
+            # since the output already exists in the db we should not call add_output_to_db
+            mock_add_output_to_db.assert_not_called()
+            assert response == mock_existing_output_model
