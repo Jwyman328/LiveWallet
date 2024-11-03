@@ -1,5 +1,5 @@
-from typing import Optional, List, Dict
-from pydantic import BaseModel, RootModel, field_validator, Field
+from typing import List
+from pydantic import BaseModel
 import structlog
 
 LOGGER = structlog.get_logger()
@@ -13,3 +13,12 @@ class PrivacyMetricDto(BaseModel):
 
 class GetAllPrivacyMetricsResponseDto(BaseModel):
     metrics: List[PrivacyMetricDto]
+
+
+class AnalyzeTxPrivacyResponseDto(BaseModel):
+    results: str  # TODO actually implement this
+
+
+class AnalyzeTxPrivacyRequestDto(BaseModel):
+    txid: str
+    privacy_metrics: List[str]

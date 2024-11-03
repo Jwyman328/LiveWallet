@@ -1,8 +1,11 @@
-import { Accordion, Checkbox, Modal } from '@mantine/core';
-import { Transaction } from '../api/types';
+import { Accordion, Button, Checkbox, Modal } from '@mantine/core';
+import { PrivacyMetric, Transaction } from '../api/types';
 import { BtcMetric } from '../types/btcSatHandler';
 import { useState } from 'react';
-import { useGetPrivacyMetrics } from '../hooks/privacyMetrics';
+import {
+  useAnalyzeTxPrivacy,
+  useGetPrivacyMetrics,
+} from '../hooks/privacyMetrics';
 type TransactionDetailsModalProps = {
   opened: boolean;
   onClose: () => void;
@@ -16,69 +19,115 @@ export const TransactionPrivacyModal = ({
   btcMetric,
 }: TransactionDetailsModalProps) => {
   const getPRivacyMetricsResponse = useGetPrivacyMetrics();
-  // TODO get from backend
-  const privacyMetricsOne = [
-    {
-      value: 'Apples',
-      description:
-        'Crisp and refreshing fruit. Apples are known for their versatility and nutritional benefits. They come in a variety of flavors and are great for snacking, baking, or adding to salads.',
-    },
-    {
-      value: 'Bananas',
-      description:
-        'Naturally sweet and potassium-rich fruit. Bananas are a popular choice for their energy-boosting properties and can be enjoyed as a quick snack, added to smoothies, or used in baking.',
-    },
-    {
-      value: 'Broccoli',
-      description:
-        'Nutrient-packed green vegetable. Broccoli is packed with vitamins, minerals, and fiber. It has a distinct flavor and can be enjoyed steamed, roasted, or added to stir-fries.',
-    },
-  ];
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+
   const privacyMetrics = getPRivacyMetricsResponse?.data?.metrics || [];
-  const items = privacyMetrics.map((item) => (
-    <Accordion.Item key={item.name} value={item.name}>
-      <div className="flex flex-row">
-        <div className="flex justify-center items-center">
-          <Checkbox
-            checked={selectedMetrics.includes(item.name)}
-            onChange={(event) => {
-              const newMetrics = [...selectedMetrics];
+  const privacyMetricsNames = privacyMetrics.map((item) => item.name);
+  const halfOfMetricsCount = Math.ceil(privacyMetrics.length / 2);
+  const firstHalf = privacyMetrics.slice(0, halfOfMetricsCount);
+  const secondHalf = privacyMetrics.slice(halfOfMetricsCount);
+  const analyzeTxPrivacyMutation = useAnalyzeTxPrivacy();
 
-              if (event.currentTarget.checked) {
-                newMetrics.push(item.name);
+  const PrivacyMetricComponent = ({
+    privacyMetric,
+  }: {
+    privacyMetric: PrivacyMetric;
+  }) => {
+    return (
+      <Accordion.Item key={privacyMetric.name} value={privacyMetric.name}>
+        <div className="flex flex-row">
+          <div className="flex justify-center items-center">
+            <Checkbox
+              disabled={analyzeTxPrivacyMutation.isLoading}
+              checked={selectedMetrics.includes(privacyMetric.name)}
+              onChange={(event) => {
+                const newMetrics = [...selectedMetrics];
 
-                setSelectedMetrics(newMetrics);
-              } else {
-                // remove the item from the array
-                const index = newMetrics.indexOf(item.name);
-                if (index > -1) {
-                  newMetrics.splice(index, 1);
+                if (event.currentTarget.checked) {
+                  newMetrics.push(privacyMetric.name);
+
                   setSelectedMetrics(newMetrics);
+                } else {
+                  // remove the item from the array
+                  const index = newMetrics.indexOf(privacyMetric.name);
+                  if (index > -1) {
+                    newMetrics.splice(index, 1);
+                    setSelectedMetrics(newMetrics);
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
+          <div className="w-full">
+            <Accordion.Control>{privacyMetric.display_name}</Accordion.Control>
+            <Accordion.Panel>{privacyMetric.description}</Accordion.Panel>
+          </div>
         </div>
-        <div className="w-full">
-          <Accordion.Control>{item.display_name}</Accordion.Control>
-          <Accordion.Panel>{item.description}</Accordion.Panel>
-        </div>
-      </div>
-    </Accordion.Item>
+      </Accordion.Item>
+    );
+  };
+
+  const firstHalfMetrics = firstHalf.map((item) => (
+    <PrivacyMetricComponent key={item.name} privacyMetric={item} />
   ));
+
+  const secondHalfMetrics = secondHalf.map((item) => (
+    <PrivacyMetricComponent key={item.name} privacyMetric={item} />
+  ));
+
+  const analyzePrivacy = () => {
+    console.log('analyze privacy');
+    analyzeTxPrivacyMutation.mutate({
+      txid: transactionDetails.txid,
+      privacy_metrics: selectedMetrics,
+    });
+  };
+
+  const areAllSelected =
+    selectedMetrics.length === privacyMetricsNames.length &&
+    selectedMetrics.every(
+      (value, index) => value === privacyMetricsNames[index],
+    );
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       centered
-      size="lg"
+      fullScreen
       title={'Analyze Privacy'}
     >
       <div>
         <p>Transaction ID: {transactionDetails.txid}</p>
-        <Accordion defaultValue="Apples">{items}</Accordion>
+        <div className="flex my-4">
+          <Checkbox
+            checked={areAllSelected}
+            onChange={() => {
+              if (areAllSelected) {
+                setSelectedMetrics([]);
+              } else {
+                setSelectedMetrics(privacyMetricsNames);
+              }
+            }}
+            size="lg"
+            label={<p className="font-bold text-lg text-center">All</p>}
+          />
+        </div>
+        <div className="flex flex-row">
+          <Accordion className="flex-1">{firstHalfMetrics}</Accordion>
+          <Accordion className="flex-1 ml-8">{secondHalfMetrics}</Accordion>
+        </div>
       </div>
+      <Button
+        loading={analyzeTxPrivacyMutation.isLoading}
+        onClick={analyzePrivacy}
+        className="mt-8"
+        size="lg"
+        fullWidth
+        disabled={selectedMetrics.length === 0}
+      >
+        Analyze privacy
+      </Button>
     </Modal>
   );
 };

@@ -26,6 +26,8 @@ import {
   PopulateOutputLabelsBodyType,
   PopulateOutputLabelsResponse,
   GetPrivacyMetricsResponseType,
+  AnalyzeTxPrivacyResponseType,
+  AnalyzeTxPrivacyRequestBody,
 } from './types';
 
 import { Network } from '../types/network';
@@ -331,6 +333,19 @@ export class ApiClient {
     );
 
     const data = (await response.json()) as GetPrivacyMetricsResponseType;
+    return data;
+  }
+
+  static async analyzeTxPrivacy(
+    analyzeTxPrivacyRequestBody: AnalyzeTxPrivacyRequestBody,
+  ) {
+    const response = await fetchHandler(
+      `${configs.backendServerBaseUrl}/privacy-metrics`,
+      'POST',
+      analyzeTxPrivacyRequestBody,
+    );
+
+    const data = (await response.json()) as AnalyzeTxPrivacyResponseType;
     return data;
   }
 }

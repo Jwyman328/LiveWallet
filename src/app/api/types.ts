@@ -226,3 +226,12 @@ export type PrivacyMetric = {
 export type GetPrivacyMetricsResponseType = {
   metrics: PrivacyMetric[];
 };
+
+export type AnalyzeTxPrivacyRequestBody = {
+  txid: string;
+  privacy_metrics: string[];
+};
+
+export type AnalyzeTxPrivacyResponseType = {
+  results: string;
+};
