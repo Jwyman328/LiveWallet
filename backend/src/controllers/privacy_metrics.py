@@ -62,7 +62,7 @@ def anaylze_tx_privacy(
     wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
 ):
     """
-    TODO
+    TODO change
     """
     try:
         # TODO use a service to actually analyze the privacy
