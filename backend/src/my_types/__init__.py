@@ -31,4 +31,5 @@ from src.my_types.controller_types.privacy_metrics_dtos import (
     GetAllPrivacyMetricsResponseDto,
     PrivacyMetricDto,
     AnalyzeTxPrivacyResponseDto,
+    AnalyzeTxPrivacyRequestDto
 )

@@ -13,5 +13,4 @@ class ServiceContainer(containers.DeclarativeContainer):
     wallet_service = providers.Factory(WalletService)
     hardware_wallet_service = providers.Singleton(HardwareWalletService)
     fee_service = providers.Factory(FeeService)
-
     privacy_metrics_service = providers.Factory(PrivacyMetricsService)

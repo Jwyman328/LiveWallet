@@ -70,12 +70,12 @@ def anaylze_tx_privacy(
         request_data = AnalyzeTxPrivacyRequestDto.model_validate(
             json.loads(request.data)
         )
-        privacy_service.analyze_tx_privacy(
+        results = privacy_service.analyze_tx_privacy(
             request_data.txid, request_data.privacy_metrics
         )
 
         return AnalyzeTxPrivacyResponseDto.model_validate(
-            dict(results="mock results")
+            dict(results=results)
         ).model_dump()
 
     except Exception as e:

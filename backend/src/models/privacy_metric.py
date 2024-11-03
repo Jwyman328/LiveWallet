@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 from src.database import DB
 
 
-class PrivacyMetricName(PyEnum):
+class PrivacyMetricName(str, PyEnum):
     # Minize personal information # TODO find better catagory name
     ANNOMINITY_SET = "annominity set"
     NO_ADDRESS_REUSE = "no address reuse"
