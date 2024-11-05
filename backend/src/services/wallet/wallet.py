@@ -23,6 +23,7 @@ from src.my_types.controller_types.utxos_dtos import (
     PopulateOutputLabelsRequestDto,
 )
 from src.my_types.transactions import LiveWalletOutput
+from src.services.last_fetched.last_fetched_service import LastFetchedService
 from src.services.wallet.raw_output_script_examples import (
     p2pkh_raw_output_script,
     p2pk_raw_output_script,
@@ -161,8 +162,7 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor,
-                           bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -184,8 +184,7 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(
-            f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -234,8 +233,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -291,12 +289,13 @@ class WalletService:
         utxos = self.wallet.list_unspent()
         return utxos
 
+    @classmethod
     def get_all_transactions(
-        self,
+        cls,
     ) -> List[Transaction]:
         """Get all transactions for the current wallet."""
         wallet_details = Wallet.get_current_wallet()
-        if self.wallet is None or wallet_details is None:
+        if cls.wallet is None or wallet_details is None:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
@@ -311,7 +310,7 @@ class WalletService:
             LOGGER.error("No electrum url or port found in the wallet details")
             return []
 
-        transactions = self.wallet.list_transactions(False)
+        transactions = cls.wallet.list_transactions(False)
 
         all_tx_details: List[Transaction] = []
 
@@ -332,24 +331,27 @@ class WalletService:
                 all_tx_details.append(electrum_response.data)
         return all_tx_details
 
-    def get_all_outputs(self) -> List[LiveWalletOutput]:
+    @classmethod
+    def get_all_outputs(cls) -> List[LiveWalletOutput]:
         """Get all spent and unspent transaction outputs for the current wallet and mutate them as needed.
         Calculate the annominity set for each output.
         Attach the txid to each output.
         Attach all labels to each output.
         Sync the database with the incoming outputs.
         """
-        all_transactions = self.get_all_transactions()
+        all_transactions = cls.get_all_transactions()
         all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
-            annominity_sets = self.calculate_output_annominity_sets(
-                transaction.outputs)
+            annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
-                db_output = self.sync_local_db_with_incoming_output(
-                    txid=transaction.txid, vout=output.output_n
-                )
                 script = bdk.Script(output.script.raw)
-                if self.wallet and self.wallet.is_mine(script):
+                if cls.wallet and cls.wallet.is_mine(script):
+                    db_output = cls.sync_local_db_with_incoming_output(
+                        txid=transaction.txid,
+                        vout=output.output_n,
+                        address=output.address,
+                    )
+                    LastFetchedService.update_last_fetched_outputs_type()
                     annominity_set = annominity_sets.get(output.value, 1)
 
                     extended_output = LiveWalletOutput(
@@ -364,27 +366,33 @@ class WalletService:
         return all_outputs
 
     # TODO add a better name since this is just adding the output to the db
+    @classmethod
     def sync_local_db_with_incoming_output(
-        self,
+        cls,
         txid: str,
         vout: int,
+        address: str,
     ) -> OutputModel:
         """Sync the local database with the incoming output.
 
         If the output is not in the database, add it.
         """
 
-        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        db_output = OutputModel.query.filter_by(
+            txid=txid, vout=vout, address=address
+        ).first()
         if not db_output:
-            db_output = self.add_output_to_db(txid=txid, vout=vout)
+            db_output = cls.add_output_to_db(txid=txid, vout=vout, address=address)
         return db_output
 
-    def add_output_to_db(self, vout: int, txid: str) -> OutputModel:
-        db_output = OutputModel(txid=txid, vout=vout, labels=[])
+    @classmethod
+    def add_output_to_db(cls, vout: int, txid: str, address: str) -> OutputModel:
+        db_output = OutputModel(txid=txid, vout=vout, address=address, labels=[])
         DB.session.add(db_output)
         DB.session.commit()
         return db_output
 
+    @classmethod
     def calculate_output_annominity_sets(
         self, transaction_outputs: List[Output]
     ) -> dict[str, int]:  # -> {"value": count }
@@ -435,7 +443,7 @@ class WalletService:
 
         for output in outputs_with_label:
             for label in output.labels:
-                key = f"{output.txid}-{output.vout}"
+                key = f"{output.txid}-{output.vout}-{output.address}"
                 if result.get(key, None) is None:
                     result[key] = [
                         OutputLabelDto(
@@ -455,25 +463,27 @@ class WalletService:
 
         return result
 
+    @classmethod
     def populate_outputs_and_labels(
-        self, populate_output_labels: PopulateOutputLabelsRequestDto
+        cls, populate_output_labels: PopulateOutputLabelsRequestDto
     ) -> None:  # TODO maybe a success of fail reutn type?
         try:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
-                txid, vout = unique_output_txid_vout.split("-")
-                self.sync_local_db_with_incoming_output(txid, int(vout))
+                txid, vout, address = unique_output_txid_vout.split("-")
+                cls.sync_local_db_with_incoming_output(txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
-                    self.add_label_to_output(txid, int(vout), display_name)
+                    cls.add_label_to_output(txid, int(vout), display_name)
         except Exception as e:
             LOGGER.error("Error populating outputs and labels", error=e)
             DB.session.rollback()
 
     # TODO should this even go here or in its own service?
+    @classmethod
     def add_label_to_output(
-        self, txid: str, vout: int, label_display_name: str
+        cls, txid: str, vout: int, label_display_name: str
     ) -> list[Label]:
         """Add a label to an output in the db."""
         db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
@@ -556,8 +566,7 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
-                self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -632,3 +641,14 @@ class WalletService:
         )
 
         return fee_estimate_response
+
+    @classmethod
+    def is_address_reused(self, address: str) -> bool:
+        """Check if the address has been used in the wallet more than once."""
+        outputs_with_this_address = OutputModel.query.filter_by(address=address).all()
+        address_used_count = len(outputs_with_this_address)
+
+        if address_used_count > 1:
+            return True
+        else:
+            return False

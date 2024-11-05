@@ -16,8 +16,12 @@ class Output(DB.Model):
     )
     vout = DB.Column(DB.Integer, nullable=False, default=0)
 
+    address = DB.Column(DB.String(), nullable=False)
+
     # Relationship to labels
-    labels = DB.relationship("Label", secondary=output_labels, back_populates="outputs")
+    labels = DB.relationship(
+        "Label", secondary=output_labels, back_populates="outputs")
 
     # Unique constraint on the combination of txid and vout
-    __table_args__ = (DB.UniqueConstraint("txid", "vout", name="uq_txid_vout"),)
+    __table_args__ = (DB.UniqueConstraint(
+        "txid", "vout", name="uq_txid_vout"),)

@@ -1,5 +1,12 @@
 from src.database import DB
 from src.models.privacy_metric import PrivacyMetric, PrivacyMetricName
+from src.models.outputs import Output as OutputModel
+from datetime import datetime, timedelta
+
+
+import structlog
+
+LOGGER = structlog.get_logger()
 
 
 class PrivacyMetricsService:
@@ -93,11 +100,40 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_no_address_reuse(cls, txid: str) -> bool:
+    def analyze_no_address_reuse(
+        cls,
+        txid: str,
+    ) -> bool:
+        # can I inject this in?
+        # circular imports are currently preventing it.
+        from src.services.wallet.wallet import WalletService
+        from src.services.last_fetched.last_fetched_service import LastFetchedService
+
+        # Check that all outputs have already been fetched recently
+        last_fetched_output_datetime = (
+            LastFetchedService.get_last_fetched_output_datetime()
+        )
+        now = datetime.now()
+        refetch_interval = timedelta(minutes=5)
+        should_refetch_outputs = now - last_fetched_output_datetime > refetch_interval
+
+        if last_fetched_output_datetime is None or should_refetch_outputs:
+            LOGGER.info("No last fetched output datetime found, fetching all outputs")
+            # this will get all the outputs and add them to the database, ensuring that they exist
+            WalletService.get_all_outputs()
+        outputs = OutputModel.query.filter_by(txid=txid).all()
+        for output in outputs:
+            if WalletService.is_address_reused(output.address):
+                LOGGER.info(f"Address {output.address} has been reused")
+                return False
+
         return True
 
     @classmethod
-    def analyze_minimal_wealth_reveal(cls, txid: str) -> bool:
+    def analyze_minimal_wealth_reveal(
+        cls,
+        txid: str,
+    ) -> bool:
         return True
 
     @classmethod
