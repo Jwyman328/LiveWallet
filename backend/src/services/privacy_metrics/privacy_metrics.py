@@ -115,7 +115,12 @@ class PrivacyMetricsService:
         )
         now = datetime.now()
         refetch_interval = timedelta(minutes=5)
-        should_refetch_outputs = now - last_fetched_output_datetime > refetch_interval
+
+        should_refetch_outputs = (
+            now - last_fetched_output_datetime > refetch_interval
+            if last_fetched_output_datetime is not None
+            else True  # if last_fetched_output_datetime is None, we should "fetch" for first time
+        )
 
         if last_fetched_output_datetime is None or should_refetch_outputs:
             LOGGER.info("No last fetched output datetime found, fetching all outputs")
