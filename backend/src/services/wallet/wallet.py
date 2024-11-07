@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import bdkpython as bdk
 from bitcoinlib.transactions import Output, Transaction
 from sqlalchemy import func
+from src.models.transaction import Transaction as TransactionModel
 from src.models.label import Label
 from src.models.outputs import Output as OutputModel
 from typing import Literal, Optional, List, Dict
@@ -293,43 +294,95 @@ class WalletService:
     def get_all_transactions(
         cls,
     ) -> List[Transaction]:
-        """Get all transactions for the current wallet."""
+        """Get all transactions for the current wallet.
+
+        Add the transaction to the database.
+        Add to the database that the transactions have been fetched
+        via the LastFetched model.
+        """
         wallet_details = Wallet.get_current_wallet()
         if cls.wallet is None or wallet_details is None:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
-        electrum_url = wallet_details.electrum_url
-
-        if electrum_url is None:
-            LOGGER.error("No electrum url found in the wallet details")
-            return []
-
-        url, port = parse_electrum_url(electrum_url)
-        if url is None or port is None:
-            LOGGER.error("No electrum url or port found in the wallet details")
-            return []
-
-        transactions = cls.wallet.list_transactions(False)
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
 
         all_tx_details: List[Transaction] = []
 
         for index, transaction in enumerate(transactions):
-            electrum_response = electrum_request(
-                url,
-                int(port),
-                ElectrumMethod.GET_TRANSACTIONS,
-                GetTransactionsRequestParams(transaction.txid, False),
-                index,
-            )
+            transaction_response = cls.get_transaction(transaction.txid, index)
+            if transaction_response is not None:
+                # add the transaction to the database
+                # use the bdk transaction details since it contains
+                # the sent and received amounts relative to the users wallet
+                # instead of just agnostic values that electrum returns
+                cls.add_transaction_to_db(transaction)
+                all_tx_details.append(transaction_response)
+            else:
+                LOGGER.error(f"Error getting transaction {transaction.txid}")
 
-            if (
-                electrum_response.status == "success"
-                and electrum_response.data is not None
-            ):
-                transaction: Transaction = electrum_response.data
-                all_tx_details.append(electrum_response.data)
+        # mark transactions as fetched
+        LastFetchedService.update_last_fetched_transaction_type()
+
         return all_tx_details
+
+    @classmethod
+    def get_transaction(cls, txid, index=1) -> Optional[Transaction]:
+        "Get an individual transaction from the wallet by the txid."
+        wallet_details = Wallet.get_current_wallet()
+        if wallet_details is None:
+            LOGGER.error(
+                "No wallet_details found, therefore the request to get the transaction can not be made."
+            )
+            return None
+
+        electrum_url = wallet_details.electrum_url
+
+        if electrum_url is None:
+            LOGGER.error("No electrum url found in the wallet details")
+            return None
+
+        url, port = parse_electrum_url(electrum_url)
+        if url is None or port is None:
+            LOGGER.error("No electrum url or port found in the wallet details")
+            return None
+
+        electrum_response = electrum_request(
+            url,
+            int(port),
+            ElectrumMethod.GET_TRANSACTIONS,
+            GetTransactionsRequestParams(txid, False),
+            index,
+        )
+
+        if electrum_response.status == "success" and electrum_response.data is not None:
+            transaction: Transaction = electrum_response.data
+            return transaction
+        else:
+            return None
+
+    @classmethod
+    def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
+        """Get the transaction details from the database."""
+        transaction = DB.session.query(TransactionModel).filter_by(txid=txid).first()
+        return transaction
+
+    @classmethod
+    def add_transaction_to_db(cls, transaction_details: bdk.TransactionDetails):
+        existing_transaction = (
+            DB.session.query(TransactionModel)
+            .filter_by(txid=transaction_details.txid)
+            .first()
+        )
+        if existing_transaction is None:
+            new_transaction = TransactionModel(
+                txid=transaction_details.txid,
+                received_amount=transaction_details.received,
+                sent_amount=transaction_details.sent,
+                fee=transaction_details.fee,
+            )
+            DB.session.add(new_transaction)
+            DB.session.commit()
 
     @classmethod
     def get_all_outputs(cls) -> List[LiveWalletOutput]:

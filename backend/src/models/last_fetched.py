@@ -7,6 +7,7 @@ from src.database import DB
 
 class LastFetchedType(PyEnum):
     OUTPUTS = "outputs"
+    TRANSACTIONS = "transactions"
 
 
 class LastFetched(DB.Model):

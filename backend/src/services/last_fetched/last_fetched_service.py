@@ -38,3 +38,33 @@ class LastFetchedService:
         if last_fetched_output:
             return last_fetched_output.timestamp
         return None
+
+    @classmethod
+    def update_last_fetched_transaction_type(
+        self,
+    ) -> None:
+        """Update the last fetched time for the transactions."""
+        timestamp = datetime.now()
+        current_last_fetched_output = LastFetched.query.filter_by(
+            type=LastFetchedType.TRANSACTIONS
+        ).first()
+        if current_last_fetched_output:
+            current_last_fetched_output.timestamp = timestamp
+        else:
+            last_fetched_output = LastFetched(
+                type=LastFetchedType.TRANSACTIONS, timestamp=timestamp
+            )
+            DB.session.add(last_fetched_output)
+        DB.session.commit()
+
+    @classmethod
+    def get_last_fetched_transaction_datetime(
+        self,
+    ) -> Optional[datetime]:
+        """Get the last fetched time for the transactions."""
+        last_fetched_output = LastFetched.query.filter_by(
+            type=LastFetchedType.TRANSACTIONS
+        ).first()
+        if last_fetched_output:
+            return last_fetched_output.timestamp
+        return None

@@ -65,7 +65,7 @@ class TransactionDetailDto(BaseModel):
     network: str  # bitcoin, what are the other options?
     witness_type: str  # segwit, what are the other options?
     coinbase: bool
-    flag: int
+    flag: Optional[int]
     txhash: str
     confirmations: Optional[int]
     block_height: Optional[int]

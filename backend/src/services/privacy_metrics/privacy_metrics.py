@@ -1,8 +1,11 @@
+from typing import Optional
+from bdkpython import bdk
+from bitcoinlib.transactions import Transaction
 from src.database import DB
 from src.models.privacy_metric import PrivacyMetric, PrivacyMetricName
 from src.models.outputs import Output as OutputModel
 from datetime import datetime, timedelta
-
+from src.models.transaction import Transaction as TransactionModel
 
 import structlog
 
@@ -19,7 +22,12 @@ class PrivacyMetricsService:
     def analyze_tx_privacy(
         cls, txid: str, privacy_metrics: list[PrivacyMetricName]
     ) -> dict[PrivacyMetricName, bool]:
+        from src.services.wallet.wallet import WalletService
+
         results: dict[PrivacyMetricName, bool] = dict()
+
+        transaction_details = WalletService.get_transaction_details(txid)
+        transaction = WalletService.get_transaction(txid)
         for privacy_metric in privacy_metrics:
             if privacy_metric == PrivacyMetricName.ANNOMINITY_SET:
                 mock_set = 5
@@ -42,15 +50,15 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_CHANGE:
-                result = cls.analyze_no_change(txid)
+                result = cls.analyze_no_change(transaction_details)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_SMALL_CHANGE:
-                result = cls.analyze_no_small_change(txid)
+                result = cls.analyze_no_small_change(transaction_details)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_ROUND_NUMBER_PAYMENTS:
-                result = cls.analyze_no_round_number_payments(txid)
+                result = cls.analyze_no_round_number_payments(transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.SAME_SCRIPT_TYPES:
@@ -150,16 +158,68 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_no_change(cls, txid: str) -> bool:
+    def analyze_no_change(cls, transaction_details: Optional[TransactionModel]) -> bool:
+        if transaction_details is None:
+            return False
+        if (
+            transaction_details.sent_amount > 0
+            and transaction_details.received_amount > 0
+        ):
+            return False
         return True
 
     @classmethod
-    def analyze_no_small_change(cls, txid: str) -> bool:
-        return True
+    def analyze_no_small_change(
+        cls, transaction_details: Optional[TransactionModel]
+    ) -> bool:
+        if transaction_details is None:
+            return False
+
+        total_change = (
+            transaction_details.sent_amount - transaction_details.received_amount
+        )
+        # 50,000 sats is about $35 at $69k
+        # when fees are at 100 sat/vbyte, this utxo would cost about
+        # 30% in fees of its total amount.
+        # TODO should this be 100,000 sats?
+        acceptable_change_amount = 50000
+        if total_change > acceptable_change_amount:
+            return False
+        else:
+            return True
 
     @classmethod
-    def analyze_no_round_number_payments(cls, txid: str) -> bool:
-        return True
+    def analyze_no_round_number_payments(
+        cls, transaction: Optional[Transaction]
+    ) -> bool:
+        """Check if this transaction's change is easily detectable due to
+        having a round number payment output and a non round number change
+        output.
+        Use the last four digits to determine if an output is a round number.
+        This privacy check will fail if there is an output with a last four
+        digits of 0 and an output with a last four digits not equal to 0.
+        """
+
+        if transaction is None:
+            return False
+
+        is_non_round_output_count = 0
+        is_round_output_count = 0
+        outputs = transaction.outputs
+        for output in outputs:
+            last_four_digits = output.value % 10000
+            if last_four_digits == 0:
+                is_round_output_count += 1
+            else:
+                is_non_round_output_count += 1
+
+        if is_non_round_output_count > 0 and is_round_output_count > 0:
+            # there is a round number output and a non round number output
+            # which means it is easy to detect the change output,
+            # which is the non round number output.
+            return False
+        else:
+            return True
 
     @classmethod
     def analyze_same_script_types(cls, txid: str) -> bool:
