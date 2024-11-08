@@ -5,7 +5,7 @@ from sqlalchemy import func
 from src.models.transaction import Transaction as TransactionModel
 from src.models.label import Label
 from src.models.outputs import Output as OutputModel
-from typing import Literal, Optional, List, Dict
+from typing import Literal, Optional, List, Dict, Tuple
 from src.api import electrum_request, parse_electrum_url
 
 from src.api.electrum import (
@@ -202,7 +202,7 @@ class WalletService:
         wallet_descriptor: bdk.Descriptor,
         # TODO get this url from a config file
         electrum_url="127.0.0.1:50000",
-    ) -> bdk.Wallet:
+    ) -> Tuple[bdk.Wallet, bdk.Blockchain]:
         """Create a new wallet and sync it to the electrum server."""
         db_config = bdk.DatabaseConfig.MEMORY()
 
@@ -221,7 +221,7 @@ class WalletService:
 
         wallet.sync(blockchain, None)
 
-        return wallet
+        return (wallet, blockchain)
 
     @classmethod
     def create_spendable_descriptor(

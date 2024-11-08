@@ -62,7 +62,9 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.SAME_SCRIPT_TYPES:
-                result = cls.analyze_same_script_types(txid)
+                result = cls.analyze_same_script_types(
+                    transaction_details=transaction_details, transaction=transaction
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.AVOID_OUTPUT_SIZE_DIFFERENCE:
@@ -222,8 +224,45 @@ class PrivacyMetricsService:
             return True
 
     @classmethod
-    def analyze_same_script_types(cls, txid: str) -> bool:
-        return True
+    def analyze_same_script_types(
+        cls,
+        transaction_details: Optional[TransactionModel],
+        transaction: Optional[Transaction],
+    ) -> bool:
+        """Analyze if the transaction is a spend to an output with a different
+        script type than the user's input.
+
+        This would be bad for privacy by linking the user's input to the output
+        with the same script type.
+        """
+        if transaction is None or transaction_details is None:
+            return False
+
+        # we are trying to obfuscate the change output
+        # so if there is no change then this passes
+        is_no_change = cls.analyze_no_change(transaction_details)
+        if is_no_change:
+            return True
+
+        is_the_user_sending_funds = transaction_details.sent_amount > 0
+        if is_the_user_sending_funds is False:
+            # this privacy metric does not apply if the user
+            # is not sending funds
+            return True
+
+        output_script_types = set()
+
+        for output in transaction.outputs:
+            output_script_types.add(output.script_type)
+
+        if len(output_script_types) > 1:
+            # there are two different output script types
+            # and we know one must be this users
+            # linking an input and an output.
+            # Therefore this privacy metric fails
+            return False
+        else:
+            return True
 
     @classmethod
     def analyze_avoid_output_size_difference(cls, txid: str) -> bool:
