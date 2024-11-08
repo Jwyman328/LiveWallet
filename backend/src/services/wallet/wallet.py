@@ -533,6 +533,13 @@ class WalletService:
             LOGGER.error("Error populating outputs and labels", error=e)
             DB.session.rollback()
 
+    @classmethod
+    def get_output_from_db(
+        cls, txid: str, vout: int
+    ) -> Optional[OutputModel]:
+        """Get an output from the database by the txid and vout."""
+        output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        return output
     # TODO should this even go here or in its own service?
     @classmethod
     def add_label_to_output(

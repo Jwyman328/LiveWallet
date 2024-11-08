@@ -9,6 +9,8 @@ from src.models.transaction import Transaction as TransactionModel
 
 import structlog
 
+from src.services.wallet.wallet import WalletService
+
 LOGGER = structlog.get_logger()
 
 
@@ -30,8 +32,8 @@ class PrivacyMetricsService:
         transaction = WalletService.get_transaction(txid)
         for privacy_metric in privacy_metrics:
             if privacy_metric == PrivacyMetricName.ANNOMINITY_SET:
-                mock_set = 5
-                result = cls.analyze_annominit_set(txid, mock_set)
+                mock_set = 2
+                result = cls.analyze_annominity_set(transaction, mock_set)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_ADDRESS_REUSE:
@@ -106,8 +108,69 @@ class PrivacyMetricsService:
         return results
 
     @classmethod
-    def analyze_annominit_set(cls, txid: str, desired_annominity_set: int) -> bool:
-        return True
+    def analyze_annominity_set(
+        cls,
+        transaction: Optional[Transaction],
+        desired_annominity_set: int = 2,
+        allow_some_uneven_change: bool = True,
+    ) -> bool:
+        """Analyze if the users output/s in the tx have the desired annominity
+        set.
+
+        If allow_some_uneven_change is True, then the privacy metric will pass
+        if atleast one of the user's outputs is above the
+        desired annominity set.
+
+        If allow_some_uneven_change is False, then the privacy metric will
+        only pass if all of the user's outputs are above the desired
+        annominity set.
+        """
+        if transaction is None:
+            return False
+        # compare the users utxos to other utxos,
+        # if other utxos do not have the same value
+        # then this fails the annominity set metric
+
+        # Check that all outputs have already been fetched recently
+        cls.ensure_recently_fetched_outputs()
+
+        output_annominity_count = WalletService.calculate_output_annominity_sets(
+            transaction.outputs
+        )
+        users_utxos_that_passed_annominity_test = 0
+        users_utxos_that_failed_annominity_test = 0
+        for output in transaction.outputs:
+            user_output = WalletService.get_output_from_db(
+                transaction.txid, output.output_n
+            )
+            is_users_output = user_output is not None
+            if is_users_output:
+                annominity_set = output_annominity_count[output.value]
+                if annominity_set < desired_annominity_set:
+                    # the users output has a lower annominity set
+                    # than the desired annominity set
+                    # therefore this metric fails
+                    users_utxos_that_failed_annominity_test += 1
+                else:
+                    users_utxos_that_passed_annominity_test += 1
+
+        if users_utxos_that_passed_annominity_test == 0:
+            return False
+
+        if allow_some_uneven_change is False:
+            # if the user has any utxos that failed the annominity test
+            # then this metric fails
+            if users_utxos_that_failed_annominity_test > 0:
+                return False
+            else:
+                # all utxos passed the annominity test
+                return True
+        else:  # allow_some_uneven_change is True
+            # at this point we know that the user has at least one utxo
+            # that passed the annominity test, if the user has other utxos
+            # that do not have an annominity set above 0 we just consider it part of the
+            # uneven change that is allowed.
+            return True
 
     @classmethod
     def analyze_no_address_reuse(
@@ -117,25 +180,9 @@ class PrivacyMetricsService:
         # can I inject this in?
         # circular imports are currently preventing it.
         from src.services.wallet.wallet import WalletService
-        from src.services.last_fetched.last_fetched_service import LastFetchedService
 
         # Check that all outputs have already been fetched recently
-        last_fetched_output_datetime = (
-            LastFetchedService.get_last_fetched_output_datetime()
-        )
-        now = datetime.now()
-        refetch_interval = timedelta(minutes=5)
-
-        should_refetch_outputs = (
-            now - last_fetched_output_datetime > refetch_interval
-            if last_fetched_output_datetime is not None
-            else True  # if last_fetched_output_datetime is None, we should "fetch" for first time
-        )
-
-        if last_fetched_output_datetime is None or should_refetch_outputs:
-            LOGGER.info("No last fetched output datetime found, fetching all outputs")
-            # this will get all the outputs and add them to the database, ensuring that they exist
-            WalletService.get_all_outputs()
+        cls.ensure_recently_fetched_outputs()
         outputs = OutputModel.query.filter_by(txid=txid).all()
         for output in outputs:
             if WalletService.is_address_reused(output.address):
@@ -299,3 +346,26 @@ class PrivacyMetricsService:
     @classmethod
     def analyze_segregate_postmix_and_nonmix(cls, txid: str) -> bool:
         return True
+
+    @classmethod
+    def ensure_recently_fetched_outputs(cls) -> None:
+        from src.services.last_fetched.last_fetched_service import LastFetchedService
+
+        # Check that all outputs have already been fetched recently
+        last_fetched_output_datetime = (
+            LastFetchedService.get_last_fetched_output_datetime()
+        )
+        now = datetime.now()
+        refetch_interval = timedelta(minutes=5)
+
+        should_refetch_outputs = (
+            now - last_fetched_output_datetime > refetch_interval
+            if last_fetched_output_datetime is not None
+            else True  # if last_fetched_output_datetime is None, we should "fetch" for first time
+        )
+
+        if last_fetched_output_datetime is None or should_refetch_outputs:
+            LOGGER.info(
+                "No last fetched output datetime found, fetching all outputs")
+            # this will get all the outputs and add them to the database, ensuring that they exist
+            WalletService.get_all_outputs()

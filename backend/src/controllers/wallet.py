@@ -18,7 +18,10 @@ from src.my_types.controller_types.generic_response_types import (
     ValidationErrorResponse,
     SimpleErrorResponse,
 )
-from src.testbridge.wallet_spends import create_and_broadcast_transaction_for_bdk_wallet
+from src.testbridge.wallet_spends import (
+    create_and_broadcast_transaction_for_bdk_wallet,
+    create_and_broadcast_coinjoin_for_bdk_wallet,
+)
 
 from src.services.wallet.raw_output_script_examples import (
     p2pkh_raw_output_script,
@@ -170,7 +173,8 @@ def create_spendable_wallet():
     Then give the wallet a few more UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(
+            request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
 
@@ -185,7 +189,8 @@ def create_spendable_wallet():
 
         if wallet_descriptor is None:
             return (
-                SimpleErrorResponse(message="Error creating wallet").model_dump(),
+                SimpleErrorResponse(
+                    message="Error creating wallet").model_dump(),
                 400,
             )
 
@@ -222,8 +227,12 @@ def create_spendable_wallet():
             )
             mine_a_block_to_miner()
             wallet.sync(blockchain, None)
-            create_and_broadcast_transaction_for_bdk_wallet(
-                wallet, blockchain, 50000, 10, p2wsh_raw_output_script
+            create_and_broadcast_coinjoin_for_bdk_wallet(
+                wallet,
+                blockchain,
+                50000,
+                10,
+                [p2wsh_raw_output_script, p2pkh_raw_output_script],
             )
 
             # Fund the wallet again so that there are a bunch of utxos
