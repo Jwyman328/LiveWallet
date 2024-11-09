@@ -2,6 +2,7 @@ from typing import Optional
 from bdkpython import bdk
 from bitcoinlib.transactions import Transaction
 from src.database import DB
+from src.models.label import LabelName
 from src.models.privacy_metric import PrivacyMetric, PrivacyMetricName
 from src.models.outputs import Output as OutputModel
 from datetime import datetime, timedelta
@@ -30,6 +31,9 @@ class PrivacyMetricsService:
 
         transaction_details = WalletService.get_transaction_details(txid)
         transaction = WalletService.get_transaction(txid)
+        # Check that all outputs have already been fetched recently
+        cls.ensure_recently_fetched_outputs()
+
         for privacy_metric in privacy_metrics:
             if privacy_metric == PrivacyMetricName.ANNOMINITY_SET:
                 mock_set = 2
@@ -90,7 +94,7 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_KYCED_UTXOS:
-                result = cls.analyze_no_kyced_utxos(txid)
+                result = cls.analyze_no_kyced_inputs(transaction=transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DUST_ATTACK_UTXOS:
@@ -130,9 +134,6 @@ class PrivacyMetricsService:
         # compare the users utxos to other utxos,
         # if other utxos do not have the same value
         # then this fails the annominity set metric
-
-        # Check that all outputs have already been fetched recently
-        cls.ensure_recently_fetched_outputs()
 
         output_annominity_count = WalletService.calculate_output_annominity_sets(
             transaction.outputs
@@ -181,8 +182,6 @@ class PrivacyMetricsService:
         # circular imports are currently preventing it.
         from src.services.wallet.wallet import WalletService
 
-        # Check that all outputs have already been fetched recently
-        cls.ensure_recently_fetched_outputs()
         outputs = OutputModel.query.filter_by(txid=txid).all()
         for output in outputs:
             if WalletService.is_address_reused(output.address):
@@ -196,10 +195,27 @@ class PrivacyMetricsService:
         cls,
         txid: str,
     ) -> bool:
+        # hmm should this analyze every possibility to see if the user could have revealed a few less sats or
+        # should it just try to minimize the wealth reveal by a certain amount? like don't reveal more than 100% of the tx toal?
+        # ...
+        # get all utxos ever.
+        # get the ones that were in a transaction before this transaction in question.
+        # get how much change was
+        # then check if
         return True
 
     @classmethod
     def analyze_minimal_tx_history_reveal(cls, txid: str) -> bool:
+        # if only one utxo was used by this user in this tx then this automaticcaly passes since you cant use less than one utxo in a tx.
+        # get all utxos ever for this user.
+        # get only the ones that were created before the transaction in question.
+        # get the user's utxos that were used in this transaction. and calculate how much total they contributed to the transaction
+        # then use an algorithm that tries to get the same amount of value out of the users utxos at the time using less utxos than the ones the user used.
+        # this algo will order all the utxos by size, then it will start by picking the first one, if that is bigger than the total then the metric fails.
+        # then if there are more than two of the users utxos in the original tx it will combine the top two utxos and if that is more than the utxo total contributed by the user then the metric will fail.
+        # this will continue until it reachs the point where either the amount of utxos contributed has been tried by the top amount utxos resulting in a passing metric, or less than the amount of utxos contributed as been tried and has found that the user could have used less utxos to create the tx. Thus failing because they linked more utxos together than needed.
+        # needed as inputs
+
         return True
 
     @classmethod
@@ -313,14 +329,20 @@ class PrivacyMetricsService:
 
     @classmethod
     def analyze_avoid_output_size_difference(cls, txid: str) -> bool:
+        # is this the same as annominity set or just looser? like the outputs shouldn't be more than 100% different or else
+        # it is easy to tell the change output?
         return True
 
     @classmethod
     def analyze_no_unnecessary_input(cls, txid: str) -> bool:
+        # hmmm how should I do this?
         return True
 
     @classmethod
     def analyze_use_multi_change_outputs(cls, txid: str) -> bool:
+        # this hsould be easy
+        # if you are making a tx (aka include an input) and have a change output
+        # you should have more than one output.
         return True
 
     @classmethod
@@ -329,12 +351,42 @@ class PrivacyMetricsService:
 
     @classmethod
     def analyze_no_do_not_spend_utxos(cls, txid: str) -> bool:
+        # this should be easy, get the utxos used, then see if they include the
+        # label do not spend, if they do this metric fails, if they don't this metric passes.
         return True
 
     @classmethod
-    def analyze_no_kyced_utxos(cls, txid: str) -> bool:
+    def analyze_no_kyced_inputs(cls, transaction: Optional[Transaction]) -> bool:
+        """Check that no inputs in this transaction come from outputs that were marked as being kyced.
+
+        If an input is used that was a utxo marked as kyced then this metric fails.
+        If no inputs were utxos marked as kyced then this metric passes.
+        """
+        # this should be easy, get the utxos used, then see if they include the
+        # label kyc, if they do this metric fails, if they don't this metric passes.
+
+        if transaction is None:
+            return False
+
+        for input in transaction.inputs:
+            input = input.as_dict()
+            # get output in the db that each input is refering to.
+            users_output = WalletService.get_output_from_db(
+                input["prev_txid"], input["output_n"]
+            )
+
+            if users_output is None:
+                # this is not the users output
+                # therefore it can not be labeled by the user
+                # therefore check the next input/output
+                continue
+
+            if LabelName.KYCED in [label.name for label in users_output.labels]:
+                return False
         return True
 
+    # I don't like this option any more, dust is more about fees
+    # a user should just mark a "tracker" output sent to them as do not spend
     @classmethod
     def analyze_no_dust_attack_utxos(cls, txid: str) -> bool:
         return True
