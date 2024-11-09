@@ -90,7 +90,8 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS:
-                result = cls.analyze_no_do_not_spend_utxos(txid)
+                result = cls.analyze_no_do_not_spend_utxos(
+                    transaction=transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_KYCED_UTXOS:
@@ -350,9 +351,31 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_no_do_not_spend_utxos(cls, txid: str) -> bool:
-        # this should be easy, get the utxos used, then see if they include the
-        # label do not spend, if they do this metric fails, if they don't this metric passes.
+    def analyze_no_do_not_spend_utxos(cls, transaction: Optional[Transaction]) -> bool:
+        """Check that no inputs in this transaction come from outputs that were marked as do not spend
+
+        If an input is used that was a utxo marked as do not spend then this metric fails.
+        If no inputs were utxos marked as do not spend then this metric passes.
+        """
+
+        if transaction is None:
+            return False
+
+        for input in transaction.inputs:
+            input = input.as_dict()
+            # get output in the db that each input is refering to.
+            users_output = WalletService.get_output_from_db(
+                input["prev_txid"], input["output_n"]
+            )
+
+            if users_output is None:
+                # this is not the users output
+                # therefore it can not be labeled by the user
+                # therefore check the next input/output
+                continue
+
+            if LabelName.DO_NOT_SPEND in [label.name for label in users_output.labels]:
+                return False
         return True
 
     @classmethod
@@ -362,8 +385,6 @@ class PrivacyMetricsService:
         If an input is used that was a utxo marked as kyced then this metric fails.
         If no inputs were utxos marked as kyced then this metric passes.
         """
-        # this should be easy, get the utxos used, then see if they include the
-        # label kyc, if they do this metric fails, if they don't this metric passes.
 
         if transaction is None:
             return False
