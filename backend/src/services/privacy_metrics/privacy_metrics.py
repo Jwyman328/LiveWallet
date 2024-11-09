@@ -82,7 +82,9 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.USE_MULTI_CHANGE_OUTPUTS:
-                result = cls.analyze_use_multi_change_outputs(txid)
+                result = cls.analyze_use_multi_change_outputs(
+                    transaction_details=transaction_details
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.AVOID_COMMON_CHANGE_POSITION:
@@ -340,11 +342,44 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_use_multi_change_outputs(cls, txid: str) -> bool:
-        # this hsould be easy
-        # if you are making a tx (aka include an input) and have a change output
-        # you should have more than one output.
-        return True
+    def analyze_use_multi_change_outputs(
+        cls,
+        transaction_details: Optional[TransactionModel],
+    ) -> bool:
+        """Check that the transaction the user made includes more than one 'change' output
+        to the user.
+
+        If there is no change outputs to the user this metric passes because it does not
+        actually leak privacy since there is not one easily traceable change output.
+        If the user has only one change output this metric fails.
+        If the user has more than one output this metric passes.
+
+        """
+        if transaction_details is None:
+            return False
+
+        total_change = (
+            transaction_details.sent_amount - transaction_details.received_amount
+        )
+
+        if total_change == 0:
+            # the user did not receive any change, therefore
+            # this metric doesn't really apply
+            # so just return that the metric passes
+            return True
+
+        # now get how many outputs the user has in this tx
+        users_outputs = WalletService.get_transaction_outputs_from_db(
+            transaction_details.txid
+        )
+        if len(users_outputs) == 1:
+            # there is only one change output for this user
+            # therefore this metric fails
+            return False
+        else:
+            # the user has more than one change output in the tx
+            # therefore this metric passes
+            return True
 
     @classmethod
     def analyze_avoid_common_change_position(cls, txid: str) -> bool:

@@ -535,11 +535,27 @@ class WalletService:
 
     @classmethod
     def get_output_from_db(
-        cls, txid: str, vout: int
+        cls,
+        txid: str,
+        vout: int,
     ) -> Optional[OutputModel]:
         """Get an output from the database by the txid and vout."""
         output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+
         return output
+
+    @classmethod
+    def get_transaction_outputs_from_db(
+        cls,
+        txid: str,
+    ) -> List[OutputModel]:
+        """Get all the wallet's outputs in the db associated with a txid"""
+        outputs = OutputModel.query.filter_by(
+            txid=txid,
+        ).all()
+
+        return outputs
+
     # TODO should this even go here or in its own service?
     @classmethod
     def add_label_to_output(
