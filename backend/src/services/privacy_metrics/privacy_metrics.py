@@ -1,5 +1,5 @@
 from typing import Optional
-from bdkpython import bdk
+from bdkpython import TransactionDetails, bdk
 from bitcoinlib.transactions import Transaction
 from src.database import DB
 from src.models.label import LabelName
@@ -48,7 +48,9 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.MINIMAL_TX_HISTORY_REVEAL:
-                result = cls.analyze_minimal_tx_history_reveal(txid)
+                result = cls.analyze_minimal_tx_history_reveal(
+                    transaction_details=transaction_details
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.TIMING_ANALYSIS:
@@ -92,8 +94,7 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS:
-                result = cls.analyze_no_do_not_spend_utxos(
-                    transaction=transaction)
+                result = cls.analyze_no_do_not_spend_utxos(transaction=transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_KYCED_UTXOS:
@@ -208,7 +209,9 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_minimal_tx_history_reveal(cls, txid: str) -> bool:
+    def analyze_minimal_tx_history_reveal(
+        cls, transaction_details: Optional[TransactionModel]
+    ) -> bool:
         # if only one utxo was used by this user in this tx then this automaticcaly passes since you cant use less than one utxo in a tx.
         # get all utxos ever for this user.
         # get only the ones that were created before the transaction in question.
@@ -218,11 +221,65 @@ class PrivacyMetricsService:
         # then if there are more than two of the users utxos in the original tx it will combine the top two utxos and if that is more than the utxo total contributed by the user then the metric will fail.
         # this will continue until it reachs the point where either the amount of utxos contributed has been tried by the top amount utxos resulting in a passing metric, or less than the amount of utxos contributed as been tried and has found that the user could have used less utxos to create the tx. Thus failing because they linked more utxos together than needed.
         # needed as inputs
+        if transaction_details is None:
+            return False
 
+        # how many inputs did the user include in this tx?
+        outputs_used_by_user_in_tx = WalletService.get_transaction_inputs_from_db(
+            transaction_details.txid
+        )
+        output_used_by_user_count = len(outputs_used_by_user_in_tx)
+        if output_used_by_user_count == 1:
+            # if the user only used one output then this metric passes
+            # because the user used the minimum amount of outputs possible
+            return True
+
+        # hmm how to get all outputs by a blockheight
+        # need a relationship of tx to outputs
+        unspent_outputs_before_this_tx = (
+            WalletService.get_all_unspent_outputs_from_db_before_blockheight(
+                transaction_details.confirmed_block_height
+            )
+        )
+        unspent_outputs_biggest_first = sorted(
+            unspent_outputs_before_this_tx, key=lambda x: x.value, reverse=True
+        )
+
+        total_input_value_needed = (
+            transaction_details.sent_amount - transaction_details.received_amount
+        )
+
+        # if we can get the total_input_value_needed with less outputs than the user used
+        # then this metric fails
+        current_total_value_included = 0
+        current_total_utxos_included = 0
+        for output in unspent_outputs_biggest_first:
+            current_total_value_included += output.value
+            current_total_utxos_included += 1
+            if current_total_utxos_included >= output_used_by_user_count:
+                # we have not been able to use less utxos to get the same value
+                # therefore the minimum tx history reveal metric passes
+                return True
+            else:
+                if current_total_value_included >= total_input_value_needed:
+                    # the user could have used less outputs to get the same value
+                    # therefore this metric fails
+                    return False
+                else:
+                    # we haven't tried more outputs than the user used yet
+                    # and we haven't reached the total_input_value_needed yet
+                    # therefore continue to the next output
+                    continue
+
+        # this shouldn't be possible to reach
+        # but if it does return True since we couldn't make a tx with less utxos
         return True
 
     @classmethod
     def analyze_timing_analysis(cls, txid: str) -> bool:
+        # is same day tx is always done
+        # is morning, afternoon or night always done.
+        # aka always done in the same few hours
         return True
 
     @classmethod
@@ -242,6 +299,8 @@ class PrivacyMetricsService:
     ) -> bool:
         if transaction_details is None:
             return False
+
+        LOGGER.info(f"what are confirmation time?")
 
         total_change = (
             transaction_details.sent_amount - transaction_details.received_amount
@@ -473,7 +532,6 @@ class PrivacyMetricsService:
         )
 
         if last_fetched_output_datetime is None or should_refetch_outputs:
-            LOGGER.info(
-                "No last fetched output datetime found, fetching all outputs")
+            LOGGER.info("No last fetched output datetime found, fetching all outputs")
             # this will get all the outputs and add them to the database, ensuring that they exist
             WalletService.get_all_outputs()

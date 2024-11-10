@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import bdkpython as bdk
+from sqlalchemy.orm import aliased
 from bitcoinlib.transactions import Output, Transaction
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from src.models.transaction import Transaction as TransactionModel
 from src.models.label import Label
 from src.models.outputs import Output as OutputModel
@@ -375,11 +376,17 @@ class WalletService:
             .first()
         )
         if existing_transaction is None:
+            block_height = (
+                transaction_details.confirmation_time.height
+                if transaction_details.confirmation_time
+                else None
+            )
             new_transaction = TransactionModel(
                 txid=transaction_details.txid,
                 received_amount=transaction_details.received,
                 sent_amount=transaction_details.sent,
                 fee=transaction_details.fee,
+                confirmed_block_height=block_height,
             )
             DB.session.add(new_transaction)
             DB.session.commit()
@@ -403,6 +410,7 @@ class WalletService:
                         txid=transaction.txid,
                         vout=output.output_n,
                         address=output.address,
+                        value=output.value,
                     )
                     LastFetchedService.update_last_fetched_outputs_type()
                     annominity_set = annominity_sets.get(output.value, 1)
@@ -416,7 +424,32 @@ class WalletService:
 
                     all_outputs.append(extended_output)
 
+        # since the transactions don't come back in order we have to
+        # loop through them all again to mark the outputs
+        # that were used as inputs.
+        for transaction in all_transactions:
+            for input in transaction.inputs:
+                # if the input is one of my outputs then add it to the inputs
+                input = input.as_dict()
+                user_output = cls.get_output_from_db(
+                    txid=input["prev_txid"], vout=input["output_n"]
+                )
+                if user_output is None:
+                    # not the users output therefore don't put it in the db
+                    LOGGER.info("output is not the users")
+                else:
+                    # add the output to the db?
+                    # or just update the output as spend and then add what txid it was spent in?
+                    cls.add_spend_tx_to_output(
+                        output=user_output, txid=transaction.txid
+                    )
+
         return all_outputs
+
+    @classmethod
+    def add_spend_tx_to_output(cls, output: OutputModel, txid: str):
+        output.spent_txid = txid
+        DB.session.commit()
 
     # TODO add a better name since this is just adding the output to the db
     @classmethod
@@ -425,6 +458,7 @@ class WalletService:
         txid: str,
         vout: int,
         address: str,
+        value: Optional[int] = None,
     ) -> OutputModel:
         """Sync the local database with the incoming output.
 
@@ -435,12 +469,18 @@ class WalletService:
             txid=txid, vout=vout, address=address
         ).first()
         if not db_output:
-            db_output = cls.add_output_to_db(txid=txid, vout=vout, address=address)
+            db_output = cls.add_output_to_db(
+                txid=txid, vout=vout, address=address, value=value
+            )
         return db_output
 
     @classmethod
-    def add_output_to_db(cls, vout: int, txid: str, address: str) -> OutputModel:
-        db_output = OutputModel(txid=txid, vout=vout, address=address, labels=[])
+    def add_output_to_db(
+        cls, vout: int, txid: str, address: str, value: Optional[int]
+    ) -> OutputModel:
+        db_output = OutputModel(
+            txid=txid, vout=vout, address=address, value=value, labels=[]
+        )
         DB.session.add(db_output)
         DB.session.commit()
         return db_output
@@ -555,6 +595,51 @@ class WalletService:
         ).all()
 
         return outputs
+
+    @classmethod
+    def get_transaction_inputs_from_db(
+        cls,
+        txid: str,
+    ) -> list[OutputModel]:
+        """Get all the outputs that were used as inputs for a txid in the db."""
+        outputs_used_as_inputs = (
+            OutputModel.query.join(
+                TransactionModel, TransactionModel.txid == OutputModel.spent_txid
+            )
+            .filter(TransactionModel.txid == txid)
+            .all()
+        )
+
+        return outputs_used_as_inputs
+
+    @classmethod
+    def get_all_unspent_outputs_from_db_before_blockheight(
+        cls, blockheight: int
+    ) -> List[OutputModel]:
+        """Get all outputs that had not been spent yet before or at a
+        certain block height.
+
+        This is useful for determining which utxos were available to a wallet
+        at a certain blockheight when a tx was made.
+        """
+        transaction_created = aliased(TransactionModel)
+        transaction_spent = aliased(TransactionModel)
+        unspent_outputs = (
+            OutputModel.query.join(
+                transaction_created, transaction_created.txid == OutputModel.txid
+            )
+            .join(transaction_spent, transaction_spent.txid == OutputModel.spent_txid)
+            .filter(
+                or_(
+                    # use equal to as well to include all outputs used in a tx in this block
+                    transaction_spent.confirmed_block_height <= blockheight,
+                    transaction_spent.confirmed_block_height
+                    == None,  # Equivalent to IS NULL in SQL. # noqa: E711
+                )
+            )
+            .all()
+        )
+        return unspent_outputs
 
     # TODO should this even go here or in its own service?
     @classmethod
