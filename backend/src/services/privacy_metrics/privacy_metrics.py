@@ -1,5 +1,4 @@
 from typing import Optional
-from bdkpython import TransactionDetails, bdk
 from bitcoinlib.transactions import Transaction
 from src.database import DB
 from src.models.label import LabelName
@@ -80,7 +79,9 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_UNNECESSARY_INPUT:
-                result = cls.analyze_no_unnecessary_input(txid)
+                result = cls.analyze_no_unnecessary_input(
+                    transaction_details=transaction_details
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.USE_MULTI_CHANGE_OUTPUTS:
@@ -94,7 +95,8 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS:
-                result = cls.analyze_no_do_not_spend_utxos(transaction=transaction)
+                result = cls.analyze_no_do_not_spend_utxos(
+                    transaction=transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_KYCED_UTXOS:
@@ -212,15 +214,10 @@ class PrivacyMetricsService:
     def analyze_minimal_tx_history_reveal(
         cls, transaction_details: Optional[TransactionModel]
     ) -> bool:
-        # if only one utxo was used by this user in this tx then this automaticcaly passes since you cant use less than one utxo in a tx.
-        # get all utxos ever for this user.
-        # get only the ones that were created before the transaction in question.
-        # get the user's utxos that were used in this transaction. and calculate how much total they contributed to the transaction
-        # then use an algorithm that tries to get the same amount of value out of the users utxos at the time using less utxos than the ones the user used.
-        # this algo will order all the utxos by size, then it will start by picking the first one, if that is bigger than the total then the metric fails.
-        # then if there are more than two of the users utxos in the original tx it will combine the top two utxos and if that is more than the utxo total contributed by the user then the metric will fail.
-        # this will continue until it reachs the point where either the amount of utxos contributed has been tried by the top amount utxos resulting in a passing metric, or less than the amount of utxos contributed as been tried and has found that the user could have used less utxos to create the tx. Thus failing because they linked more utxos together than needed.
-        # needed as inputs
+        """Analyze if the user could have used less outputs from the
+        outputs in there wallet at the time of the tx, to cover the
+        amount(not including change) needed to send in the transaction.
+        aka revealing less of their tx history to the blockchain."""
         if transaction_details is None:
             return False
 
@@ -299,8 +296,6 @@ class PrivacyMetricsService:
     ) -> bool:
         if transaction_details is None:
             return False
-
-        LOGGER.info(f"what are confirmation time?")
 
         total_change = (
             transaction_details.sent_amount - transaction_details.received_amount
@@ -396,8 +391,53 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_no_unnecessary_input(cls, txid: str) -> bool:
-        # hmmm how should I do this?
+    def analyze_no_unnecessary_input(
+        cls, transaction_details: Optional[TransactionModel]
+    ) -> bool:
+        """Analyze if the user included more inputs (from the inputs used)
+        than needed to cover the amount.
+
+        If a subset of the inputs that the user used in this tx could have
+        covered the amount needed to send (not included the change) then this metric fails.
+        """
+
+        if transaction_details is None:
+            return False
+
+        total_input_value_needed = (
+            transaction_details.sent_amount - transaction_details.received_amount
+        )
+
+        current_amount = 0
+        current_inputs_used = 0
+
+        inputs_used_in_tx = WalletService.get_transaction_inputs_from_db(
+            transaction_details.txid
+        )
+        inputs_used_in_tx_ordered_by_biggest_first = sorted(  # type: ignore
+            inputs_used_in_tx, key=lambda x: x.value, reverse=True
+        )
+        inputs_used_in_tx_count = len(inputs_used_in_tx)
+
+        for input in inputs_used_in_tx_ordered_by_biggest_first:
+            current_amount += input.value
+            current_inputs_used += 1
+            if current_amount >= total_input_value_needed:
+                # we have enough inputs to cover the amount needed
+                # and we did it using the biggest inputs first
+                if current_inputs_used < inputs_used_in_tx_count:
+                    # there are still inputs left over
+                    # therefore some were not needed
+                    # therefore this metric fails
+                    return False
+                else:
+                    # we did not use less inputs
+                    # therefore they were all neccessary
+                    # therefore this metric passes
+                    return True
+
+        # this should not be possible to reach since the outputs
+        # should always be able to cover the amount sent
         return True
 
     @classmethod
@@ -532,6 +572,7 @@ class PrivacyMetricsService:
         )
 
         if last_fetched_output_datetime is None or should_refetch_outputs:
-            LOGGER.info("No last fetched output datetime found, fetching all outputs")
+            LOGGER.info(
+                "No last fetched output datetime found, fetching all outputs")
             # this will get all the outputs and add them to the database, ensuring that they exist
             WalletService.get_all_outputs()
