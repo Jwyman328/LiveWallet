@@ -52,9 +52,10 @@ class PrivacyMetricsService:
                 )
                 results[privacy_metric] = result
 
-            elif privacy_metric == PrivacyMetricName.TIMING_ANALYSIS:
-                result = cls.analyze_timing_analysis(txid)
-                results[privacy_metric] = result
+            # TODO
+            # elif privacy_metric == PrivacyMetricName.TIMING_ANALYSIS:
+            #     result = cls.analyze_timing_analysis(txid)
+            #     results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_CHANGE:
                 result = cls.analyze_no_change(transaction_details)
@@ -72,10 +73,6 @@ class PrivacyMetricsService:
                 result = cls.analyze_same_script_types(
                     transaction_details=transaction_details, transaction=transaction
                 )
-                results[privacy_metric] = result
-
-            elif privacy_metric == PrivacyMetricName.AVOID_OUTPUT_SIZE_DIFFERENCE:
-                result = cls.analyze_avoid_output_size_difference(txid)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_UNNECESSARY_INPUT:
@@ -103,17 +100,14 @@ class PrivacyMetricsService:
                 result = cls.analyze_no_kyced_inputs(transaction=transaction)
                 results[privacy_metric] = result
 
-            elif privacy_metric == PrivacyMetricName.NO_DUST_ATTACK_UTXOS:
-                result = cls.analyze_no_dust_attack_utxos(txid)
-                results[privacy_metric] = result
-
-            elif privacy_metric == PrivacyMetricName.NO_POST_MIX_CHANGE:
-                result = cls.analyze_no_post_mix_change(txid)
-                results[privacy_metric] = result
-
-            elif privacy_metric == PrivacyMetricName.SEGREGATE_POSTMIX_AND_NONMIX:
-                result = cls.analyze_segregate_postmix_and_nonmix(txid)
-                results[privacy_metric] = result
+            # TODO
+            # elif privacy_metric == PrivacyMetricName.NO_POST_MIX_CHANGE:
+            #     result = cls.analyze_no_post_mix_change(txid)
+            #     results[privacy_metric] = result
+            #
+            # elif privacy_metric == PrivacyMetricName.SEGREGATE_POSTMIX_AND_NONMIX:
+            #     result = cls.analyze_segregate_postmix_and_nonmix(txid)
+            #     results[privacy_metric] = result
 
         return results
 
@@ -272,12 +266,14 @@ class PrivacyMetricsService:
         # but if it does return True since we couldn't make a tx with less utxos
         return True
 
-    @classmethod
-    def analyze_timing_analysis(cls, txid: str) -> bool:
-        # is same day tx is always done
-        # is morning, afternoon or night always done.
-        # aka always done in the same few hours
-        return True
+    # # TODO this is a difficult metric, do this is a v2
+    # @classmethod
+    # def analyze_timing_analysis(cls, txid: str) -> bool:
+    #     # is same day tx is always done
+    #     # is morning, afternoon or night always done.
+    #     # aka always done in the same few hours
+    #     return True
+    #
 
     @classmethod
     def analyze_no_change(cls, transaction_details: Optional[TransactionModel]) -> bool:
@@ -383,12 +379,6 @@ class PrivacyMetricsService:
             return False
         else:
             return True
-
-    @classmethod
-    def analyze_avoid_output_size_difference(cls, txid: str) -> bool:
-        # is this the same as annominity set or just looser? like the outputs shouldn't be more than 100% different or else
-        # it is easy to tell the change output?
-        return True
 
     @classmethod
     def analyze_no_unnecessary_input(
@@ -540,19 +530,14 @@ class PrivacyMetricsService:
                 return False
         return True
 
-    # I don't like this option any more, dust is more about fees
-    # a user should just mark a "tracker" output sent to them as do not spend
-    @classmethod
-    def analyze_no_dust_attack_utxos(cls, txid: str) -> bool:
-        return True
-
-    @classmethod
-    def analyze_no_post_mix_change(cls, txid: str) -> bool:
-        return True
-
-    @classmethod
-    def analyze_segregate_postmix_and_nonmix(cls, txid: str) -> bool:
-        return True
+    # TODO
+    # @classmethod
+    # def analyze_no_post_mix_change(cls, txid: str) -> bool:
+    #     return True
+    #
+    # @classmethod
+    # def analyze_segregate_postmix_and_nonmix(cls, txid: str) -> bool:
+    #     return True
 
     @classmethod
     def ensure_recently_fetched_outputs(cls) -> None:
