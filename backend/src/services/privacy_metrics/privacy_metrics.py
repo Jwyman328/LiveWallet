@@ -88,7 +88,9 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.AVOID_COMMON_CHANGE_POSITION:
-                result = cls.analyze_avoid_common_change_position(txid)
+                result = cls.analyze_avoid_common_change_position(
+                    transaction=transaction_details
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS:
@@ -471,8 +473,61 @@ class PrivacyMetricsService:
             return True
 
     @classmethod
-    def analyze_avoid_common_change_position(cls, txid: str) -> bool:
-        return True
+    def analyze_avoid_common_change_position(
+        cls, transaction: Optional[TransactionModel]
+    ) -> bool:
+        """Check that the user is not sending funds to a change output that is
+        an exteremly common position for them.
+
+
+        If this transaction that the user is sending funds in has
+        a change output with the same vout (aka position) as 80% or more of their
+        other change outputs then this metric fails.
+
+        If the user has less than 8 change outputs then this metric passes
+        since it is not statistically relevant enough to fail this metric.
+        """
+        if transaction is None:
+            return False
+
+        change_output: Optional[OutputModel] = None
+        for output in transaction.outputs:
+            if output.is_simple_change:
+                change_output = output
+                # there should only ever be
+                # one simple change output in a tx
+                # therefore if we found one break the loop
+                break
+
+        if change_output is None:
+            # there is no change output in this transaction
+            # therefore this metric passes
+            return True
+
+        change_output_position = change_output.vout
+        all_change_outputs_count: int = WalletService.get_all_change_outputs_from_db(
+            None, "count"
+        )
+
+        # this metric is only statistically relevant if the user has at least 8 change outputs
+        if all_change_outputs_count < 8:
+            # not statistically relevant enough to fail this metric
+            return True
+
+        only_this_vout_change_outputs_count: int = (
+            WalletService.get_all_change_outputs_from_db(
+                change_output_position, "count"
+            )
+        )
+
+        percent_this_vout_is_change_position = (
+            only_this_vout_change_outputs_count / all_change_outputs_count
+        )
+
+        if percent_this_vout_is_change_position >= 0.80:
+            return False
+        else:
+            return True
 
     @classmethod
     def analyze_no_do_not_spend_utxos(cls, transaction: Optional[Transaction]) -> bool:

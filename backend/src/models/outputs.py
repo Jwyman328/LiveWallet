@@ -46,6 +46,25 @@ class Output(DB.Model):
     labels = DB.relationship(
         "Label", secondary=output_labels, back_populates="outputs")
 
+    @property
+    def is_simple_change(self) -> bool:
+        """Check if the output is a simple change output
+
+
+        # If the transaction it was created in the user has included inputs and also outputs
+        # it is change but only
+        # if it does not have more than one output though
+        # since that means it is a more complex transaction, not just simple change.
+        """
+        is_there_change = (
+            self.transaction.sent_amount > 0 and self.transaction.received_amount > 0
+        )
+        # if the user only has one output in the tx it has an input in
+        # then consider it change
+        is_simple_change = is_there_change and len(
+            self.transaction.outputs) == 1
+        return is_simple_change
+
     # Unique constraint on the combination of txid and vout
     __table_args__ = (DB.UniqueConstraint(
         "txid", "vout", name="uq_txid_vout"),)

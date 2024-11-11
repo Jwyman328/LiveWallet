@@ -164,7 +164,8 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor,
+                           bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -186,7 +187,8 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(
+            f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -235,7 +237,8 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(
+            network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -306,7 +309,8 @@ class WalletService:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
-        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(
+            False)
 
         all_tx_details: List[Transaction] = []
 
@@ -365,7 +369,8 @@ class WalletService:
     @classmethod
     def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
         """Get the transaction details from the database."""
-        transaction = DB.session.query(TransactionModel).filter_by(txid=txid).first()
+        transaction = DB.session.query(
+            TransactionModel).filter_by(txid=txid).first()
         return transaction
 
     @classmethod
@@ -402,7 +407,8 @@ class WalletService:
         all_transactions = cls.get_all_transactions()
         all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
-            annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
+            annominity_sets = cls.calculate_output_annominity_sets(
+                transaction.outputs)
             for output in transaction.outputs:
                 script = bdk.Script(output.script.raw)
                 if cls.wallet and cls.wallet.is_mine(script):
@@ -445,6 +451,46 @@ class WalletService:
                     )
 
         return all_outputs
+
+    @classmethod
+    def get_all_change_outputs_from_db(
+        cls,
+        vout: Optional[int] = None,
+        query_result_type: Literal["count", "all"] = "all",
+    ) -> List[OutputModel] | int:
+        """Get all the change outputs for the current wallet.
+
+        If a vout is supplied get all change outputs with the vout
+
+
+        This will either return a count of the change outputs or all the change outputs
+        depending on the query_result_type.
+        """
+        output_alias = aliased(OutputModel)
+
+        query = (
+            DB.session.query(OutputModel)
+            .join(TransactionModel, TransactionModel.txid == OutputModel.txid)
+            .outerjoin(output_alias, output_alias.txid == OutputModel.txid)
+            .group_by(OutputModel.txid)
+            .filter(
+                TransactionModel.sent_amount
+                > 0,  # Sent amount is greater than 0 so we know the user is creating change
+                TransactionModel.received_amount
+                > 0,  # Received amount is greater than 0, so we know the user is getting change
+            )
+            .having(func.count(output_alias.id) == 1)
+            # Only one output for the transaction because we want simple change, not any "change" from a complex tx
+        )
+
+        if vout is not None:
+            # only get the change outputs for a specific vout
+            query = query.filter(OutputModel.vout == vout)
+
+        if query_result_type == "count":
+            return query.count()
+        else:
+            return query.all()
 
     @classmethod
     def add_spend_tx_to_output(cls, output: OutputModel, txid: str):
@@ -564,7 +610,8 @@ class WalletService:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
                 txid, vout, address = unique_output_txid_vout.split("-")
-                cls.sync_local_db_with_incoming_output(txid, int(vout), address)
+                cls.sync_local_db_with_incoming_output(
+                    txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
@@ -727,7 +774,8 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
+                self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -806,7 +854,8 @@ class WalletService:
     @classmethod
     def is_address_reused(self, address: str) -> bool:
         """Check if the address has been used in the wallet more than once."""
-        outputs_with_this_address = OutputModel.query.filter_by(address=address).all()
+        outputs_with_this_address = OutputModel.query.filter_by(
+            address=address).all()
         address_used_count = len(outputs_with_this_address)
 
         if address_used_count > 1:
