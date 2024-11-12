@@ -43,7 +43,9 @@ class PrivacyMetricsService:
                 result = cls.analyze_no_address_reuse(txid)
                 results[privacy_metric] = result
             elif privacy_metric == PrivacyMetricName.MINIMAL_WEALTH_REVEAL:
-                result = cls.analyze_minimal_wealth_reveal(txid)
+                result = cls.analyze_significantly_minimal_wealth_reveal(
+                    transaction=transaction_details
+                )
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.MINIMAL_TX_HISTORY_REVEAL:
@@ -193,18 +195,76 @@ class PrivacyMetricsService:
         return True
 
     @classmethod
-    def analyze_minimal_wealth_reveal(
+    def analyze_significantly_minimal_wealth_reveal(
         cls,
-        txid: str,
+        transaction: Optional[TransactionModel],
     ) -> bool:
-        # hmm should this analyze every possibility to see if the user could have revealed a few less sats or
-        # should it just try to minimize the wealth reveal by a certain amount? like don't reveal more than 100% of the tx toal?
-        # ...
-        # get all utxos ever.
-        # get the ones that were in a transaction before this transaction in question.
-        # get how much change was
-        # then check if
-        return True
+        """Check how much unnecessary wealth the user revealed to the receiver
+        in this transaction.
+
+        This is equivilent to how big the dollar bill you used to pay for
+        something was. If you paid for a 5 cent candy with a 100 dollar bill
+        you significantly revealed that you have a lot more wealth than that
+        5 cents. If you paid for a $98 dollar purchase with a 100 dollar bill
+        though this would only reveal $2 of wealth, which isn't crazy to the
+        relatively large purchase that was made.
+
+        This metric will be based off of how big the "spend" was compared to
+        how big (in terms of sats) the UTXO inputs were.
+        If the user reveals 1x the amount paid for an amount of 1 bitcoin or more
+        then this metric fails.
+        If the user reveals 5x the amount paid for an amount of 0.1 bitcoin or more
+        then this metric fails.
+        If the user reveals 10x the amount paid for an amount of 0.01 bitcoin or more
+        then this metric fails.
+
+
+        We are scaling it and not using a fixed ratio because
+        if you make a small purchase, 2x that purchase isn't much, but you probably
+        don't want to reveal 10x that purchase amount. If you make a large buy
+        though revealing 1x or 2x that amount would reveal a significant amount.
+
+
+        """
+        if transaction is None:
+            return False
+
+        if cls.analyze_no_change(transaction):
+            # if there is no change then the user didn't reveal any wealth
+            return True
+
+        amount_sent = transaction.sent_amount
+        amount_sent_to_others = amount_sent - transaction.received_amount
+
+        if amount_sent_to_others == 0:
+            # if it all went back to the user then
+            # this is not a typical simple spent tx therefore
+            # this metric passes
+            return True
+        ratio_threshold = cls.get_ratio_threshold(amount_sent_to_others)
+        acceptable_amount_to_reveal_threshold = amount_sent_to_others * ratio_threshold
+
+        if transaction.received_amount >= acceptable_amount_to_reveal_threshold:
+            return False
+        else:
+            return True
+
+    @classmethod
+    def get_ratio_threshold(cls, amount_sent_to_others) -> int:
+        # if amount needed to reveal is 1 or > then if wealth reveal is 1x then this metric fails
+        # if amount needed to reveal is .1 then if wealth reveal is 5x then this metric fails
+        # if amount needed to reveal is .01 or less then if wealth reveal is 10x then this metric fails
+
+        # Iterate through the thresholds in descending order (from highest to lowest)
+        ratio_thresholds_by_amount = {100000000: 1, 10000000: 5, 1000000: 10}
+        for threshold, ratio in sorted(
+            ratio_thresholds_by_amount.items(), reverse=True
+        ):
+            if amount_sent_to_others >= threshold:
+                return ratio  # Return the corresponding ratio if the threshold is met
+
+        # If amount_sent_to_others is smaller than the smallest threshold, return the smallest ratio
+        return ratio_thresholds_by_amount[min(ratio_thresholds_by_amount)]
 
     @classmethod
     def analyze_minimal_tx_history_reveal(
