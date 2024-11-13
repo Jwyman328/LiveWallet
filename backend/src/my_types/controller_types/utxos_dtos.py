@@ -17,7 +17,7 @@ class InputDto(BaseModel):
     script_type: str  # sig_pubkey
     address: str
     value: int
-    public_keys: str
+    public_keys: Optional[str | List[str]]
     compressed: bool
     compressed: bool
     encoding: str  # bech32, what other options?
@@ -65,7 +65,7 @@ class TransactionDetailDto(BaseModel):
     network: str  # bitcoin, what are the other options?
     witness_type: str  # segwit, what are the other options?
     coinbase: bool
-    flag: int
+    flag: Optional[int]
     txhash: str
     confirmations: Optional[int]
     block_height: Optional[int]

@@ -232,6 +232,10 @@ export type AnalyzeTxPrivacyRequestBody = {
   privacy_metrics: string[];
 };
 
+export type PrivacyResults = {
+  [key: string]: boolean;
+};
+
 export type AnalyzeTxPrivacyResponseType = {
-  results: string;
+  results: PrivacyResults;
 };

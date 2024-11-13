@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 import bdkpython as bdk
+from sqlalchemy.orm import aliased
 from bitcoinlib.transactions import Output, Transaction
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from src.models.transaction import Transaction as TransactionModel
 from src.models.label import Label
 from src.models.outputs import Output as OutputModel
-from typing import Literal, Optional, List, Dict
+from typing import Literal, Optional, List, Dict, Tuple
 from src.api import electrum_request, parse_electrum_url
 
 from src.api.electrum import (
@@ -23,6 +25,7 @@ from src.my_types.controller_types.utxos_dtos import (
     PopulateOutputLabelsRequestDto,
 )
 from src.my_types.transactions import LiveWalletOutput
+from src.services.last_fetched.last_fetched_service import LastFetchedService
 from src.services.wallet.raw_output_script_examples import (
     p2pkh_raw_output_script,
     p2pk_raw_output_script,
@@ -202,7 +205,7 @@ class WalletService:
         wallet_descriptor: bdk.Descriptor,
         # TODO get this url from a config file
         electrum_url="127.0.0.1:50000",
-    ) -> bdk.Wallet:
+    ) -> Tuple[bdk.Wallet, bdk.Blockchain]:
         """Create a new wallet and sync it to the electrum server."""
         db_config = bdk.DatabaseConfig.MEMORY()
 
@@ -221,7 +224,7 @@ class WalletService:
 
         wallet.sync(blockchain, None)
 
-        return wallet
+        return (wallet, blockchain)
 
     @classmethod
     def create_spendable_descriptor(
@@ -291,65 +294,131 @@ class WalletService:
         utxos = self.wallet.list_unspent()
         return utxos
 
+    @classmethod
     def get_all_transactions(
-        self,
+        cls,
     ) -> List[Transaction]:
-        """Get all transactions for the current wallet."""
+        """Get all transactions for the current wallet.
+
+        Add the transaction to the database.
+        Add to the database that the transactions have been fetched
+        via the LastFetched model.
+        """
         wallet_details = Wallet.get_current_wallet()
-        if self.wallet is None or wallet_details is None:
+        if cls.wallet is None or wallet_details is None:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
+
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(
+            False)
+
+        all_tx_details: List[Transaction] = []
+
+        for index, transaction in enumerate(transactions):
+            transaction_response = cls.get_transaction(transaction.txid, index)
+            if transaction_response is not None:
+                # add the transaction to the database
+                # use the bdk transaction details since it contains
+                # the sent and received amounts relative to the users wallet
+                # instead of just agnostic values that electrum returns
+                cls.add_transaction_to_db(transaction)
+                all_tx_details.append(transaction_response)
+            else:
+                LOGGER.error(f"Error getting transaction {transaction.txid}")
+
+        # mark transactions as fetched
+        LastFetchedService.update_last_fetched_transaction_type()
+
+        return all_tx_details
+
+    @classmethod
+    def get_transaction(cls, txid, index=1) -> Optional[Transaction]:
+        "Get an individual transaction from the wallet by the txid."
+        wallet_details = Wallet.get_current_wallet()
+        if wallet_details is None:
+            LOGGER.error(
+                "No wallet_details found, therefore the request to get the transaction can not be made."
+            )
+            return None
 
         electrum_url = wallet_details.electrum_url
 
         if electrum_url is None:
             LOGGER.error("No electrum url found in the wallet details")
-            return []
+            return None
 
         url, port = parse_electrum_url(electrum_url)
         if url is None or port is None:
             LOGGER.error("No electrum url or port found in the wallet details")
-            return []
+            return None
 
-        transactions = self.wallet.list_transactions(False)
+        electrum_response = electrum_request(
+            url,
+            int(port),
+            ElectrumMethod.GET_TRANSACTIONS,
+            GetTransactionsRequestParams(txid, False),
+            index,
+        )
 
-        all_tx_details: List[Transaction] = []
+        if electrum_response.status == "success" and electrum_response.data is not None:
+            transaction: Transaction = electrum_response.data
+            return transaction
+        else:
+            return None
 
-        for index, transaction in enumerate(transactions):
-            electrum_response = electrum_request(
-                url,
-                int(port),
-                ElectrumMethod.GET_TRANSACTIONS,
-                GetTransactionsRequestParams(transaction.txid, False),
-                index,
+    @classmethod
+    def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
+        """Get the transaction details from the database."""
+        transaction = DB.session.query(
+            TransactionModel).filter_by(txid=txid).first()
+        return transaction
+
+    @classmethod
+    def add_transaction_to_db(cls, transaction_details: bdk.TransactionDetails):
+        existing_transaction = (
+            DB.session.query(TransactionModel)
+            .filter_by(txid=transaction_details.txid)
+            .first()
+        )
+        if existing_transaction is None:
+            block_height = (
+                transaction_details.confirmation_time.height
+                if transaction_details.confirmation_time
+                else None
             )
+            new_transaction = TransactionModel(
+                txid=transaction_details.txid,
+                received_amount=transaction_details.received,
+                sent_amount=transaction_details.sent,
+                fee=transaction_details.fee,
+                confirmed_block_height=block_height,
+            )
+            DB.session.add(new_transaction)
+            DB.session.commit()
 
-            if (
-                electrum_response.status == "success"
-                and electrum_response.data is not None
-            ):
-                transaction: Transaction = electrum_response.data
-                all_tx_details.append(electrum_response.data)
-        return all_tx_details
-
-    def get_all_outputs(self) -> List[LiveWalletOutput]:
+    @classmethod
+    def get_all_outputs(cls) -> List[LiveWalletOutput]:
         """Get all spent and unspent transaction outputs for the current wallet and mutate them as needed.
         Calculate the annominity set for each output.
         Attach the txid to each output.
         Attach all labels to each output.
         Sync the database with the incoming outputs.
         """
-        all_transactions = self.get_all_transactions()
+        all_transactions = cls.get_all_transactions()
         all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
-            annominity_sets = self.calculate_output_annominity_sets(
+            annominity_sets = cls.calculate_output_annominity_sets(
                 transaction.outputs)
             for output in transaction.outputs:
-                db_output = self.sync_local_db_with_incoming_output(
-                    txid=transaction.txid, vout=output.output_n
-                )
                 script = bdk.Script(output.script.raw)
-                if self.wallet and self.wallet.is_mine(script):
+                if cls.wallet and cls.wallet.is_mine(script):
+                    db_output = cls.sync_local_db_with_incoming_output(
+                        txid=transaction.txid,
+                        vout=output.output_n,
+                        address=output.address,
+                        value=output.value,
+                    )
+                    LastFetchedService.update_last_fetched_outputs_type()
                     annominity_set = annominity_sets.get(output.value, 1)
 
                     extended_output = LiveWalletOutput(
@@ -361,30 +430,108 @@ class WalletService:
 
                     all_outputs.append(extended_output)
 
+        # since the transactions don't come back in order we have to
+        # loop through them all again to mark the outputs
+        # that were used as inputs.
+        for transaction in all_transactions:
+            for input in transaction.inputs:
+                # if the input is one of my outputs then add it to the inputs
+                input = input.as_dict()
+                user_output = cls.get_output_from_db(
+                    txid=input["prev_txid"], vout=input["output_n"]
+                )
+                if user_output is None:
+                    # not the users output therefore don't put it in the db
+                    LOGGER.info("output is not the users")
+                else:
+                    # add the output to the db?
+                    # or just update the output as spend and then add what txid it was spent in?
+                    cls.add_spend_tx_to_output(
+                        output=user_output, txid=transaction.txid
+                    )
+
         return all_outputs
 
+    @classmethod
+    def get_all_change_outputs_from_db(
+        cls,
+        vout: Optional[int] = None,
+        query_result_type: Literal["count", "all"] = "all",
+    ) -> List[OutputModel] | int:
+        """Get all the change outputs for the current wallet.
+
+        If a vout is supplied get all change outputs with the vout
+
+
+        This will either return a count of the change outputs or all the change outputs
+        depending on the query_result_type.
+        """
+        output_alias = aliased(OutputModel)
+
+        query = (
+            DB.session.query(OutputModel)
+            .join(TransactionModel, TransactionModel.txid == OutputModel.txid)
+            .outerjoin(output_alias, output_alias.txid == OutputModel.txid)
+            .group_by(OutputModel.txid)
+            .filter(
+                TransactionModel.sent_amount
+                > 0,  # Sent amount is greater than 0 so we know the user is creating change
+                TransactionModel.received_amount
+                > 0,  # Received amount is greater than 0, so we know the user is getting change
+            )
+            .having(func.count(output_alias.id) == 1)
+            # Only one output for the transaction because we want simple change, not any "change" from a complex tx
+        )
+
+        if vout is not None:
+            # only get the change outputs for a specific vout
+            query = query.filter(OutputModel.vout == vout)
+
+        if query_result_type == "count":
+            return query.count()
+        else:
+            return query.all()
+
+    @classmethod
+    def add_spend_tx_to_output(cls, output: OutputModel, txid: str):
+        output.spent_txid = txid
+        DB.session.commit()
+
     # TODO add a better name since this is just adding the output to the db
+    @classmethod
     def sync_local_db_with_incoming_output(
-        self,
+        cls,
         txid: str,
         vout: int,
+        address: str,
+        value: Optional[int] = None,
     ) -> OutputModel:
         """Sync the local database with the incoming output.
 
         If the output is not in the database, add it.
         """
 
-        db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+        db_output = OutputModel.query.filter_by(
+            txid=txid, vout=vout, address=address
+        ).first()
         if not db_output:
-            db_output = self.add_output_to_db(txid=txid, vout=vout)
+            db_output = cls.add_output_to_db(
+                txid=txid, vout=vout, address=address, value=value
+            )
         return db_output
 
-    def add_output_to_db(self, vout: int, txid: str) -> OutputModel:
-        db_output = OutputModel(txid=txid, vout=vout, labels=[])
+    @classmethod
+    def add_output_to_db(
+        cls, vout: int, txid: str, address: str, value: Optional[int]
+    ) -> OutputModel:
+        db_output = OutputModel(
+            txid=txid, vout=vout, address=address, value=value, labels=[]
+        )
         DB.session.add(db_output)
         DB.session.commit()
         return db_output
 
+    @classmethod
     def calculate_output_annominity_sets(
         self, transaction_outputs: List[Output]
     ) -> dict[str, int]:  # -> {"value": count }
@@ -435,7 +582,7 @@ class WalletService:
 
         for output in outputs_with_label:
             for label in output.labels:
-                key = f"{output.txid}-{output.vout}"
+                key = f"{output.txid}-{output.vout}-{output.address}"
                 if result.get(key, None) is None:
                     result[key] = [
                         OutputLabelDto(
@@ -455,25 +602,96 @@ class WalletService:
 
         return result
 
+    @classmethod
     def populate_outputs_and_labels(
-        self, populate_output_labels: PopulateOutputLabelsRequestDto
+        cls, populate_output_labels: PopulateOutputLabelsRequestDto
     ) -> None:  # TODO maybe a success of fail reutn type?
         try:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
-                txid, vout = unique_output_txid_vout.split("-")
-                self.sync_local_db_with_incoming_output(txid, int(vout))
+                txid, vout, address = unique_output_txid_vout.split("-")
+                cls.sync_local_db_with_incoming_output(
+                    txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
-                    self.add_label_to_output(txid, int(vout), display_name)
+                    cls.add_label_to_output(txid, int(vout), display_name)
         except Exception as e:
             LOGGER.error("Error populating outputs and labels", error=e)
             DB.session.rollback()
 
+    @classmethod
+    def get_output_from_db(
+        cls,
+        txid: str,
+        vout: int,
+    ) -> Optional[OutputModel]:
+        """Get an output from the database by the txid and vout."""
+        output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
+
+        return output
+
+    @classmethod
+    def get_transaction_outputs_from_db(
+        cls,
+        txid: str,
+    ) -> List[OutputModel]:
+        """Get all the wallet's outputs in the db associated with a txid"""
+        outputs = OutputModel.query.filter_by(
+            txid=txid,
+        ).all()
+
+        return outputs
+
+    @classmethod
+    def get_transaction_inputs_from_db(
+        cls,
+        txid: str,
+    ) -> list[OutputModel]:
+        """Get all the outputs that were used as inputs for a txid in the db."""
+        outputs_used_as_inputs = (
+            OutputModel.query.join(
+                TransactionModel, TransactionModel.txid == OutputModel.spent_txid
+            )
+            .filter(TransactionModel.txid == txid)
+            .all()
+        )
+
+        return outputs_used_as_inputs
+
+    @classmethod
+    def get_all_unspent_outputs_from_db_before_blockheight(
+        cls, blockheight: int
+    ) -> List[OutputModel]:
+        """Get all outputs that had not been spent yet before or at a
+        certain block height.
+
+        This is useful for determining which utxos were available to a wallet
+        at a certain blockheight when a tx was made.
+        """
+        transaction_created = aliased(TransactionModel)
+        transaction_spent = aliased(TransactionModel)
+        unspent_outputs = (
+            OutputModel.query.join(
+                transaction_created, transaction_created.txid == OutputModel.txid
+            )
+            .join(transaction_spent, transaction_spent.txid == OutputModel.spent_txid)
+            .filter(
+                or_(
+                    # use equal to as well to include all outputs used in a tx in this block
+                    transaction_spent.confirmed_block_height <= blockheight,
+                    transaction_spent.confirmed_block_height
+                    == None,  # Equivalent to IS NULL in SQL. # noqa: E711
+                )
+            )
+            .all()
+        )
+        return unspent_outputs
+
     # TODO should this even go here or in its own service?
+    @classmethod
     def add_label_to_output(
-        self, txid: str, vout: int, label_display_name: str
+        cls, txid: str, vout: int, label_display_name: str
     ) -> list[Label]:
         """Add a label to an output in the db."""
         db_output = OutputModel.query.filter_by(txid=txid, vout=vout).first()
@@ -632,3 +850,15 @@ class WalletService:
         )
 
         return fee_estimate_response
+
+    @classmethod
+    def is_address_reused(self, address: str) -> bool:
+        """Check if the address has been used in the wallet more than once."""
+        outputs_with_this_address = OutputModel.query.filter_by(
+            address=address).all()
+        address_used_count = len(outputs_with_this_address)
+
+        if address_used_count > 1:
+            return True
+        else:
+            return False

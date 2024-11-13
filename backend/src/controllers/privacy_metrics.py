@@ -1,12 +1,10 @@
 from flask import Blueprint
 import json
 
-from src.database import DB
-from src.models.privacy_metric import PrivacyMetric
 from src.my_types.controller_types.privacy_metrics_dtos import (
     AnalyzeTxPrivacyRequestDto,
 )
-from src.services import WalletService
+from src.services import PrivacyMetricsService
 from dependency_injector.wiring import inject, Provide
 from src.containers.service_container import ServiceContainer
 from flask import request
@@ -29,14 +27,16 @@ LOGGER = structlog.get_logger()
 @privacy_metrics_api.route("/")
 @inject
 def get_privacy_metrics(
-    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+    privacy_service: PrivacyMetricsService = Provide[
+        ServiceContainer.privacy_metrics_service
+    ],
 ):
     """
-    TODO
+    Get all privacy metrics.
     """
     try:
         # TODO use a service
-        all_metrics = DB.session.query(PrivacyMetric).all()
+        all_metrics = privacy_service.get_all_privacy_metrics()
 
         return GetAllPrivacyMetricsResponseDto.model_validate(
             dict(
@@ -59,18 +59,23 @@ def get_privacy_metrics(
 @privacy_metrics_api.route("/", methods=["POST"])
 @inject
 def anaylze_tx_privacy(
-    wallet_service: WalletService = Provide[ServiceContainer.wallet_service],
+    privacy_service: PrivacyMetricsService = Provide[
+        ServiceContainer.privacy_metrics_service
+    ],
 ):
     """
-    TODO
+    Analyze a selected transaction based on an array of selected privacy metrics.
     """
     try:
-        # TODO use a service to actually analyze the privacy
-        data = AnalyzeTxPrivacyRequestDto.model_validate(json.loads(request.data))
-        print("todo do something with ", data)
+        request_data = AnalyzeTxPrivacyRequestDto.model_validate(
+            json.loads(request.data)
+        )
+        results = privacy_service.analyze_tx_privacy(
+            request_data.txid, request_data.privacy_metrics
+        )
 
         return AnalyzeTxPrivacyResponseDto.model_validate(
-            dict(results="mock results")
+            dict(results=results)
         ).model_dump()
 
     except Exception as e:
