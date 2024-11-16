@@ -289,3 +289,19 @@ class TestPrivacyMetricsService(TestCase):
         response = PrivacyMetricsService.analyze_no_change(
             mock_transaction_model)
         assert response is False
+
+    def test_analyze_no_small_change_fail(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000000
+        mock_transaction_model.received_amount = 100
+        response = PrivacyMetricsService.analyze_no_small_change(
+            mock_transaction_model)
+        assert response is False
+
+    def test_analyze_no_small_change_pass(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000040000
+        mock_transaction_model.received_amount = 1000000000
+        response = PrivacyMetricsService.analyze_no_small_change(
+            mock_transaction_model)
+        assert response is True
