@@ -160,7 +160,7 @@ class TestWalletController(TestCase):
         get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
+            return_value=(wallet_mock, MagicMock())
         )
 
         with (
@@ -174,7 +174,9 @@ class TestWalletController(TestCase):
                 return_value=spendable_descriptor_mock,
             ) as create_spendable_descriptor_mock,
             patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
+                WalletService,
+                "create_spendable_wallet",
+                return_value=(wallet_mock, MagicMock()),
             ) as create_spendable_wallet_mock,
         ):
             wallet_response = self.test_client.post(
@@ -220,7 +222,7 @@ class TestWalletController(TestCase):
         get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
+            return_value=(wallet_mock, MagicMock())
         )
 
         with (
@@ -234,7 +236,9 @@ class TestWalletController(TestCase):
                 return_value=spendable_descriptor_mock,
             ) as create_spendable_descriptor_mock,
             patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
+                WalletService,
+                "create_spendable_wallet",
+                return_value=(wallet_mock, MagicMock()),
             ) as create_spendable_wallet_mock,
             patch.object(
                 bdk, "Descriptor", return_value=spendable_descriptor_mock
@@ -289,7 +293,7 @@ class TestWalletController(TestCase):
         get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
+            return_value=(wallet_mock, MagicMock())
         )
 
         with (
@@ -303,7 +307,9 @@ class TestWalletController(TestCase):
                 return_value=None,
             ) as create_spendable_descriptor_mock,
             patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
+                WalletService,
+                "create_spendable_wallet",
+                return_value=(wallet_mock, MagicMock()),
             ) as create_spendable_wallet_mock,
         ):
             wallet_response = self.test_client.post(
@@ -341,7 +347,7 @@ class TestWalletController(TestCase):
         get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
+            return_value=(wallet_mock, MagicMock())
         )
 
         with (
@@ -355,7 +361,9 @@ class TestWalletController(TestCase):
                 return_value=spendable_descriptor_mock,
             ) as create_spendable_descriptor_mock,
             patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
+                WalletService,
+                "create_spendable_wallet",
+                return_value=(wallet_mock, MagicMock()),
             ) as create_spendable_wallet_mock,
         ):
             randomly_fund_mock_wallet_mock.side_effect = Exception("mock exception")
@@ -396,7 +404,7 @@ class TestWalletController(TestCase):
         get_address_mock.address.as_string = MagicMock(return_value="mock_address")
         wallet_mock.get_address = address_mock
         self.mock_wallet_service.create_spendable_wallet = MagicMock(
-            return_value=wallet_mock
+            return_value=(wallet_mock, MagicMock())
         )
 
         with (
@@ -410,7 +418,9 @@ class TestWalletController(TestCase):
                 return_value=None,
             ) as create_spendable_descriptor_mock,
             patch.object(
-                WalletService, "create_spendable_wallet", return_value=wallet_mock
+                WalletService,
+                "create_spendable_wallet",
+                return_value=(wallet_mock, MagicMock()),
             ) as create_spendable_wallet_mock,
         ):
             wallet_response = self.test_client.post(
