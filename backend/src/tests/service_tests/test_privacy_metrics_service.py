@@ -335,3 +335,91 @@ class TestPrivacyMetricsService(TestCase):
         )
 
         assert response is True
+
+    def test_analyze_same_script_types_pass_if_user_not_sending(self):
+        mock_output_one = MagicMock()
+        mock_output_one.value = 11234324532
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+
+        mock_transaction_model = MagicMock()
+        # user not sending
+        mock_transaction_model.sent_amount = 0
+        mock_transaction_model.received_amount = 1000000000
+
+        response = PrivacyMetricsService.analyze_same_script_types(
+            mock_transaction_model, mock_transaction
+        )
+
+        assert response is True
+
+    def test_analyze_same_script_types_pass_if_no_change(self):
+        mock_output_one = MagicMock()
+        mock_output_one.value = 11234324532
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000
+        # no receiving therefore no change
+        mock_transaction_model.received_amount = 0
+
+        response = PrivacyMetricsService.analyze_same_script_types(
+            mock_transaction_model, mock_transaction
+        )
+
+        assert response is True
+
+    def test_analyze_same_script_types_failse_if_not_same_script_type(self):
+        mock_output_one = MagicMock()
+        mock_output_one.script_type = "p2pkh"
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+        mock_output_two.script_type = "p2wpkh"
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000
+        mock_transaction_model.received_amount = 1000
+
+        response = PrivacyMetricsService.analyze_same_script_types(
+            mock_transaction_model, mock_transaction
+        )
+
+        assert response is False
+
+    def test_analyze_same_script_types_passes_if_same_script_type(self):
+        mock_output_one = MagicMock()
+        mock_output_one.script_type = "p2pkh"
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+        mock_output_two.script_type = "p2pkh"
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000
+        mock_transaction_model.received_amount = 1000
+
+        response = PrivacyMetricsService.analyze_same_script_types(
+            mock_transaction_model, mock_transaction
+        )
+
+        assert response is True
+
+
+# TODO
+# test_analyze_no_unnecessary_input
