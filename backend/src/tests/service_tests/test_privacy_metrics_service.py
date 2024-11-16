@@ -2,6 +2,7 @@ import copy
 from unittest.case import TestCase
 from unittest.mock import MagicMock, patch
 
+from src.models.label import LabelName
 from src.models.privacy_metric import PrivacyMetric, PrivacyMetricName
 from src.services.wallet.wallet import WalletService
 from src.tests.mocks import tx_mock
@@ -420,6 +421,263 @@ class TestPrivacyMetricsService(TestCase):
 
         assert response is True
 
+    def test_analyze_no_unnecessary_input_fail(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000
+        mock_transaction_model.received_amount = 2000000
+        mock_transaction_model.txid = "mock_txid"
 
-# TODO
-# test_analyze_no_unnecessary_input
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db:
+            mock_input_one = MagicMock()
+            mock_input_one.value = 1000000
+            mock_input_two = MagicMock()
+
+            # unneccessary input
+            mock_input_two.value = 2000000
+            mock_get_transaction_inputs_from_db.return_value = [
+                mock_input_one,
+                mock_input_two,
+            ]
+
+            response = PrivacyMetricsService.analyze_no_unnecessary_input(
+                mock_transaction_model
+            )
+
+            assert response is False
+
+    def test_analyze_no_unnecessary_input_pass(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 3001000
+        mock_transaction_model.received_amount = 1000
+        mock_transaction_model.txid = "mock_txid"
+
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db:
+            mock_input_one = MagicMock()
+            mock_input_one.value = 1000000
+            mock_input_two = MagicMock()
+
+            mock_input_two.value = 2001000
+            mock_get_transaction_inputs_from_db.return_value = [
+                mock_input_one,
+                mock_input_two,
+            ]
+
+            response = PrivacyMetricsService.analyze_no_unnecessary_input(
+                mock_transaction_model
+            )
+
+            assert response is True
+
+    def test_analyze_no_unnecessary_input_if_not_sending(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 0
+        mock_transaction_model.received_amount = 100000
+        mock_transaction_model.txid = "mock_txid"
+
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db:
+            mock_get_transaction_inputs_from_db.return_value = []
+
+            response = PrivacyMetricsService.analyze_no_unnecessary_input(
+                mock_transaction_model
+            )
+
+            # if no inputs contributed, then no input is unnecessary
+            assert response is True
+
+    def test_analyze_use_multi_change_outputs_no_change(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        # no change
+        mock_transaction_model.received_amount = 0
+        mock_transaction_model.txid = "mock_txid"
+
+        with patch.object(
+            WalletService, "get_transaction_outputs_from_db"
+        ) as mock_get_transaction_outputs_from_db:
+            mock_get_transaction_outputs_from_db.return_value = []
+
+            response = PrivacyMetricsService.analyze_use_multi_change_outputs(
+                mock_transaction_model
+            )
+
+            # if no change then no need to obscure the change
+            assert response is True
+
+    def test_analyze_use_multi_change_outputs_pass(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+
+        with patch.object(
+            WalletService, "get_transaction_outputs_from_db"
+        ) as mock_get_transaction_outputs_from_db:
+            mock_get_transaction_outputs_from_db.return_value = [
+                MagicMock(),
+                MagicMock(),
+            ]
+
+            response = PrivacyMetricsService.analyze_use_multi_change_outputs(
+                mock_transaction_model
+            )
+
+            assert response is True
+
+    def test_analyze_use_multi_change_outputs_fail(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+
+        with patch.object(
+            WalletService, "get_transaction_outputs_from_db"
+        ) as mock_get_transaction_outputs_from_db:
+            mock_get_transaction_outputs_from_db.return_value = [
+                MagicMock(),
+            ]
+
+            response = PrivacyMetricsService.analyze_use_multi_change_outputs(
+                mock_transaction_model
+            )
+
+            assert response is False
+
+    # TODO analyze_avoid_common_change_position
+
+    def test_analyze_no_do_not_spend_utxos_fail(self):
+        mock_transaction = MagicMock()
+        mock_transaction_input_one = MagicMock()
+        mock_transaction_input_one.as_dict.return_value = {
+            "prev_txid": "mock_txid",
+            "output_n": 0,
+        }
+        mock_transaction.inputs = [
+            mock_transaction_input_one,
+        ]
+
+        with patch.object(
+            WalletService, "get_output_from_db"
+        ) as mock_get_output_from_db:
+            mock_db_output_one = MagicMock()
+            mock_label = MagicMock()
+            mock_label.name = LabelName.DO_NOT_SPEND
+            mock_db_output_one.labels = [mock_label]
+            mock_get_output_from_db.return_value = mock_db_output_one
+
+            response = PrivacyMetricsService.analyze_no_do_not_spend_utxos(
+                mock_transaction
+            )
+            mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
+
+            assert response is False
+
+    def test_analyze_no_do_not_spend_utxos_pass(self):
+        mock_transaction = MagicMock()
+        mock_transaction_input_one = MagicMock()
+        mock_transaction_input_one.as_dict.return_value = {
+            "prev_txid": "mock_txid",
+            "output_n": 0,
+        }
+        mock_transaction.inputs = [
+            mock_transaction_input_one,
+        ]
+
+        with patch.object(
+            WalletService, "get_output_from_db"
+        ) as mock_get_output_from_db:
+            mock_db_output_one = MagicMock()
+            mock_label = MagicMock()
+            # kyced label is not a do not spend label
+            mock_label.name = LabelName.KYCED
+            mock_db_output_one.labels = [mock_label]
+            mock_get_output_from_db.return_value = mock_db_output_one
+
+            response = PrivacyMetricsService.analyze_no_do_not_spend_utxos(
+                mock_transaction
+            )
+            mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
+
+            assert response is True
+
+    def test_analyze_no_do_not_spend_utxos_when_not_user_output(self):
+        mock_transaction = MagicMock()
+        mock_transaction_input_one = MagicMock()
+        mock_transaction_input_one.as_dict.return_value = {
+            "prev_txid": "mock_txid",
+            "output_n": 0,
+        }
+        mock_transaction.inputs = [
+            mock_transaction_input_one,
+        ]
+
+        with patch.object(
+            WalletService, "get_output_from_db"
+        ) as mock_get_output_from_db:
+            # not users output
+            mock_get_output_from_db.return_value = None
+
+            response = PrivacyMetricsService.analyze_no_do_not_spend_utxos(
+                mock_transaction
+            )
+            mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
+
+            assert response is True
+
+    def test_analyze_no_kyced_inputs_fail(self):
+        mock_transaction = MagicMock()
+        mock_transaction_input_one = MagicMock()
+        mock_transaction_input_one.as_dict.return_value = {
+            "prev_txid": "mock_txid",
+            "output_n": 0,
+        }
+        mock_transaction.inputs = [
+            mock_transaction_input_one,
+        ]
+
+        with patch.object(
+            WalletService, "get_output_from_db"
+        ) as mock_get_output_from_db:
+            mock_db_output_one = MagicMock()
+            mock_label = MagicMock()
+            mock_label.name = LabelName.KYCED
+            mock_db_output_one.labels = [mock_label]
+            mock_get_output_from_db.return_value = mock_db_output_one
+
+            response = PrivacyMetricsService.analyze_no_kyced_inputs(
+                mock_transaction)
+            mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
+
+            assert response is False
+
+    def test_analyze_no_kyced_inputs_pass(self):
+        mock_transaction = MagicMock()
+        mock_transaction_input_one = MagicMock()
+        mock_transaction_input_one.as_dict.return_value = {
+            "prev_txid": "mock_txid",
+            "output_n": 0,
+        }
+        mock_transaction.inputs = [
+            mock_transaction_input_one,
+        ]
+
+        with patch.object(
+            WalletService, "get_output_from_db"
+        ) as mock_get_output_from_db:
+            mock_db_output_one = MagicMock()
+            mock_label = MagicMock()
+            # not the kyc label
+            mock_label.name = LabelName.DO_NOT_SPEND
+            mock_db_output_one.labels = [mock_label]
+            mock_get_output_from_db.return_value = mock_db_output_one
+
+            response = PrivacyMetricsService.analyze_no_kyced_inputs(
+                mock_transaction)
+            mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
+
+            assert response is True
