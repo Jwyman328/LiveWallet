@@ -305,3 +305,33 @@ class TestPrivacyMetricsService(TestCase):
         response = PrivacyMetricsService.analyze_no_small_change(
             mock_transaction_model)
         assert response is True
+
+    def test_analyze_no_round_number_payments_fail(self):
+        mock_output_one = MagicMock()
+        mock_output_one.value = 1000000000
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+        response = PrivacyMetricsService.analyze_no_round_number_payments(
+            mock_transaction
+        )
+
+        assert response is False
+
+    def test_analyze_no_round_number_payments_pass(self):
+        mock_output_one = MagicMock()
+        mock_output_one.value = 11234324532
+
+        mock_output_two = MagicMock()
+        mock_output_two.value = 1123432342
+
+        mock_transaction = MagicMock()
+        mock_transaction.outputs = [mock_output_one, mock_output_two]
+        response = PrivacyMetricsService.analyze_no_round_number_payments(
+            mock_transaction
+        )
+
+        assert response is True
