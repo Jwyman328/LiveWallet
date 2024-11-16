@@ -238,3 +238,27 @@ class TestPrivacyMetricsService(TestCase):
             )
 
             assert response is True
+
+    def test_ratio_threshold(self):
+        one_btc = 100000000  # 1btc
+        point_one_btc = 10000000  # 0.1btc
+        point_zero_one_btc = 1000000  # 0.01btc
+        point_zero_zero_one_btc = 100000  # 0.001btc
+
+        one_btc_threshold = PrivacyMetricsService.get_ratio_threshold(one_btc)
+
+        point_one_btc_threshold = PrivacyMetricsService.get_ratio_threshold(
+            point_one_btc
+        )
+
+        point_zero_one_btc_threshold = PrivacyMetricsService.get_ratio_threshold(
+            point_zero_one_btc
+        )
+        point_zero_zero_one_btc_threshold = PrivacyMetricsService.get_ratio_threshold(
+            point_zero_zero_one_btc
+        )
+
+        assert one_btc_threshold == 1
+        assert point_one_btc_threshold == 5
+        assert point_zero_one_btc_threshold == 10
+        assert point_zero_zero_one_btc_threshold == 10
