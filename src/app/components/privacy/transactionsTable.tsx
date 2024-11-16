@@ -19,7 +19,7 @@ import { TransactionPrivacyModal } from '../TransactionPrivacyModal';
 const sectionColor = 'rgb(1, 67, 97)';
 
 type TransactionsTableProps = {
-  transactions: [Transaction];
+  transactions: Transaction[];
   btcMetric: BtcMetric;
 };
 

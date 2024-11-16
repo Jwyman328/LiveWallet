@@ -68,7 +68,7 @@ function Home() {
   const [txMode, setTxMode] = useState(TxMode.SINGLE);
   const isCreateBatchTx = txMode === TxMode.BATCH;
 
-  const [displayType, setDisplayType] = useState(DisplayType.EFFICIENCY);
+  const [displayType, setDisplayType] = useState(DisplayType.EFFICENCY);
 
   const location = useLocation();
   const { numberOfXpubs, signaturesNeeded } = location.state as {
@@ -131,8 +131,9 @@ function Home() {
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
   // use the labels to populate the backend.
-  const [importedOutputLabels, setImportedOutputLabels] =
-    useState<null | GetOutputLabelsPopulateResponseType>(null);
+  const [importedOutputLabels, setImportedOutputLabels] = useState<
+    undefined | null | GetOutputLabelsPopulateResponseType
+  >(null);
 
   // Initially set the current future fee rate to the current medium fee rate
   // if it was not set by an imported wallet.

@@ -173,8 +173,7 @@ def create_spendable_wallet():
     Then give the wallet a few more UTXOs.
     """
     try:
-        data = CreateSpendableWalletRequestDto.model_validate_json(
-            request.data)
+        data = CreateSpendableWalletRequestDto.model_validate_json(request.data)
 
         bdk_network: bdk.Network = bdk.Network.__members__[data.network]
 
@@ -189,8 +188,7 @@ def create_spendable_wallet():
 
         if wallet_descriptor is None:
             return (
-                SimpleErrorResponse(
-                    message="Error creating wallet").model_dump(),
+                SimpleErrorResponse(message="Error creating wallet").model_dump(),
                 400,
             )
 
@@ -209,43 +207,84 @@ def create_spendable_wallet():
 
             # make sure a few blocks are mined before continuing
             # to ensure the wallet is funded.
-            mine_a_block_to_miner()
-            mine_a_block_to_miner()
-            mine_a_block_to_miner()
-
-            # sync the wallet so the wallet knows about latest transactions
-            wallet.sync(blockchain, None)
-
-            # create and broadcast a handful of transactions
-            create_and_broadcast_transaction_for_bdk_wallet(
-                wallet, blockchain, 50000, 10, p2sh_raw_output_script
-            )
-            mine_a_block_to_miner()
-            wallet.sync(blockchain, None)
-            create_and_broadcast_transaction_for_bdk_wallet(
-                wallet, blockchain, 50000, 10, p2pkh_raw_output_script
-            )
-            mine_a_block_to_miner()
-            wallet.sync(blockchain, None)
-            create_and_broadcast_coinjoin_for_bdk_wallet(
-                wallet,
-                blockchain,
-                50000,
-                10,
-                [p2wsh_raw_output_script, p2pkh_raw_output_script],
-            )
+            # mine_a_block_to_miner()
+            # mine_a_block_to_miner()
+            # mine_a_block_to_miner()
+            #
+            # # sync the wallet so the wallet knows about latest transactions
+            # wallet.sync(blockchain, None)
+            #
+            # # create and broadcast a handful of transactions
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2sh_raw_output_script
+            # )
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            #
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_transaction_for_bdk_wallet(
+            #     wallet, blockchain, 50000, 10, p2pkh_raw_output_script
+            # )
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # create_and_broadcast_coinjoin_for_bdk_wallet(
+            #     wallet,
+            #     blockchain,
+            #     50000,
+            #     10,
+            #     [p2wsh_raw_output_script, p2pkh_raw_output_script],
+            # )
 
             # Fund the wallet again so that there are a bunch of utxos
             # instead of just one because the spends are spend alls.
-            mine_a_block_to_miner()
-            wallet.sync(blockchain, None)
-            randomly_fund_mock_wallet(
-                wallet_address.address.as_string(),
-                float(data.minUtxoAmount),
-                float(data.maxUtxoAmount),
-                int(data.utxoCount),
-            )
-
+            # mine_a_block_to_miner()
+            # wallet.sync(blockchain, None)
+            # randomly_fund_mock_wallet(
+            #     wallet_address.address.as_string(),
+            #     float(data.minUtxoAmount),
+            #     float(data.maxUtxoAmount),
+            #     int(data.utxoCount),
+            # )
+            #
         except Exception as e:
             LOGGER.error("error funding wallet", error=e)
             return SimpleErrorResponse(message="Error funding wallet").model_dump(), 400
