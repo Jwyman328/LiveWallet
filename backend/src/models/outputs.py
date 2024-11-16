@@ -1,6 +1,5 @@
 from sqlalchemy import Integer
 from src.database import DB
-import uuid
 from .output_labels import output_labels
 
 
