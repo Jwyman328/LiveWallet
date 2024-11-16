@@ -160,3 +160,81 @@ class TestPrivacyMetricsService(TestCase):
             # fail early after first address found is reused
             assert is_address_reuse_mock.call_count == 1
             assert response is False
+
+    def test_analyze_significantly_minimal_wealth_reveal_no_change(self):
+        with patch.object(
+            PrivacyMetricsService, "analyze_no_change"
+        ) as mock_analyze_no_change:
+            mock_analyze_no_change.return_value = True
+            transaction_model_mock = MagicMock()
+            response = (
+                PrivacyMetricsService.analyze_significantly_minimal_wealth_reveal(
+                    transaction_model_mock
+                )
+            )
+
+            # if no change then no wealth is revealed
+            assert response is True
+
+    def test_analyze_significantly_minimal_wealth_reveal_non_typical_tx(self):
+        with patch.object(
+            PrivacyMetricsService, "analyze_no_change"
+        ) as mock_analyze_no_change:
+            mock_analyze_no_change.return_value = True
+            transaction_model_mock = MagicMock()
+            transaction_model_mock.sent_amount = 1000000000
+            transaction_model_mock.received_amount = 1000000000
+            response = (
+                PrivacyMetricsService.analyze_significantly_minimal_wealth_reveal(
+                    transaction_model_mock
+                )
+            )
+
+            # if nothing sent to others then no wealth is revealed
+            assert response is True
+
+    def test_analyze_significantly_minimal_wealth_reveal_fails(self):
+        with patch.object(
+            PrivacyMetricsService, "analyze_no_change"
+        ) as mock_analyze_no_change, patch.object(
+            PrivacyMetricsService, "get_ratio_threshold"
+        ) as mock_get_ratio_threshold:
+            mock_analyze_no_change.return_value = False
+            transaction_model_mock = MagicMock()
+            transaction_model_mock.sent_amount = 1000000000
+            transaction_model_mock.received_amount = 800000000
+            # amount receiver got  is 200000000
+            # amount sender got in change 800000000
+            # therefore revealed 4x the payment
+            # since threshold is 1x the payment, this fails
+            mock_get_ratio_threshold.return_value = 1
+
+            response = (
+                PrivacyMetricsService.analyze_significantly_minimal_wealth_reveal(
+                    transaction_model_mock
+                )
+            )
+
+            assert response is False
+
+    def test_analyze_significantly_minimal_wealth_reveal_passes(self):
+        with patch.object(
+            PrivacyMetricsService, "analyze_no_change"
+        ) as mock_analyze_no_change, patch.object(
+            PrivacyMetricsService, "get_ratio_threshold"
+        ) as mock_get_ratio_threshold:
+            mock_analyze_no_change.return_value = False
+            transaction_model_mock = MagicMock()
+            transaction_model_mock.sent_amount = 1000000000
+            transaction_model_mock.received_amount = 1000
+            # amount receiver got much more than 2x the change amount
+            # therefore wealth is not revealed
+            mock_get_ratio_threshold.return_value = 2
+
+            response = (
+                PrivacyMetricsService.analyze_significantly_minimal_wealth_reveal(
+                    transaction_model_mock
+                )
+            )
+
+            assert response is True
