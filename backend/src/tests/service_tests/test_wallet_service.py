@@ -886,6 +886,12 @@ class TestWalletService(TestCase):
                 "src.services.wallet.wallet.electrum_request"
             ) as mock_electrum_request,
             patch.object(WalletService, "wallet") as mock_wallet,
+            patch.object(
+                WalletService, "add_transaction_to_db"
+            ) as mock_add_transaction_to_db,
+            patch.object(
+                LastFetchedService, "update_last_fetched_transaction_type"
+            ) as mock_update_last_fetched_transaction_type,
         ):
             # mock the transactions that bdk fetches from the wallet
             mock_wallet.list_transactions.return_value = [
@@ -917,6 +923,8 @@ class TestWalletService(TestCase):
             get_all_transactions_response = self.wallet_service.get_all_transactions()
 
             mock_wallet.list_transactions.assert_called_with(False)
+            mock_add_transaction_to_db.assert_called()
+            mock_update_last_fetched_transaction_type.assert_called()
 
             assert mock_electrum_request.call_count == 2
             mock_electrum_request.assert_any_call(
