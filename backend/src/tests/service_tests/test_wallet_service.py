@@ -876,7 +876,7 @@ class TestWalletService(TestCase):
                 database_config=memory_mock,
             )
 
-            assert response == wallet_mock
+            assert response == (wallet_mock, block_chain_mock)
             wallet_sync_mock.assert_called_with(block_chain_mock, None)
 
     def test_get_all_transactions_success(self):
@@ -998,6 +998,12 @@ class TestWalletService(TestCase):
             patch.object(
                 LastFetchedService, "update_last_fetched_outputs_type"
             ) as mock_update_last_fetched_outputs_type,
+            patch.object(
+                WalletService, "add_spend_tx_to_output"
+            ) as mock_add_spend_tx_to_output,
+            patch.object(
+                WalletService, "get_output_from_db"
+            ) as mock_get_output_from_db,
         ):
             mock_wallet.is_mine = Mock()
             # mark first output as mine and the second as not
@@ -1029,6 +1035,8 @@ class TestWalletService(TestCase):
             mock_calculate_output_annominity_sets.assert_called()
             mock_sync_local_db_with_incoming_output.assert_called()
             mock_update_last_fetched_outputs_type.assert_called()
+            mock_add_spend_tx_to_output.assert_called()
+            mock_get_output_from_db.assert_called()
 
             # the returned outputs should only be the first one since we mocked out that the second output would return False when checking if it is mine
 
@@ -1054,6 +1062,12 @@ class TestWalletService(TestCase):
             patch.object(
                 LastFetchedService, "update_last_fetched_outputs_type"
             ) as mock_update_last_fetched_outputs_type,
+            patch.object(
+                WalletService, "add_spend_tx_to_output"
+            ) as mock_add_spend_tx_to_output,
+            patch.object(
+                WalletService, "get_output_from_db", return_value=None
+            ) as mock_get_output_from_db,
         ):
             mock_wallet.is_mine = Mock(return_value=False)
             # mark No outputs as mine
@@ -1081,6 +1095,8 @@ class TestWalletService(TestCase):
             mock_calculate_output_annominity_sets.assert_called()
             mock_sync_local_db_with_incoming_output.assert_not_called()
             mock_update_last_fetched_outputs_type.assert_not_called()
+            mock_get_output_from_db.assert_called()
+            mock_add_spend_tx_to_output.assert_not_called()
 
             assert mock_wallet.is_mine.call_count == 2
             assert get_all_outputs_response == []
@@ -1303,10 +1319,10 @@ class TestWalletService(TestCase):
             mock_add_output_to_db.return_value = mock_new_output_model
             mock_new_last_fetched_model = Mock(return_value=mock_new_last_fetched_model)
             response = self.wallet_service.sync_local_db_with_incoming_output(
-                "txid", 0, "mock_address"
+                "txid", 0, "mock_address", 10
             )
             mock_add_output_to_db.assert_called_with(
-                txid="txid", vout=0, address="mock_address"
+                txid="txid", vout=0, address="mock_address", value=10
             )
             assert response == mock_new_output_model
 
