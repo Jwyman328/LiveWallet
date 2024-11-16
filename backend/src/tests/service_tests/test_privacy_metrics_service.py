@@ -27,11 +27,9 @@ class TestPrivacyMetricsService(TestCase):
         with patch(
             "src.services.privacy_metrics.privacy_metrics.DB.session.query"
         ) as mock_DB_session_query:
-            self.mock_DB_session_query = mock_DB_session_query
-            mock_return_metrics = [privacy_metric_mock_one, privacy_metric_mock_two]
-            self.mock_DB_session_query.return_value.all.return_value = (
-                mock_return_metrics
-            )
+            mock_return_metrics = [
+                privacy_metric_mock_one, privacy_metric_mock_two]
+            mock_DB_session_query.return_value.all.return_value = mock_return_metrics
             response = PrivacyMetricsService.get_all_privacy_metrics()
             assert response == mock_return_metrics
 
@@ -41,7 +39,8 @@ class TestPrivacyMetricsService(TestCase):
         ) as get_output_from_db_mock, patch.object(
             WalletService, "calculate_output_annominity_sets"
         ) as mock_calculate_output_annominity_sets:
-            mock_calculate_output_annominity_sets.return_value = {"1": 1, "2": 2}
+            mock_calculate_output_annominity_sets.return_value = {
+                "1": 1, "2": 2}
             # first output is the users, second isn't
             get_output_from_db_mock.side_effect = [MagicMock, None]
             mock_transaction_with_one_anon_set = copy.deepcopy(tx_mock)
@@ -62,7 +61,8 @@ class TestPrivacyMetricsService(TestCase):
             WalletService, "calculate_output_annominity_sets"
         ) as mock_calculate_output_annominity_sets:
             # both outputs have an anon set on 2
-            mock_calculate_output_annominity_sets.return_value = {"1": 2, "2": 2}
+            mock_calculate_output_annominity_sets.return_value = {
+                "1": 2, "2": 2}
             # first output is the users, second isn't
             get_output_from_db_mock.side_effect = [MagicMock, None]
             mock_transaction_with_one_anon_set = copy.deepcopy(tx_mock)
@@ -83,7 +83,8 @@ class TestPrivacyMetricsService(TestCase):
             WalletService, "calculate_output_annominity_sets"
         ) as mock_calculate_output_annominity_sets:
             # both outputs are the users but only one has an anon set above the desired anon set of 2
-            mock_calculate_output_annominity_sets.return_value = {"1": 2, "2": 1}
+            mock_calculate_output_annominity_sets.return_value = {
+                "1": 2, "2": 1}
             # first output is the users, second is the users change which failed anon test
             get_output_from_db_mock.side_effect = [MagicMock, MagicMock]
             mock_transaction_with_one_anon_set = copy.deepcopy(tx_mock)
@@ -104,7 +105,8 @@ class TestPrivacyMetricsService(TestCase):
             WalletService, "calculate_output_annominity_sets"
         ) as mock_calculate_output_annominity_sets:
             # both outputs are the users but only one has an anon set above the desired anon set of 2
-            mock_calculate_output_annominity_sets.return_value = {"1": 2, "2": 1}
+            mock_calculate_output_annominity_sets.return_value = {
+                "1": 2, "2": 1}
             # first output is the users, second is the users change which failed anon test
             get_output_from_db_mock.side_effect = [MagicMock, MagicMock]
             mock_transaction_with_one_anon_set = copy.deepcopy(tx_mock)
@@ -116,4 +118,45 @@ class TestPrivacyMetricsService(TestCase):
                 desired_annominity_set=2,
                 allow_some_uneven_change=False,
             )
+            assert response is False
+
+    def test_analyze_no_address_reuse_passes(self):
+        with patch(
+            "src.services.privacy_metrics.privacy_metrics.OutputModel"
+        ) as mock_outputmodel, patch.object(
+            WalletService, "is_address_reused"
+        ) as is_address_reuse_mock:
+            mock_output = MagicMock()
+            mock_outputs = [mock_output, mock_output]
+            mock_outputmodel.query.filter_by.return_value.all.return_value = (
+                mock_outputs
+            )
+
+            # both addresses are not reused
+            is_address_reuse_mock.side_effect = [False, False]
+
+            response = PrivacyMetricsService.analyze_no_address_reuse(
+                txid="mock_tx_id")
+            assert is_address_reuse_mock.call_count == 2
+            assert response is True
+
+    def test_analyze_no_address_reuse_fails(self):
+        with patch(
+            "src.services.privacy_metrics.privacy_metrics.OutputModel"
+        ) as mock_outputmodel, patch.object(
+            WalletService, "is_address_reused"
+        ) as is_address_reuse_mock:
+            mock_output = MagicMock()
+            mock_outputs = [mock_output, mock_output]
+            mock_outputmodel.query.filter_by.return_value.all.return_value = (
+                mock_outputs
+            )
+
+            # first address is reused
+            is_address_reuse_mock.side_effect = [True, False]
+
+            response = PrivacyMetricsService.analyze_no_address_reuse(
+                txid="mock_tx_id")
+            # fail early after first address found is reused
+            assert is_address_reuse_mock.call_count == 1
             assert response is False
