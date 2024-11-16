@@ -262,3 +262,30 @@ class TestPrivacyMetricsService(TestCase):
         assert point_one_btc_threshold == 5
         assert point_zero_one_btc_threshold == 10
         assert point_zero_zero_one_btc_threshold == 10
+
+    # TODO tests for analyze_minimal_tx_history_reveal
+
+    def test_analyze_no_change_pass(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000000
+        mock_transaction_model.received_amount = 0
+        response = PrivacyMetricsService.analyze_no_change(
+            mock_transaction_model)
+        assert response is True
+
+        # is a user received but didn't send then the amount
+        # they received is not change, therefore no change passes
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 0
+        mock_transaction_model.received_amount = 100000000
+        response = PrivacyMetricsService.analyze_no_change(
+            mock_transaction_model)
+        assert response is True
+
+    def test_analyze_no_change_fail(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 1000000000
+        mock_transaction_model.received_amount = 10
+        response = PrivacyMetricsService.analyze_no_change(
+            mock_transaction_model)
+        assert response is False
