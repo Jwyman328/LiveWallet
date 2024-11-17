@@ -1,9 +1,12 @@
 import copy
 from unittest.case import TestCase
 from unittest.mock import MagicMock, patch
+from datetime import datetime
+
 
 from src.models.label import LabelName
-from src.models.privacy_metric import PrivacyMetric, PrivacyMetricName
+from src.models.privacy_metric import PrivacyMetricName
+from src.services.last_fetched.last_fetched_service import LastFetchedService
 from src.services.wallet.wallet import WalletService
 from src.tests.mocks import tx_mock
 from src.services.privacy_metrics.privacy_metrics import PrivacyMetricsService
@@ -263,8 +266,6 @@ class TestPrivacyMetricsService(TestCase):
         assert point_one_btc_threshold == 5
         assert point_zero_one_btc_threshold == 10
         assert point_zero_zero_one_btc_threshold == 10
-
-    # TODO tests for analyze_minimal_tx_history_reveal
 
     def test_analyze_no_change_pass(self):
         mock_transaction_model = MagicMock()
@@ -548,8 +549,6 @@ class TestPrivacyMetricsService(TestCase):
 
             assert response is False
 
-    # TODO analyze_avoid_common_change_position
-
     def test_analyze_no_do_not_spend_utxos_fail(self):
         mock_transaction = MagicMock()
         mock_transaction_input_one = MagicMock()
@@ -681,3 +680,343 @@ class TestPrivacyMetricsService(TestCase):
             mock_get_output_from_db.assert_called_once_with("mock_txid", 0)
 
             assert response is True
+
+    def test_ensure_recently_fetched_outputs_when_never_fetched(self):
+        with patch.object(
+            LastFetchedService, "get_last_fetched_output_datetime"
+        ) as mock_get_last_fetched_output_datetime, patch.object(
+            WalletService, "get_all_outputs"
+        ) as mock_get_all_outputs:
+            mock_get_last_fetched_output_datetime.return_value = None
+            response = PrivacyMetricsService.ensure_recently_fetched_outputs()
+            # since not recently fetched, we should fetch the outputs
+            mock_get_all_outputs.assert_called()
+            assert response == None
+
+    def test_ensure_recently_fetched_outputs_when_not_recently_fetched(self):
+        with patch.object(
+            LastFetchedService, "get_last_fetched_output_datetime"
+        ) as mock_get_last_fetched_output_datetime, patch.object(
+            WalletService, "get_all_outputs"
+        ) as mock_get_all_outputs:
+            # 2021 is not recent
+            mock_get_last_fetched_output_datetime.return_value = datetime(
+                2021, 1, 1)
+            response = PrivacyMetricsService.ensure_recently_fetched_outputs()
+            # since not recently fetched, we should fetch the outputs
+            mock_get_all_outputs.assert_called()
+            assert response == None
+
+    def test_ensure_recently_fetched_outputs_when_recently_fetched(self):
+        with patch.object(
+            LastFetchedService, "get_last_fetched_output_datetime"
+        ) as mock_get_last_fetched_output_datetime, patch.object(
+            WalletService, "get_all_outputs"
+        ) as mock_get_all_outputs:
+            # now is recent
+            mock_get_last_fetched_output_datetime.return_value = datetime.now()
+            response = PrivacyMetricsService.ensure_recently_fetched_outputs()
+            # since  recently fetched, we should NOT fetch the outputs
+            mock_get_all_outputs.assert_not_called()
+            assert response == None
+
+    def test_analyze_avoid_common_change_position_when_no_simple_change(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+        mock_output = MagicMock()
+        mock_output.is_simple_change = False
+        mock_transaction_model.outputs = [mock_output]
+
+        response = PrivacyMetricsService.analyze_avoid_common_change_position(
+            mock_transaction_model
+        )
+        # since no change position, then that means we are not using
+        # a common change position, therefore this metric passes
+        assert response is True
+
+    def test_analyze_avoid_common_change_position_with_small_output_count(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+        mock_output = MagicMock()
+        mock_output.is_simple_change = True
+        mock_output.vout = 0
+        mock_transaction_model.outputs = [mock_output]
+
+        with patch.object(
+            WalletService, "get_all_change_outputs_from_db"
+        ) as mock_get_all_change_ouotputs_from_db:
+            # only 7 change outputs total
+            mock_get_all_change_ouotputs_from_db.return_value = 7
+
+            response = PrivacyMetricsService.analyze_avoid_common_change_position(
+                mock_transaction_model
+            )
+            mock_get_all_change_ouotputs_from_db.assert_called()
+            # since less than 8 outputs, then this metric passes
+            assert response is True
+
+    def test_analyze_avoid_common_change_position_fails(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+        mock_output = MagicMock()
+        mock_output.is_simple_change = True
+        mock_output.vout = 0
+        mock_transaction_model.outputs = [mock_output]
+
+        with patch.object(
+            WalletService, "get_all_change_outputs_from_db"
+        ) as mock_get_all_change_ouotputs_from_db:
+            total_change_outputs = 10
+            change_outputs_as_vout_0 = 9
+            mock_get_all_change_ouotputs_from_db.side_effect = [
+                total_change_outputs,
+                change_outputs_as_vout_0,
+            ]
+
+            response = PrivacyMetricsService.analyze_avoid_common_change_position(
+                mock_transaction_model
+            )
+            mock_get_all_change_ouotputs_from_db.assert_called_with(0, "count")
+            # since 9 out of 10 change outputs are vout 0, then this metric fails
+            assert response is False
+
+    def test_analyze_avoid_common_change_position_passess(self):
+        mock_transaction_model = MagicMock()
+        mock_transaction_model.sent_amount = 30000
+        mock_transaction_model.received_amount = 10000
+        mock_transaction_model.txid = "mock_txid"
+        mock_output = MagicMock()
+        mock_output.is_simple_change = True
+        mock_output.vout = 0
+        mock_transaction_model.outputs = [mock_output]
+
+        with patch.object(
+            WalletService, "get_all_change_outputs_from_db"
+        ) as mock_get_all_change_ouotputs_from_db:
+            total_change_outputs = 10
+            change_outputs_as_vout_0 = 2
+            mock_get_all_change_ouotputs_from_db.side_effect = [
+                total_change_outputs,
+                change_outputs_as_vout_0,
+            ]
+
+            response = PrivacyMetricsService.analyze_avoid_common_change_position(
+                mock_transaction_model
+            )
+            mock_get_all_change_ouotputs_from_db.assert_called_with(0, "count")
+            # since only 2 out of 10 change outputs are vout 0, then this metric passes
+            assert response is True
+
+    def test_analyze_minimal_tx_history_reveal_with_one_input(self):
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db, patch.object(
+            WalletService, "get_all_unspent_outputs_from_db_before_blockheight"
+        ) as mock_get_all_unspent_outputs_from_db_before_blockheight:
+            mock_get_transaction_inputs_from_db.return_value = [MagicMock()]
+
+            response = PrivacyMetricsService.analyze_minimal_tx_history_reveal(
+                MagicMock()
+            )
+            mock_get_all_unspent_outputs_from_db_before_blockheight.assert_not_called()
+            # since only one input then no excess history is revealed
+            # therefore this metric passes
+            assert response is True
+
+    def test_analyze_minimal_tx_history_reveal_fails(self):
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db, patch.object(
+            WalletService, "get_all_unspent_outputs_from_db_before_blockheight"
+        ) as mock_get_all_unspent_outputs_from_db_before_blockheight:
+            input_that_covers_entire_tx = MagicMock()
+            input_that_covers_entire_tx.value = 2000010000
+            used_input_one = MagicMock()
+            used_input_one.value = 1000000000
+            used_input_two = MagicMock()
+            used_input_two.value = 1000010000
+
+            mock_get_transaction_inputs_from_db.return_value = [
+                used_input_one,
+                used_input_two,
+            ]
+
+            mock_get_all_unspent_outputs_from_db_before_blockheight.return_value = [
+                used_input_one,
+                used_input_two,
+                input_that_covers_entire_tx,
+            ]
+            mock_transaction = MagicMock()
+            mock_transaction.confirmed_block_height = 100
+            mock_transaction.txid = "mock_txid"
+            mock_transaction.sent_amount = 2000000000
+            mock_transaction.received_amount = 10000
+            response = PrivacyMetricsService.analyze_minimal_tx_history_reveal(
+                mock_transaction
+            )
+            mock_get_transaction_inputs_from_db.assert_called_with("mock_txid")
+            mock_get_all_unspent_outputs_from_db_before_blockheight.assert_called_with(
+                100
+            )
+            # since we could have used one utxo instead of two
+            # then this metric fails
+            assert response is False
+
+    def test_analyze_minimal_tx_history_reveal_passes(self):
+        with patch.object(
+            WalletService, "get_transaction_inputs_from_db"
+        ) as mock_get_transaction_inputs_from_db, patch.object(
+            WalletService, "get_all_unspent_outputs_from_db_before_blockheight"
+        ) as mock_get_all_unspent_outputs_from_db_before_blockheight:
+            used_input_one = MagicMock()
+            used_input_one.value = 1000000000
+            used_input_two = MagicMock()
+            used_input_two.value = 1000000000
+
+            not_used_input = MagicMock()
+            not_used_input.value = 1000000000
+
+            mock_get_transaction_inputs_from_db.return_value = [
+                used_input_one,
+                used_input_two,
+            ]
+
+            mock_get_all_unspent_outputs_from_db_before_blockheight.return_value = [
+                not_used_input,
+                used_input_one,
+                used_input_two,
+            ]
+            mock_transaction = MagicMock()
+            mock_transaction.confirmed_block_height = 100
+            mock_transaction.txid = "mock_txid"
+            mock_transaction.sent_amount = 2000000000
+            mock_transaction.received_amount = 10000
+            response = PrivacyMetricsService.analyze_minimal_tx_history_reveal(
+                mock_transaction
+            )
+            mock_get_transaction_inputs_from_db.assert_called_with("mock_txid")
+            mock_get_all_unspent_outputs_from_db_before_blockheight.assert_called_with(
+                100
+            )
+            # since we could not have used less than 2 utxos
+            # then this metric fails
+            assert response is True
+
+    def test_analyze_tx_privacy_ensures_recent_outputs_call(self):
+        mock_txid = "mock_txid"
+        # empty array since we are just testing the initial calls
+        privacy_metrics = []
+        with patch.object(
+            PrivacyMetricsService, "ensure_recently_fetched_outputs"
+        ) as mock_ensure_recently_fetched_outputs, patch.object(
+            WalletService, "get_transaction_details"
+        ) as mock_get_transaction_details, patch.object(
+            WalletService, "get_transaction"
+        ) as mock_get_transaction:
+            response = PrivacyMetricsService.analyze_tx_privacy(
+                mock_txid, privacy_metrics
+            )
+
+            mock_ensure_recently_fetched_outputs.assert_called()
+            mock_get_transaction.assert_called_with(mock_txid)
+            mock_get_transaction_details.assert_called_with(mock_txid)
+
+            assert response == {}
+
+    def test_analyze_tx_privacy_calls_all_metric_methods(self):
+        mock_txid = "mock_txid"
+        # empty array since we are just testing the initial calls
+        privacy_metrics = [
+            PrivacyMetricName.ANNOMINITY_SET,
+            PrivacyMetricName.NO_ADDRESS_REUSE,
+            PrivacyMetricName.MINIMAL_WEALTH_REVEAL,
+            PrivacyMetricName.MINIMAL_TX_HISTORY_REVEAL,
+            PrivacyMetricName.NO_CHANGE,
+            PrivacyMetricName.NO_SMALL_CHANGE,
+            PrivacyMetricName.NO_ROUND_NUMBER_PAYMENTS,
+            PrivacyMetricName.SAME_SCRIPT_TYPES,
+            PrivacyMetricName.NO_UNNECESSARY_INPUT,
+            PrivacyMetricName.USE_MULTI_CHANGE_OUTPUTS,
+            PrivacyMetricName.AVOID_COMMON_CHANGE_POSITION,
+            PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS,
+            PrivacyMetricName.NO_KYCED_UTXOS,
+        ]
+
+        with patch.object(
+            PrivacyMetricsService, "ensure_recently_fetched_outputs"
+        ) as mock_ensure_recently_fetched_outputs, patch.object(
+            WalletService, "get_transaction_details"
+        ) as mock_get_transaction_details, patch.object(
+            WalletService, "get_transaction"
+        ) as mock_get_transaction, patch.object(
+            PrivacyMetricsService, "analyze_annominity_set"
+        ) as mock_analyze_annominity_set, patch.object(
+            PrivacyMetricsService, "analyze_no_address_reuse"
+        ) as mock_analyze_no_address_reuse, patch.object(
+            PrivacyMetricsService, "analyze_significantly_minimal_wealth_reveal"
+        ) as mock_analyze_significantly_minimal_wealth_reveal, patch.object(
+            PrivacyMetricsService, "analyze_minimal_tx_history_reveal"
+        ) as mock_analyze_minimal_tx_history_reveal, patch.object(
+            PrivacyMetricsService, "analyze_no_change"
+        ) as mock_analyze_no_change, patch.object(
+            PrivacyMetricsService, "analyze_no_small_change"
+        ) as mock_analyze_no_small_change, patch.object(
+            PrivacyMetricsService, "analyze_no_round_number_payments"
+        ) as mock_analyze_no_round_number_payments, patch.object(
+            PrivacyMetricsService, "analyze_same_script_types"
+        ) as mock_analyze_same_script_types, patch.object(
+            PrivacyMetricsService, "analyze_no_unnecessary_input"
+        ) as mock_analyze_no_unnecessary_input, patch.object(
+            PrivacyMetricsService, "analyze_use_multi_change_outputs"
+        ) as mock_analyze_use_multi_change_outputs, patch.object(
+            PrivacyMetricsService, "analyze_avoid_common_change_position"
+        ) as mock_analyze_avoid_common_change_position, patch.object(
+            PrivacyMetricsService, "analyze_no_do_not_spend_utxos"
+        ) as mock_analyze_no_do_not_spend_utxos, patch.object(
+            PrivacyMetricsService, "analyze_no_kyced_inputs"
+        ) as mock_analyze_no_kyced_inputs:
+            mock_analyze_no_kyced_inputs.return_value = True
+            mock_analyze_no_do_not_spend_utxos.return_value = True
+            mock_analyze_avoid_common_change_position.return_value = True
+            mock_analyze_use_multi_change_outputs.return_value = True
+            mock_analyze_no_unnecessary_input.return_value = True
+            mock_analyze_same_script_types.return_value = True
+            mock_analyze_no_round_number_payments.return_value = True
+            mock_analyze_no_address_reuse.return_value = True
+            mock_analyze_no_small_change.return_value = True
+            mock_analyze_no_change.return_value = True
+            mock_analyze_annominity_set.return_value = True
+            mock_analyze_significantly_minimal_wealth_reveal.return_value = True
+            mock_analyze_minimal_tx_history_reveal.return_value = True
+            mock_get_transaction_details.return_value = MagicMock()
+            mock_get_transaction.return_value = MagicMock()
+
+            response = PrivacyMetricsService.analyze_tx_privacy(
+                mock_txid, privacy_metrics
+            )
+
+            mock_ensure_recently_fetched_outputs.assert_called()
+            mock_get_transaction.assert_called_with(mock_txid)
+            mock_get_transaction_details.assert_called_with(mock_txid)
+
+            assert response == {
+                PrivacyMetricName.ANNOMINITY_SET: True,
+                PrivacyMetricName.NO_ADDRESS_REUSE: True,
+                PrivacyMetricName.MINIMAL_WEALTH_REVEAL: True,
+                PrivacyMetricName.MINIMAL_TX_HISTORY_REVEAL: True,
+                PrivacyMetricName.NO_CHANGE: True,
+                PrivacyMetricName.NO_SMALL_CHANGE: True,
+                PrivacyMetricName.NO_ROUND_NUMBER_PAYMENTS: True,
+                PrivacyMetricName.SAME_SCRIPT_TYPES: True,
+                PrivacyMetricName.NO_UNNECESSARY_INPUT: True,
+                PrivacyMetricName.USE_MULTI_CHANGE_OUTPUTS: True,
+                PrivacyMetricName.AVOID_COMMON_CHANGE_POSITION: True,
+                PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS: True,
+                PrivacyMetricName.NO_KYCED_UTXOS: True,
+            }

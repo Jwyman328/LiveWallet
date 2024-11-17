@@ -612,7 +612,6 @@ class PrivacyMetricsService:
                 # therefore it can not be labeled by the user
                 # therefore check the next input/output
                 continue
-
             if LabelName.DO_NOT_SPEND in [label.name for label in users_output.labels]:
                 return False
         return True
