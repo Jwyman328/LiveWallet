@@ -9,14 +9,12 @@ from src.database import DB
 class LabelName(PyEnum):
     DO_NOT_SPEND = "do not spend"
     KYCED = "kyced"
-    NOT_KYCED = "not kyced"
     # Add more labels as needed
 
 
 label_descriptions = {
     LabelName.DO_NOT_SPEND: "This output should not be spent. This can be helpful for outputs that may comprimise your privacy, like KYCED outputs, or toxic change from a coinjoin.",
     LabelName.KYCED: "KYC, also known as Know Your Customer, is the process of verifying the identity of customers. This output has been KYCed, which means it is attached to your name, and therefore you should be careful when spending it as it may be being monitoring.",
-    LabelName.NOT_KYCED: "KYC, also known as Know Your Customer, is the process of verifying the identity of customers. This output has not been KYCed, and therefore is not attached to your name, increasing your privacy.",
 }
 
 
