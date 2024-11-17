@@ -35,7 +35,6 @@ def get_privacy_metrics(
     Get all privacy metrics.
     """
     try:
-        # TODO use a service
         all_metrics = privacy_service.get_all_privacy_metrics()
 
         return GetAllPrivacyMetricsResponseDto.model_validate(
