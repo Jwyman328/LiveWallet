@@ -31,12 +31,3 @@ class Transaction(DB.Model):
             Output.spent_txid
         ],  # Explicitly reference the 'spent_txid' column in Output
     )
-
-    # Relationship to Output
-    # inputs = DB.relationship("Output", back_populates="transaction")
-
-    # at some point I will need an output relationship
-    # prob just need it on the output
-    # outputs = DB.relationship(
-    #     "Output", secondary=output_labels, back_populates="transactions"
-    # )
