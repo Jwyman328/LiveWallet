@@ -485,7 +485,7 @@ function Home() {
         </div>
       </SettingsSlideout>
 
-      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-16">
+      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-0 h-[8vh] ">
         <Container size="xl" className="flex justify-between items-center h-16">
           <CurrentFeeRates />
           <SegmentedControl
@@ -525,11 +525,11 @@ function Home() {
         </Container>
       </header>
 
-      <div className="flex flex-row justify-evenly"></div>
+      <div className="flex flex-row justify-evenly h-[92vh]"></div>
       {displayType === DisplayType.PRIVACY ? (
         <Privacy btcMetric={btcMetric} />
       ) : (
-        <div className="mx-4 flex flex-col items-center overflow-x-scroll">
+        <div className="mx-4 flex flex-col items-center overflow-x-scroll mt-4">
           <div
             className={`flex flex-row w-full justify-around`}
             style={maxToggleContainerWidth}

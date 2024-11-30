@@ -79,7 +79,7 @@ export const TransactionDetailsModal = ({
             transitionDuration={300}
             transitionTimingFunction="linear"
           >
-            <div className="flex flex-row justify-between w-3/4 mt-8">
+            <div className="flex flex-row justify-between w-3/4 mt-8 ml-auto mr-auto">
               <div className="flex flex-col border-t-2 border-gray-900 border-r-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center bg-blue-300 justify-center">
                 {transactionDetails.inputs.map((input) => (
                   <BitcoinAddress splitCount={6} address={input.address} />
