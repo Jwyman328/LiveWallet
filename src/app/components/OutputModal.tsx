@@ -1,4 +1,12 @@
-import { Modal, Chip, Tooltip } from '@mantine/core';
+import {
+  Modal,
+  Chip,
+  Tooltip,
+  TextInput,
+  Textarea,
+  Checkbox,
+  Divider,
+} from '@mantine/core';
 import { useState } from 'react';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { OutputLabelType, TransactionOutputType } from '../api/types';
@@ -42,32 +50,20 @@ export const OutputModal = ({
     }
   };
 
+  const displayAmount =
+    btcMetric === BtcMetric.BTC ? amount : Number(amount).toLocaleString();
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       centered
-      size="lg"
-      title={`Output`}
+      title={<p className="text-xl font-bold">Output details</p>}
+      fullScreen
     >
+      <Divider className="mt-2" variant="solid" size={1} />
       <div className="h-full">
-        <p>address: {output.address}</p>
-        <p>
-          amount:{' '}
-          {btcMetric === BtcMetric.BTC
-            ? amount
-            : Number(amount).toLocaleString()}
-        </p>
-        <p>Annominity set: {output.annominity_set}</p>
-        <p>v out: {output.output_n}</p>
-        <p>hash: {output.public_hash}</p>
-        <p>script: {output.script}</p>
-        <p>script type: {output.script_type}</p>
-        <p>Recieved txid: {output.txid}</p>
-        <p>is spent?{output.spent ? 'Yes' : 'No'}</p>
-        <p>spending index: {output.spending_index_n}</p>
-        <p>spending txid: {output.spending_txid}</p>
-        labels here
+        <p className="text-lg font-bold mb-2 mt-4">Labels</p>
         <Chip.Group multiple value={selectedChips} onChange={setSelectedChips}>
           <div className="flex flex-row">
             {labels.map((label) => (
@@ -82,6 +78,7 @@ export const OutputModal = ({
                   onChange={(isChecked) => handleChipChange(label, isChecked)}
                   width={30}
                   value={label.display_name}
+                  className="ml-2"
                 >
                   {label.display_name}
                 </Chip>
@@ -89,6 +86,94 @@ export const OutputModal = ({
             ))}
           </div>
         </Chip.Group>
+
+        <Divider className="mt-4" variant="solid" size={1} />
+
+        <div className="flex flex-row mt-4">
+          <div>
+            <p className="text-lg font-bold">Transaction details</p>
+            <Textarea
+              label={'Recieved txid'}
+              value={output.txid}
+              disabled={true}
+              className="w-96"
+            />
+
+            <TextInput
+              label={'V out'}
+              value={output.output_n}
+              disabled={true}
+              className="w-28 mt-2"
+            />
+
+            <TextInput
+              label={'Input total'}
+              value={displayAmount}
+              rightSection={'sats'}
+              disabled={true}
+              className="w-40 mt-2"
+            />
+
+            <TextInput
+              label={'Annominity set'}
+              value={output.annominity_set}
+              disabled={true}
+              className="w-28 mt-2"
+            />
+          </div>
+          <div className="ml-8">
+            <p className="text-lg font-bold">Address details</p>
+            <Textarea
+              label={'Address'}
+              value={output.address}
+              disabled={true}
+              className="w-96"
+            />
+
+            <Textarea
+              label={'Script'}
+              value={output.script}
+              disabled={true}
+              className="w-96 mt-2"
+            />
+
+            <TextInput
+              label={'Script type'}
+              value={output.script_type}
+              disabled={true}
+              className="w-32 mt-2"
+            />
+          </div>
+        </div>
+
+        <Divider className="mt-4" variant="solid" size={1} />
+
+        <div className="mt-4">
+          <p className="text-lg font-bold">Spent details</p>
+          <Checkbox
+            checked={output.spent}
+            label="Spent"
+            disabled={true}
+            className="mt-2"
+          />
+          {output.spent && (
+            <>
+              <Textarea
+                label={'Spending txid'}
+                value={output.spending_txid}
+                disabled={true}
+                className="w-96 mt-2"
+              />
+
+              <TextInput
+                label={'Spending vout'}
+                value={output.spending_index_n}
+                disabled={true}
+                className="w-28 mt-2"
+              />
+            </>
+          )}
+        </div>
       </div>
     </Modal>
   );
