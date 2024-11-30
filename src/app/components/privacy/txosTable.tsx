@@ -65,7 +65,7 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
               <Tooltip label={row.original?.address}>
                 <p className="mr-2">{abrv}</p>
               </Tooltip>
-              <CopyButton value={row.original.txid} timeout={2000}>
+              <CopyButton value={row.original.address} timeout={2000}>
                 {({ copied, copy }) => (
                   <Tooltip
                     label={copied ? 'Copied' : 'Copy'}
