@@ -24,23 +24,24 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
       <Tabs
         variant="default"
         orientation="vertical"
-        defaultValue={PrivacyTabs.UTXOS_STXOS}
+        defaultValue={PrivacyTabs.TRANSACTIONS}
         style={{ height: '100%' }}
       >
         <Tabs.List grow>
-          <Tabs.Tab
-            className="h-1/2"
-            value={PrivacyTabs.UTXOS_STXOS}
-            leftSection={<IconCoins style={iconStyle} />}
-          >
-            <div>UTXOS</div> <div> STXOS</div>
-          </Tabs.Tab>
           <Tabs.Tab
             className="h-1/2"
             value={PrivacyTabs.TRANSACTIONS}
             leftSection={<IconArrowsDownUp style={iconStyle} />}
           >
             Transactions
+          </Tabs.Tab>
+
+          <Tabs.Tab
+            className="h-1/2"
+            value={PrivacyTabs.UTXOS_STXOS}
+            leftSection={<IconCoins style={iconStyle} />}
+          >
+            <div>UTXOS</div> <div> STXOS</div>
           </Tabs.Tab>
           {/*
             // TODO add this back in once the preview feature is complete
