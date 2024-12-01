@@ -3,12 +3,12 @@ import { useMutation, useQuery } from 'react-query';
 import { AnalyzeTxPrivacyRequestBody } from '../api/types';
 
 export const uxtoQueryKeys = {
-  getPrivacyMetrics: ['getPrivacyMetrics'],
+  getPrivacyMetrics: (txid: string) => ['getPrivacyMetrics', txid],
 };
 
-export function useGetPrivacyMetrics() {
+export function useGetPrivacyMetrics(txid: string) {
   return useQuery(
-    uxtoQueryKeys.getPrivacyMetrics,
+    uxtoQueryKeys.getPrivacyMetrics(txid),
     () => ApiClient.getAllPrivacyMetrics(),
     {
       refetchOnWindowFocus: true,

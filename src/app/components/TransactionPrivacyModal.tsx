@@ -6,6 +6,8 @@ import {
   useAnalyzeTxPrivacy,
   useGetPrivacyMetrics,
 } from '../hooks/privacyMetrics';
+
+import { IconX, IconLineDashed } from '@tabler/icons-react';
 type TransactionDetailsModalProps = {
   opened: boolean;
   onClose: () => void;
@@ -18,7 +20,9 @@ export const TransactionPrivacyModal = ({
   transactionDetails,
   btcMetric,
 }: TransactionDetailsModalProps) => {
-  const getPRivacyMetricsResponse = useGetPrivacyMetrics();
+  const getPRivacyMetricsResponse = useGetPrivacyMetrics(
+    transactionDetails.txid,
+  );
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   const privacyMetrics = getPRivacyMetricsResponse?.data?.metrics || [];
@@ -33,6 +37,46 @@ export const TransactionPrivacyModal = ({
   }: {
     privacyMetric: PrivacyMetric;
   }) => {
+    const isMetricPassed = () => {
+      if (
+        analyzeTxPrivacyMutation.isSuccess &&
+        analyzeTxPrivacyMutation.data?.results
+      ) {
+        const isMetricIncluded =
+          analyzeTxPrivacyMutation.data?.results[privacyMetric.name];
+        return isMetricIncluded;
+      } else {
+        return undefined;
+      }
+    };
+    const checkboxColor = () => {
+      if (!analyzeTxPrivacyMutation.isSuccess) {
+        return undefined;
+      } else {
+        const isPassed = isMetricPassed();
+        if (isPassed === undefined) {
+          return undefined;
+        } else if (isPassed) {
+          return 'green';
+        } else {
+          return 'red';
+        }
+      }
+    };
+    const checkboxIcon = () => {
+      if (!analyzeTxPrivacyMutation.isSuccess) {
+        return IconLineDashed;
+      } else {
+        const isPassed = isMetricPassed();
+        if (isPassed === undefined) {
+          return IconLineDashed;
+        } else if (isPassed) {
+          return undefined; // Check mark by default
+        } else {
+          return IconX;
+        }
+      }
+    };
     return (
       <Accordion.Item key={privacyMetric.name} value={privacyMetric.name}>
         <div className="flex flex-row">
@@ -40,6 +84,8 @@ export const TransactionPrivacyModal = ({
             <Checkbox
               disabled={analyzeTxPrivacyMutation.isLoading}
               checked={selectedMetrics.includes(privacyMetric.name)}
+              color={checkboxColor()}
+              icon={checkboxIcon()}
               onChange={(event) => {
                 const newMetrics = [...selectedMetrics];
 
@@ -98,6 +144,7 @@ export const TransactionPrivacyModal = ({
         <p>Transaction ID: {transactionDetails.txid}</p>
         <div className="flex my-4">
           <Checkbox
+            icon={IconLineDashed}
             checked={areAllSelected}
             onChange={() => {
               if (areAllSelected) {
