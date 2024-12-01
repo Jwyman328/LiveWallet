@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 import {
   MaterialReactTable,
+  MRT_RowSelectionState,
   useMaterialReactTable,
 } from 'material-react-table';
 
-import { CopyButton, rem, Tooltip, ActionIcon } from '@mantine/core';
+import { CopyButton, rem, Tooltip, ActionIcon, Button } from '@mantine/core';
 import { TbListDetails } from 'react-icons/tb';
 
 import { IconCheck, IconCopy } from '@tabler/icons-react';
@@ -34,32 +35,12 @@ export const TransactionsTable = ({
 
   const [isPrivacyModalShowing, setIsPrivacyModalShowing] = useState(false);
 
+  const [areRowsSelectable, setAreRowsSelectable] = useState(true);
+
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+
   const columns = useMemo(() => {
     const defaultColumns = [
-      {
-        header: 'Analyze Privacy',
-        size: 50,
-        accessorKey: 'privacy',
-        Cell: ({ row }: { row: any }) => {
-          const transactionDetails = row.original as Transaction;
-          return (
-            <div className="flex items-center justify-center">
-              <ActionIcon
-                color={'blue'}
-                variant="subtle"
-                size={42}
-                onClick={() => {
-                  setSelectedTransaction(transactionDetails);
-                  setIsPrivacyModalShowing(true);
-                }}
-              >
-                <PrivacyIcon />
-              </ActionIcon>
-            </div>
-          );
-        },
-      },
-
       {
         header: 'View details',
         size: 50,
@@ -161,10 +142,31 @@ export const TransactionsTable = ({
     return defaultColumns;
   }, [transactions, btcMetric]);
 
+  const analyzePrivacy = () => {
+    const selectedTxId = Object.keys(rowSelection)[0];
+    const transactionDetails = transactions.find(
+      (tx) => tx.txid === selectedTxId,
+    );
+
+    setSelectedTransaction(transactionDetails);
+    setIsPrivacyModalShowing(true);
+  };
+
   const table = useMaterialReactTable({
     columns,
     data: transactions,
-    enableRowSelection: false,
+    enableRowSelection: true,
+    enableBatchRowSelection: false,
+    enableSelectAll: false,
+    enableMultiRowSelection: false,
+    displayColumnDefOptions: { 'mrt-row-select': { header: 'Privacy' } },
+    state: { rowSelection },
+    getRowId: (originalRow) => {
+      return originalRow.txid;
+    },
+
+    onRowSelectionChange: setRowSelection,
+
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     enableFilters: false,
@@ -183,20 +185,6 @@ export const TransactionsTable = ({
     positionToolbarAlertBanner: 'none',
     positionToolbarDropZone: 'top',
     enableEditing: false,
-    renderTopToolbarCustomActions: ({ table }) => {
-      return (
-        <div className="ml-2">
-          <p
-            style={{
-              color: sectionColor,
-            }}
-            className="text-2xl font-semibold"
-          >
-            Transactions
-          </p>
-        </div>
-      );
-    },
     muiSelectCheckboxProps: {
       color: 'primary',
     },
@@ -233,6 +221,15 @@ export const TransactionsTable = ({
       >
         <MaterialReactTable table={table} />
       </ThemeProvider>
+      <Button
+        className="mt-4"
+        fullWidth
+        disabled={Object.keys(rowSelection).length === 0}
+        onClick={analyzePrivacy}
+        size="xl"
+      >
+        Analyze privacy
+      </Button>
 
       {isTransactionModalShowing && (
         <TransactionDetailsModal
