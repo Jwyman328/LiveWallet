@@ -188,6 +188,20 @@ export const TransactionsTable = ({
     muiSelectCheckboxProps: {
       color: 'primary',
     },
+    renderTopToolbarCustomActions: ({ table }) => {
+      return (
+        <div className="ml-2">
+          <p
+            style={{
+              color: sectionColor,
+            }}
+            className="text-2xl font-semibold"
+          >
+           Transactions
+          </p>
+        </div>
+      );
+    },
 
     // @ts-ignore
     muiTableBodyRowProps: { classes: { root: { after: 'bg-green-100' } } },
