@@ -138,10 +138,18 @@ export const TransactionPrivacyModal = ({
       onClose={onClose}
       centered
       fullScreen
-      title={'Analyze Privacy'}
+      title={
+        <p className="text-lg font-bold">
+          Analyze tx privacy:{' '}
+          <span className="text-md font-medium">{transactionDetails.txid}</span>
+        </p>
+      }
     >
       <div>
-        <p>Transaction ID: {transactionDetails.txid}</p>
+        <p className=" text-lg font-medium mb-8">
+          Select from the privacy metrics below to analyze the privacy of your
+          transaction
+        </p>
         <div className="flex my-4">
           <Checkbox
             icon={IconLineDashed}
