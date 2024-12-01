@@ -76,7 +76,6 @@ export const TransactionPrivacyModal = ({
   ));
 
   const analyzePrivacy = () => {
-    console.log('analyze privacy');
     analyzeTxPrivacyMutation.mutate({
       txid: transactionDetails.txid,
       privacy_metrics: selectedMetrics,
@@ -84,10 +83,8 @@ export const TransactionPrivacyModal = ({
   };
 
   const areAllSelected =
-    selectedMetrics.length === privacyMetricsNames.length &&
-    selectedMetrics.every(
-      (value, index) => value === privacyMetricsNames[index],
-    );
+    selectedMetrics.length > 0 &&
+    selectedMetrics.length === privacyMetricsNames.length;
 
   return (
     <Modal
