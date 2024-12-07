@@ -261,15 +261,19 @@ export const TransactionsTable = ({
           btcMetric={btcMetric}
           opened={isTransactionModalShowing}
           onClose={() => setIsTransactionModalShowing(false)}
+          showTxDetailsStart={true}
+          showPrivacyStart={false}
         />
       )}
 
       {isPrivacyModalShowing && (
-        <TransactionPrivacyModal
+        <TransactionDetailsModal
           transactionDetails={selectedTransaction}
           btcMetric={btcMetric}
           opened={isPrivacyModalShowing}
           onClose={() => setIsPrivacyModalShowing(false)}
+          showTxDetailsStart={false}
+          showPrivacyStart={true}
         />
       )}
     </div>

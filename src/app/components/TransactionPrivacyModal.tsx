@@ -9,16 +9,11 @@ import {
 
 import { IconX, IconLineDashed } from '@tabler/icons-react';
 type TransactionDetailsModalProps = {
-  opened: boolean;
-  onClose: () => void;
   transactionDetails: Transaction;
   btcMetric: BtcMetric;
 };
 export const TransactionPrivacyModal = ({
-  opened,
-  onClose,
   transactionDetails,
-  btcMetric,
 }: TransactionDetailsModalProps) => {
   const getPRivacyMetricsResponse = useGetPrivacyMetrics(
     transactionDetails.txid,
@@ -133,18 +128,7 @@ export const TransactionPrivacyModal = ({
     selectedMetrics.length === privacyMetricsNames.length;
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      centered
-      fullScreen
-      title={
-        <p className="text-lg font-bold">
-          Analyze tx privacy:{' '}
-          <span className="text-md font-medium">{transactionDetails.txid}</span>
-        </p>
-      }
-    >
+    <div>
       <div>
         <p className=" text-lg font-medium mb-8">
           Select from the privacy metrics below to analyze the privacy of your
@@ -180,6 +164,6 @@ export const TransactionPrivacyModal = ({
       >
         Analyze privacy
       </Button>
-    </Modal>
+    </div>
   );
 };
