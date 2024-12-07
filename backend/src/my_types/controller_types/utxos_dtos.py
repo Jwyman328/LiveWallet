@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict
 from pydantic import BaseModel, RootModel, field_validator, Field
 import structlog
+from datetime import datetime
 
 LOGGER = structlog.get_logger()
 
@@ -61,7 +62,7 @@ class OutputDetailDto(OutputDto):
 
 class TransactionDetailDto(BaseModel):
     txid: str
-    date: Optional[str]
+    date: Optional[str | datetime]
     network: str  # bitcoin, what are the other options?
     witness_type: str  # segwit, what are the other options?
     coinbase: bool

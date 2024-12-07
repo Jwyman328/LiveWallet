@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 import bdkpython as bdk
 from sqlalchemy.orm import aliased
 from bitcoinlib.transactions import Output, Transaction
@@ -164,8 +165,7 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor,
-                           bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -187,8 +187,7 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(
-            f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -237,8 +236,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -309,8 +307,7 @@ class WalletService:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
-        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(
-            False)
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
 
         all_tx_details: List[Transaction] = []
 
@@ -321,7 +318,8 @@ class WalletService:
                 # use the bdk transaction details since it contains
                 # the sent and received amounts relative to the users wallet
                 # instead of just agnostic values that electrum returns
-                cls.add_transaction_to_db(transaction)
+                new_tx = cls.add_transaction_to_db(transaction)
+                transaction_response.date = new_tx.confirmed_date_time
                 all_tx_details.append(transaction_response)
             else:
                 LOGGER.error(f"Error getting transaction {transaction.txid}")
@@ -369,12 +367,13 @@ class WalletService:
     @classmethod
     def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
         """Get the transaction details from the database."""
-        transaction = DB.session.query(
-            TransactionModel).filter_by(txid=txid).first()
+        transaction = DB.session.query(TransactionModel).filter_by(txid=txid).first()
         return transaction
 
     @classmethod
-    def add_transaction_to_db(cls, transaction_details: bdk.TransactionDetails):
+    def add_transaction_to_db(
+        cls, transaction_details: bdk.TransactionDetails
+    ) -> TransactionModel:
         existing_transaction = (
             DB.session.query(TransactionModel)
             .filter_by(txid=transaction_details.txid)
@@ -386,15 +385,24 @@ class WalletService:
                 if transaction_details.confirmation_time
                 else None
             )
+
+            timestamp = (
+                transaction_details.confirmation_time.timestamp
+                if transaction_details.confirmation_time
+                else None
+            )
             new_transaction = TransactionModel(
                 txid=transaction_details.txid,
                 received_amount=transaction_details.received,
                 sent_amount=transaction_details.sent,
                 fee=transaction_details.fee,
                 confirmed_block_height=block_height,
+                confirmed_date_time=datetime.fromtimestamp(timestamp),
             )
             DB.session.add(new_transaction)
             DB.session.commit()
+            return new_transaction
+        return existing_transaction
 
     @classmethod
     def get_all_outputs(cls) -> List[LiveWalletOutput]:
@@ -407,8 +415,7 @@ class WalletService:
         all_transactions = cls.get_all_transactions()
         all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
-            annominity_sets = cls.calculate_output_annominity_sets(
-                transaction.outputs)
+            annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
                 script = bdk.Script(output.script.raw)
                 if cls.wallet and cls.wallet.is_mine(script):
@@ -610,8 +617,7 @@ class WalletService:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
                 txid, vout, address = unique_output_txid_vout.split("-")
-                cls.sync_local_db_with_incoming_output(
-                    txid, int(vout), address)
+                cls.sync_local_db_with_incoming_output(txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
@@ -774,8 +780,7 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
-                self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -854,8 +859,7 @@ class WalletService:
     @classmethod
     def is_address_reused(self, address: str) -> bool:
         """Check if the address has been used in the wallet more than once."""
-        outputs_with_this_address = OutputModel.query.filter_by(
-            address=address).all()
+        outputs_with_this_address = OutputModel.query.filter_by(address=address).all()
         address_used_count = len(outputs_with_this_address)
 
         if address_used_count > 1:

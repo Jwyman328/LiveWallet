@@ -287,8 +287,6 @@ class PrivacyMetricsService:
             # because the user used the minimum amount of outputs possible
             return True
 
-        # hmm how to get all outputs by a blockheight
-        # need a relationship of tx to outputs
         unspent_outputs_before_this_tx = (
             WalletService.get_all_unspent_outputs_from_db_before_blockheight(
                 transaction_details.confirmed_block_height

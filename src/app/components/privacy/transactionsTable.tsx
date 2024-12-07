@@ -69,7 +69,17 @@ export const TransactionsTable = ({
         size: 100,
         accessorKey: 'date',
         Cell: ({ row }: { row: any }) => {
-          return <div className="flex">{row.original.date || 'unknown'}</div>;
+          const date = row.original.date
+            ? new Date(row.original.date)
+            : 'unknown';
+          const displayDate =
+            date === 'unknown'
+              ? date
+              : `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`.replace(
+                  /:\d{2} /,
+                  ' ',
+                );
+          return <div className="flex">{displayDate}</div>;
         },
       },
       {
@@ -197,7 +207,7 @@ export const TransactionsTable = ({
             }}
             className="text-2xl font-semibold"
           >
-           Transactions
+            Transactions
           </p>
         </div>
       );

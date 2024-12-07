@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer
+from sqlalchemy import String, Integer, DateTime
 
 
 from src.database import DB
@@ -14,6 +14,7 @@ class Transaction(DB.Model):
     sent_amount = DB.Column(Integer, nullable=False)
     fee = DB.Column(Integer, nullable=False)
     confirmed_block_height = DB.Column(Integer, nullable=True)
+    confirmed_date_time = DB.Column(DateTime, nullable=True)
 
     # Relationship to Output (outputs created by this transaction)
     outputs = DB.relationship(

@@ -15,10 +15,10 @@ class PrivacyMetricName(str, PyEnum):
     # Minimize linkability of inputs and outputs through change detection.
     NO_CHANGE = "no change"
     NO_SMALL_CHANGE = "no small change"
-    NO_ROUND_NUMBER_PAYMENTS = "rcd no round number payments"
-    SAME_SCRIPT_TYPES = "rcd same script types"
-    NO_UNNECESSARY_INPUT = "rcd no unnecessary input heuristic"
-    USE_MULTI_CHANGE_OUTPUTS = "rcd multi change outputs"
+    NO_ROUND_NUMBER_PAYMENTS = "no round number payments"
+    SAME_SCRIPT_TYPES = "same script types"
+    NO_UNNECESSARY_INPUT = "no unnecessary inputs"
+    USE_MULTI_CHANGE_OUTPUTS = "multi change outputs"
     AVOID_COMMON_CHANGE_POSITION = "avoid common change position"
 
     # avoid combinding or using utxos that you do not want to be combined
