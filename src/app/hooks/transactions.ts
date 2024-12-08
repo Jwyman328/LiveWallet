@@ -21,7 +21,7 @@ export function useGetTransactions() {
     {
       refetchOnWindowFocus: false,
       refetchInterval: false,
-      staleTime: Infinity,
+      staleTime: 1000 * 60 * 5, // 5 minutes
     },
   );
 }
@@ -30,6 +30,7 @@ export function useGetOutputs() {
   return useQuery(uxtoQueryKeys.getOutputs, () => ApiClient.getOutputs(), {
     refetchOnWindowFocus: false,
     refetchInterval: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

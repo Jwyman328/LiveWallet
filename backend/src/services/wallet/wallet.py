@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import bdkpython as bdk
 from sqlalchemy.orm import aliased
-from bitcoinlib.transactions import Output, Transaction
+from bitcoinlib.transactions import Output, Transaction, Input
 from sqlalchemy import func, or_
 from src.models.all_inputs import AllInput
 from src.models.transaction import Transaction as TransactionModel
@@ -10,6 +10,7 @@ from src.models.label import Label
 from src.models.outputs import Output as OutputModel
 from typing import Literal, Optional, List, Dict, Tuple
 from src.api import electrum_request, parse_electrum_url
+import asyncio
 
 from src.api.electrum import (
     ElectrumMethod,
@@ -38,7 +39,6 @@ from src.services.wallet.raw_output_script_examples import (
 from dependency_injector.wiring import inject
 
 import structlog
-
 
 LOGGER = structlog.get_logger()
 
@@ -114,6 +114,7 @@ class WalletService:
             DB.session.flush()
         # remove all rows in the OutputModel table
         DB.session.query(OutputModel).delete()
+        DB.session.query(AllInput).delete()
         DB.session.commit()
 
     @classmethod
@@ -166,8 +167,7 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor,
-                           bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -189,8 +189,7 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(
-            f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -239,8 +238,7 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(
-            network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -297,7 +295,7 @@ class WalletService:
         return utxos
 
     @classmethod
-    def get_all_transactions(
+    async def get_all_transactions(
         cls,
     ) -> List[Transaction]:
         """Get all transactions for the current wallet.
@@ -311,18 +309,43 @@ class WalletService:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
-        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(
-            False)
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
 
         all_tx_details: List[Transaction] = []
-
+        update_tx_details_tasks = []
+        # if there are more than 10 requests at once then the electrum server will return an error, therefore limit it to 10.
+        semaphore = asyncio.Semaphore(10)
         for index, transaction in enumerate(transactions):
-            transaction_response = cls.get_transaction(transaction.txid, index)
+            task = cls.update_all_tx_details_for_tx_with_semaphore(
+                transaction, index, all_tx_details, semaphore
+            )
+            update_tx_details_tasks.append(task)
+
+        # fetch all the tx details concurrently
+        await asyncio.gather(*update_tx_details_tasks)
+
+        # mark transactions as fetched
+        LastFetchedService.update_last_fetched_transaction_type()
+
+        return all_tx_details
+
+    @classmethod
+    async def update_all_tx_details_for_tx(
+        cls,
+        transaction: bdk.TransactionDetails,
+        index: int,
+        all_tx_details: List[Transaction],
+    ):
+        """Get and cache the transaction and related input txs,
+        then add the fetch transaction to the all_tx_details list"""
+        try:
+            transaction_response = await cls.get_transaction(transaction.txid, index)
             if transaction_response is not None:
                 LOGGER.info(
                     f"the_input_value {transaction_response.inputs[0].value}",
                 )
                 # for each input, get the tx for the input
+                inputs_that_need_to_be_fetched = []
                 for input in transaction_response.inputs:
                     try:
                         # try to get it from the db
@@ -337,21 +360,13 @@ class WalletService:
                         if all_input is not None:
                             input.value = all_input.value
                         else:
-                            inputs_tx = cls.get_transaction(
-                                input_dict["prev_txid"])
-                            LOGGER.info(f"inputs_tx {inputs_tx}")
-                            inputs_amount = inputs_tx.outputs[
-                                input_dict["output_n"]
-                            ].value
-                            input.value = inputs_amount
-                            cls.add_all_input_to_db(
-                                input_dict["prev_txid"],
-                                input_dict["output_n"],
-                                input_dict["address"],
-                                inputs_amount,
-                            )
+                            task = cls.update_input_amount_value(input_dict, input)
+                            inputs_that_need_to_be_fetched.append(task)
                     except Exception as e:
                         LOGGER.error(f"Error getting input tx {e}")
+                # update all the input values concurrently
+                await asyncio.gather(*inputs_that_need_to_be_fetched)
+
                 # add the transaction to the database
                 # use the bdk transaction details since it contains
                 # the sent and received amounts relative to the users wallet
@@ -361,14 +376,40 @@ class WalletService:
                 all_tx_details.append(transaction_response)
             else:
                 LOGGER.error(f"Error getting transaction {transaction.txid}")
-
-        # mark transactions as fetched
-        LastFetchedService.update_last_fetched_transaction_type()
-
-        return all_tx_details
+        except Exception as e:
+            LOGGER.error(f"Error getting transaction in exception {transaction.txid}")
 
     @classmethod
-    def get_transaction(cls, txid, index=1) -> Optional[Transaction]:
+    async def update_all_tx_details_for_tx_with_semaphore(
+        cls, transaction, index, all_tx_details, semaphore
+    ):
+        """call update_all_tx_details_for_tx with a semaphore to limit the number of concurrent requests."""
+        async with semaphore:  # Acquire the semaphore before the task starts
+            await cls.update_all_tx_details_for_tx(transaction, index, all_tx_details)
+
+    @classmethod
+    async def update_input_amount_value(cls, input_dict: dict, input: Input) -> None:
+        """Get the transaction that the input was used in as an output
+        and add its value to the input."""
+        try:
+            inputs_tx = await cls.get_transaction(input_dict["prev_txid"])
+            if inputs_tx is None:
+                return
+
+            inputs_amount = inputs_tx.outputs[input_dict["output_n"]].value
+            input.value = inputs_amount
+            cls.add_all_input_to_db(
+                input_dict["prev_txid"],
+                input_dict["output_n"],
+                input_dict["address"],
+                inputs_amount,
+            )
+
+        except Exception as e:
+            LOGGER.error(f"Error getting and updating the input amount value {e}")
+
+    @classmethod
+    async def get_transaction(cls, txid, index=1) -> Optional[Transaction]:
         "Get an individual transaction from the wallet by the txid."
         wallet_details = Wallet.get_current_wallet()
         if wallet_details is None:
@@ -388,7 +429,7 @@ class WalletService:
             LOGGER.error("No electrum url or port found in the wallet details")
             return None
 
-        electrum_response = electrum_request(
+        electrum_response = await electrum_request(
             url,
             int(port),
             ElectrumMethod.GET_TRANSACTIONS,
@@ -405,8 +446,7 @@ class WalletService:
     @classmethod
     def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
         """Get the transaction details from the database."""
-        transaction = DB.session.query(
-            TransactionModel).filter_by(txid=txid).first()
+        transaction = DB.session.query(TransactionModel).filter_by(txid=txid).first()
         return transaction
 
     @classmethod
@@ -451,11 +491,10 @@ class WalletService:
         Attach all labels to each output.
         Sync the database with the incoming outputs.
         """
-        all_transactions = cls.get_all_transactions()
+        all_transactions = asyncio.run(cls.get_all_transactions())
         all_outputs: List[LiveWalletOutput] = []
         for transaction in all_transactions:
-            annominity_sets = cls.calculate_output_annominity_sets(
-                transaction.outputs)
+            annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
                 script = bdk.Script(output.script.raw)
                 if cls.wallet and cls.wallet.is_mine(script):
@@ -657,8 +696,7 @@ class WalletService:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
                 txid, vout, address = unique_output_txid_vout.split("-")
-                cls.sync_local_db_with_incoming_output(
-                    txid, int(vout), address)
+                cls.sync_local_db_with_incoming_output(txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
@@ -721,9 +759,8 @@ class WalletService:
         vout: str,
         address: str,
         value: int,
-    ) -> AllInput:
-        all_input = AllInput(txid=txid, vout=vout,
-                             address=address, value=value)
+    ) -> None:
+        all_input = AllInput(txid=txid, vout=vout, address=address, value=value)
         DB.session.add(all_input)
         DB.session.commit()
 
@@ -842,8 +879,7 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
-                self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -922,8 +958,7 @@ class WalletService:
     @classmethod
     def is_address_reused(self, address: str) -> bool:
         """Check if the address has been used in the wallet more than once."""
-        outputs_with_this_address = OutputModel.query.filter_by(
-            address=address).all()
+        outputs_with_this_address = OutputModel.query.filter_by(address=address).all()
         address_used_count = len(outputs_with_this_address)
 
         if address_used_count > 1:

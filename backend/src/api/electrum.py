@@ -5,6 +5,7 @@ from bitcoinlib.transactions import Transaction
 import structlog
 import json
 import socket
+import asyncio
 
 LOGGER = structlog.get_logger()
 
@@ -45,47 +46,46 @@ class ElectrumResponse:
     data: Optional[ElectrumDataResponses]
 
 
-def electrum_request(
+async def electrum_request(
     url: str,
     port: int,
     electrum_method: ElectrumMethod,
     params: Optional[ALL_UTXOS_REQUEST_PARAMS],
     request_id: Optional[int] = 1,
 ) -> ElectrumResponse:
+    writer = None
     try:
-        # Create a IPv4 TCP socket
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((url, port))
+        # Use asyncio to manage the socket connection
+        reader, writer = await asyncio.open_connection(url, port)
 
-            request = json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "method": electrum_method.value,
-                    "params": params.create_params_list() if params else [],
-                }
-            )
+        request = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": electrum_method.value,
+                "params": params.create_params_list() if params else [],
+            }
+        )
 
-            LOGGER.info(f"Sending electrum request: {request}")
-            # Send the request
-            s.sendall((request + "\n").encode("utf-8"))
+        LOGGER.info(f"Sending electrum request: {request}")
+        writer.write((request + "\n").encode("utf-8"))
+        await writer.drain()
 
-            # Receive the response
-            response = b""
-            while True:
-                part = s.recv(4096)
-                response += part
-                if len(part) < 4096:
-                    break
+        # Read the response asynchronously
+        response = b""
+        while True:
+            part = await reader.read(4096)
+            response += part
+            if len(part) < 4096:
+                break
 
-            # Decode and parse the JSON response
-            raw_response_data = json.loads(response.decode("utf-8").strip())
+        # Decode and parse the JSON response
+        raw_response_data = json.loads(response.decode("utf-8").strip())
 
-            # Decode the transaction
-            response_data = handle_raw_electrum_response(
-                electrum_method, raw_response_data
-            )
-            return ElectrumResponse(status="success", data=response_data)
+        # Assuming handle_raw_electrum_response is an existing function
+        response_data = handle_raw_electrum_response(
+            electrum_method, raw_response_data)
+        return ElectrumResponse(status="success", data=response_data)
     except socket.error as e:
         LOGGER.error(f"Socket error: {e}")
         return ElectrumResponse(status="error", data=None)
@@ -95,6 +95,11 @@ def electrum_request(
     except Exception as e:
         LOGGER.error(f"An error occurred: {e}")
         return ElectrumResponse(status="error", data=None)
+    finally:
+        # Close the writer/reader
+        if writer:
+            writer.close()
+            await writer.wait_closed()
 
 
 def handle_raw_electrum_response(
