@@ -166,7 +166,7 @@ export const OutputModal = ({
               />
 
               <TextInput
-                label={'Spending vout'}
+                label={'Spending V in'}
                 value={output.spending_index_n}
                 disabled={true}
                 className="w-28 mt-2"

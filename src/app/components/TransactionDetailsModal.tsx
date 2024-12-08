@@ -122,6 +122,7 @@ export const TransactionDetailsModal = ({
                       <BitcoinAddress
                         splitCount={6}
                         address={input.address}
+                        className="mt-1"
                         tooltipLabel={
                           <div>
                             <p>Amount: {input.value} sats</p>
@@ -147,11 +148,12 @@ export const TransactionDetailsModal = ({
 
                   <Divider className="flex-1 mt-60" variant="solid" size={2} />
 
-                  <div className="flex flex-col border-t-2 border-gray-900 border-l-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center mt-40 bg-green-300 justify-center">
+                  <div className="flex flex-col border-t-2 border-gray-900 border-l-2 border-b-2 p-2 h-40  overflow-y-scroll w-60 items-center mt-40 bg-green-300 justify-center">
                     {transactionDetails.outputs.map((output) => (
                       <BitcoinAddress
                         splitCount={6}
                         address={output.address}
+                        className="mt-1"
                         tooltipLabel={
                           <div>
                             <p>Amount: {output.value} sats</p>

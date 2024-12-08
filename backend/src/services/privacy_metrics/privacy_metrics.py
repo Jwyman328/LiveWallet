@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 from bitcoinlib.transactions import Transaction
 from src.database import DB
@@ -29,7 +30,7 @@ class PrivacyMetricsService:
         results: dict[PrivacyMetricName, bool] = dict()
 
         transaction_details = WalletService.get_transaction_details(txid)
-        transaction = WalletService.get_transaction(txid)
+        transaction = asyncio.run(WalletService.get_transaction(txid))
         # Check that all outputs have already been fetched recently
         cls.ensure_recently_fetched_outputs()
 
@@ -96,8 +97,7 @@ class PrivacyMetricsService:
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_DO_NOT_SPEND_UTXOS:
-                result = cls.analyze_no_do_not_spend_utxos(
-                    transaction=transaction)
+                result = cls.analyze_no_do_not_spend_utxos(transaction=transaction)
                 results[privacy_metric] = result
 
             elif privacy_metric == PrivacyMetricName.NO_KYCED_UTXOS:
@@ -669,7 +669,6 @@ class PrivacyMetricsService:
         )
 
         if last_fetched_output_datetime is None or should_refetch_outputs:
-            LOGGER.info(
-                "No last fetched output datetime found, fetching all outputs")
+            LOGGER.info("No last fetched output datetime found, fetching all outputs")
             # this will get all the outputs and add them to the database, ensuring that they exist
             WalletService.get_all_outputs()

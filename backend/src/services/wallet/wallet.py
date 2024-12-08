@@ -493,6 +493,7 @@ class WalletService:
         """
         all_transactions = asyncio.run(cls.get_all_transactions())
         all_outputs: List[LiveWalletOutput] = []
+        all_outputs_dict: Dict[str, LiveWalletOutput] = {}
         for transaction in all_transactions:
             annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
@@ -506,7 +507,9 @@ class WalletService:
                     )
                     LastFetchedService.update_last_fetched_outputs_type()
                     annominity_set = annominity_sets.get(output.value, 1)
-
+                    LOGGER.info(
+                        f"output.address {output.address}: and isspent {db_output.spent_txid}"
+                    )
                     extended_output = LiveWalletOutput(
                         annominity_set=annominity_set,
                         base_output=output,
@@ -515,6 +518,9 @@ class WalletService:
                     )
 
                     all_outputs.append(extended_output)
+                    all_outputs_dict[f"{transaction.txid}-{output.output_n}"] = (
+                        extended_output
+                    )
 
         # since the transactions don't come back in order we have to
         # loop through them all again to mark the outputs
@@ -535,6 +541,13 @@ class WalletService:
                     cls.add_spend_tx_to_output(
                         output=user_output, txid=transaction.txid
                     )
+                    extended_output = all_outputs_dict.get(
+                        f"{input['prev_txid']}-{input['output_n']}", None
+                    )
+                    if extended_output:
+                        extended_output.spent = True
+                        extended_output.spending_txid = transaction.txid
+                        extended_output.spending_index_n = input["index_n"]
 
         return all_outputs
 

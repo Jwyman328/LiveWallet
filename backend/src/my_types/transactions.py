@@ -14,6 +14,9 @@ class LiveWalletOutput(Output):
         txid: Optional[str] = None,
         base_output: Optional[Output] = None,
         labels: Optional[List[str]] = None,
+        is_spent: Optional[bool] = False,
+        spending_txid: Optional[str] = None,
+        spending_tx_vout: Optional[int] = None,
     ):
         if labels is None:
             labels = []
@@ -23,6 +26,9 @@ class LiveWalletOutput(Output):
         self.annominity_set = annominity_set
         self.txid = txid
         self.labels = labels
+        self.spent = is_spent
+        self.spending_txid = spending_txid if is_spent else ""
+        self.spending_index_n = spending_tx_vout if spending_tx_vout else None
 
     def as_dict(self) -> dict[str, Any]:
         # Get the dictionary from the base class
