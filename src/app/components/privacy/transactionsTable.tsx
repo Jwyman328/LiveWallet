@@ -157,7 +157,7 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
   const analyzePrivacy = () => {
     const selectedTxId = Object.keys(rowSelection)[0];
     const transactionDetails = transactions.find(
-      (tx) => tx.txid === selectedTxId,
+      (tx) => tx?.txid === selectedTxId,
     );
 
     setSelectedTransaction(transactionDetails);
