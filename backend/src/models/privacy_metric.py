@@ -7,23 +7,23 @@ from src.database import DB
 
 class PrivacyMetricName(str, PyEnum):
     # Minize personal information # TODO find better catagory name
-    ANNOMINITY_SET = "annominity set"
-    NO_ADDRESS_REUSE = "no address reuse"
-    MINIMAL_WEALTH_REVEAL = "minimal wealth reveal"
-    MINIMAL_TX_HISTORY_REVEAL = "minimal transaction history reveal"
+    ANNOMINITY_SET = "Annominity set > 1"
+    NO_ADDRESS_REUSE = "No address reuse"
+    MINIMAL_WEALTH_REVEAL = "Minimal wealth reveal"
+    MINIMAL_TX_HISTORY_REVEAL = "Minimal transaction history reveal"
 
     # Minimize linkability of inputs and outputs through change detection.
-    NO_CHANGE = "no change"
-    NO_SMALL_CHANGE = "no small change"
-    NO_ROUND_NUMBER_PAYMENTS = "no round number payments"
-    SAME_SCRIPT_TYPES = "same script types"
-    NO_UNNECESSARY_INPUT = "no unnecessary inputs"
-    USE_MULTI_CHANGE_OUTPUTS = "multi change outputs"
-    AVOID_COMMON_CHANGE_POSITION = "avoid common change position"
+    NO_CHANGE = "No change"
+    NO_SMALL_CHANGE = "No small change"
+    NO_ROUND_NUMBER_PAYMENTS = "No round number payments"
+    SAME_SCRIPT_TYPES = "Use same script types"
+    NO_UNNECESSARY_INPUT = "No unnecessary inputs"
+    USE_MULTI_CHANGE_OUTPUTS = "Use multi change outputs"
+    AVOID_COMMON_CHANGE_POSITION = "Avoid common change position"
 
     # avoid combinding or using utxos that you do not want to be combined
-    NO_DO_NOT_SPEND_UTXOS = "do not spend do not spends"
-    NO_KYCED_UTXOS = "do not spend KYCED"
+    NO_DO_NOT_SPEND_UTXOS = "No do not spends"
+    NO_KYCED_UTXOS = "No KYC"
 
     # Add more labels as needed
 

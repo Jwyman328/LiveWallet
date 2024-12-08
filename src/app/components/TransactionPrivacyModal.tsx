@@ -1,4 +1,5 @@
-import { Accordion, Button, Checkbox, Modal } from '@mantine/core';
+import { Accordion, Button, Checkbox } from '@mantine/core';
+
 import { PrivacyMetric, Transaction } from '../api/types';
 import { BtcMetric } from '../types/btcSatHandler';
 import { useState } from 'react';

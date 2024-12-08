@@ -7,35 +7,37 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 
-import { CopyButton, rem, Tooltip, ActionIcon, Button } from '@mantine/core';
+import {
+  CopyButton,
+  rem,
+  Tooltip,
+  ActionIcon,
+  Button,
+  LoadingOverlay,
+} from '@mantine/core';
 import { TbListDetails } from 'react-icons/tb';
 
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { BtcMetric, btcSatHandler } from '../../types/btcSatHandler';
 import { Transaction } from '../../api/types';
-import PrivacyIcon from './privacySvg';
 import { TransactionDetailsModal } from '../TransactionDetailsModal';
-import { TransactionPrivacyModal } from '../TransactionPrivacyModal';
+import { useGetTransactions } from '../../hooks/transactions';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
 type TransactionsTableProps = {
-  transactions: Transaction[];
   btcMetric: BtcMetric;
 };
 
-export const TransactionsTable = ({
-  transactions,
-  btcMetric,
-}: TransactionsTableProps) => {
+export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
+  const transactionsResponse = useGetTransactions();
+  const transactions = transactionsResponse.data?.transactions || [];
   const [isTransactionModalShowing, setIsTransactionModalShowing] =
     useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
 
   const [isPrivacyModalShowing, setIsPrivacyModalShowing] = useState(false);
-
-  const [areRowsSelectable, setAreRowsSelectable] = useState(true);
 
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
@@ -243,7 +245,14 @@ export const TransactionsTable = ({
           },
         })}
       >
-        <MaterialReactTable table={table} />
+        <div className="relative">
+          <LoadingOverlay
+            visible={transactionsResponse.isLoading}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 2 }}
+          />
+          <MaterialReactTable table={table} />
+        </div>
       </ThemeProvider>
       <Button
         className="mt-4"

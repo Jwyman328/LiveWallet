@@ -34,6 +34,7 @@ export const TransactionDetailsModal = ({
   const date = transactionDetails.date
     ? new Date(transactionDetails.date).toLocaleString()
     : null;
+
   return (
     <Modal
       opened={opened}
@@ -118,7 +119,18 @@ export const TransactionDetailsModal = ({
                 <div className="flex flex-row justify-between w-3/4 mt-8 ml-auto mr-auto">
                   <div className="flex flex-col border-t-2 border-gray-900 border-r-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center bg-blue-300 justify-center">
                     {transactionDetails.inputs.map((input) => (
-                      <BitcoinAddress splitCount={6} address={input.address} />
+                      <BitcoinAddress
+                        splitCount={6}
+                        address={input.address}
+                        tooltipLabel={
+                          <div>
+                            <p>Amount: {input.value} sats</p>
+                            <p>Output tx id: {input.prev_txid}</p>
+                            <p>Output tx v out: {input.output_n}</p>
+                            <p>Address: {input.address}</p>
+                          </div>
+                        }
+                      />
                     ))}
                   </div>
 
@@ -137,7 +149,18 @@ export const TransactionDetailsModal = ({
 
                   <div className="flex flex-col border-t-2 border-gray-900 border-l-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center mt-40 bg-green-300 justify-center">
                     {transactionDetails.outputs.map((output) => (
-                      <BitcoinAddress splitCount={6} address={output.address} />
+                      <BitcoinAddress
+                        splitCount={6}
+                        address={output.address}
+                        tooltipLabel={
+                          <div>
+                            <p>Amount: {output.value} sats</p>
+                            <p>Address: {output.address}</p>
+                            <p>Script type: {output.script_type}</p>
+                            <p>V out: {output.output_n}</p>
+                          </div>
+                        }
+                      />
                     ))}
                   </div>
                 </div>

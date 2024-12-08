@@ -1,6 +1,5 @@
 import { Tabs, rem } from '@mantine/core';
 import { IconCoins, IconArrowsDownUp, IconEye } from '@tabler/icons-react';
-import { useGetTransactions, useGetOutputs } from '../hooks/transactions';
 import { TxosTable } from '../components/privacy/txosTable';
 import { BtcMetric } from '../types/btcSatHandler';
 import { TransactionsTable } from '../components/privacy/transactionsTable';
@@ -16,8 +15,6 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
     PREVIEW = 'preview',
   }
 
-  const transactionsResponse = useGetTransactions();
-  const outputs = useGetOutputs();
   return (
     <div style={{ height: '93.5vh' }}>
       <Tabs
@@ -56,19 +53,13 @@ export const Privacy = ({ btcMetric }: PrivacyProps) => {
 
         <Tabs.Panel value={PrivacyTabs.UTXOS_STXOS}>
           <div className="p-14">
-            <TxosTable
-              btcMetric={btcMetric}
-              txos={outputs?.data?.outputs || []}
-            />
+            <TxosTable btcMetric={btcMetric} />
           </div>
         </Tabs.Panel>
 
         <Tabs.Panel value={PrivacyTabs.TRANSACTIONS}>
           <div className="p-14">
-            <TransactionsTable
-              btcMetric={btcMetric}
-              transactions={transactionsResponse?.data?.transactions || []}
-            />
+            <TransactionsTable btcMetric={btcMetric} />
           </div>
         </Tabs.Panel>
 

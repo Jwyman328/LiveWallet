@@ -6,7 +6,14 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 
-import { CopyButton, rem, Tooltip, ActionIcon, Chip } from '@mantine/core';
+import {
+  CopyButton,
+  rem,
+  Tooltip,
+  ActionIcon,
+  Chip,
+  LoadingOverlay,
+} from '@mantine/core';
 import { MdLabelOutline } from 'react-icons/md';
 
 import {
@@ -25,16 +32,16 @@ import {
 import {
   useGetOutputLabels,
   useGetOutputLabelsUnique,
+  useGetOutputs,
 } from '../../hooks/transactions';
 
 const sectionColor = 'rgb(1, 67, 97)';
 
 type TxosTableProps = {
-  txos: TransactionOutputType[];
   btcMetric: BtcMetric;
 };
 
-export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
+export const TxosTable = ({ btcMetric }: TxosTableProps) => {
   const getOutputLabelsQuery = useGetOutputLabels();
   const saveLabelsInWalletConfig = (
     data: GetOutputLabelsPopulateResponseType,
@@ -42,6 +49,8 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
     window.electron.ipcRenderer.sendMessage('save-labels', data);
   };
 
+  const outputs = useGetOutputs();
+  const txos = outputs.data?.outputs || [];
   // get all the output labels in a format that is good for storing
   // in the global wallet.labels object via the "save-labels" event
   useGetOutputLabelsUnique(saveLabelsInWalletConfig);
@@ -273,7 +282,14 @@ export const TxosTable = ({ txos, btcMetric }: TxosTableProps) => {
           },
         })}
       >
-        <MaterialReactTable table={table} />
+        <div className="relative">
+          <LoadingOverlay
+            visible={outputs.isLoading}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 2 }}
+          />
+          <MaterialReactTable table={table} />
+        </div>
       </ThemeProvider>
       {isOutputModalShowing && (
         <OutputModal

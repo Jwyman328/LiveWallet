@@ -19,7 +19,9 @@ export function useGetTransactions() {
     uxtoQueryKeys.getTransactions,
     () => ApiClient.getTransactions(),
     {
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
+      refetchInterval: false,
+      staleTime: Infinity,
     },
   );
 }
@@ -27,6 +29,7 @@ export function useGetTransactions() {
 export function useGetOutputs() {
   return useQuery(uxtoQueryKeys.getOutputs, () => ApiClient.getOutputs(), {
     refetchOnWindowFocus: false,
+    refetchInterval: false,
   });
 }
 
