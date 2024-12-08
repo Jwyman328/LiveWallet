@@ -23,19 +23,16 @@ class TestPrivacyMetricsController(TestCase):
         privacy_metric_mock_two.display_name = "mock_dn_2"
         privacy_metric_mock_two.description = "mock_description_2"
 
-        all_privacy_metrics_mock = [
-            privacy_metric_mock, privacy_metric_mock_two]
+        all_privacy_metrics_mock = [privacy_metric_mock, privacy_metric_mock_two]
 
-        get_all_privacy_metrics_mock = MagicMock(
-            return_value=all_privacy_metrics_mock)
+        get_all_privacy_metrics_mock = MagicMock(return_value=all_privacy_metrics_mock)
         with self.app.container.privacy_metrics_service.override(
             self.mock_privacy_metrics_service
         ):
             self.mock_privacy_metrics_service.get_all_privacy_metrics = (
                 get_all_privacy_metrics_mock
             )
-            get_privacy_metrics_response = self.test_client.get(
-                "/privacy-metrics/")
+            get_privacy_metrics_response = self.test_client.get("/privacy-metrics/")
 
             get_all_privacy_metrics_mock.assert_called_once()
 
@@ -57,7 +54,7 @@ class TestPrivacyMetricsController(TestCase):
 
     def test_post_privacy_metrics(self):
         analyze_tx_privacy_mock = MagicMock(
-            return_value={"annominity set": True, "no address reuse": False}
+            return_value={"Annominity set > 1": True, "No address reuse": False}
         )
 
         with self.app.container.privacy_metrics_service.override(
@@ -70,7 +67,7 @@ class TestPrivacyMetricsController(TestCase):
                 "/privacy-metrics/",
                 json={
                     "txid": "mock_txid",
-                    "privacy_metrics": ["annominity set", "no address reuse"],
+                    "privacy_metrics": ["Annominity set > 1", "No address reuse"],
                 },
             )
 
@@ -78,5 +75,5 @@ class TestPrivacyMetricsController(TestCase):
 
             assert post_privacy_metrics_response.status == "200 OK"
             assert json.loads(post_privacy_metrics_response.data) == {
-                "results": {"annominity set": True, "no address reuse": False}
+                "results": {"Annominity set > 1": True, "No address reuse": False}
             }

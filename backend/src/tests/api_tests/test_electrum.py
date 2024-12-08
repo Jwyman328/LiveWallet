@@ -1,3 +1,4 @@
+import asyncio
 from unittest.case import TestCase
 
 from src.api.electrum import (
@@ -34,16 +35,17 @@ class TestElectrumApi(TestCase):
         assert port is None
         assert url is None
 
-    def test_get_transactions_electrum_request_success(self):
+    async def test_get_transactions_electrum_request_success(self):
         request_method = ElectrumMethod.GET_TRANSACTIONS
 
-        with patch.object(socket, "socket") as mock_socket:
+        with patch.object(asyncio, "open_connection") as mock_socket:
             mock_live_socket = Mock()
             mock_socket.return_value.__enter__.return_value = mock_live_socket
             mock_live_socket.recv.return_value = (
                 mock_electrum_get_transactions_response_json.encode("utf-8")
             )
-            response = electrum_request(
+
+            response = await electrum_request(
                 self.mock_url,
                 self.mock_port,
                 request_method,
@@ -59,15 +61,16 @@ class TestElectrumApi(TestCase):
                 status="success", data=mock_electrum_get_transactions_response_parsed
             )
 
-    def test_get_transactions_electrum_request_error(self):
+    async def test_get_transactions_electrum_request_error(self):
         request_method = ElectrumMethod.GET_TRANSACTIONS
 
-        with patch.object(socket, "socket") as mock_socket:
+        with patch.object(asyncio, "open_connection") as mock_socket:
             mock_live_socket = Mock()
             mock_socket.return_value.__enter__.return_value = mock_live_socket
             # bad electrum response
             mock_live_socket.recv.return_value = None
-            response = electrum_request(
+
+            response = await electrum_request(
                 self.mock_url,
                 self.mock_port,
                 request_method,
