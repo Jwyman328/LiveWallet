@@ -107,9 +107,10 @@ export const OutputModal = ({
             />
 
             <TextInput
-              label={'Input total'}
+              label={`Input total  (${
+                btcMetric === BtcMetric.BTC ? 'BTC' : 'sats'
+              })`}
               value={displayAmount}
-              rightSection={'sats'}
               disabled={true}
               className="w-40 mt-2"
             />
