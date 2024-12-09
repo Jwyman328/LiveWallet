@@ -70,6 +70,12 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
         header: 'Date',
         size: 100,
         accessorKey: 'date',
+        sortingFn: (rowA, rowB) => {
+          const dateA = new Date(rowA.original.date); // Convert to timestamp
+          const dateB = new Date(rowB.original.date); // Convert to timestamp
+          //@ts-ignore
+          return dateA - dateB; // Compare the timestamps
+        },
         Cell: ({ row }: { row: any }) => {
           const date = row.original.date
             ? new Date(row.original.date)
