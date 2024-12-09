@@ -47,10 +47,11 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
         header: 'View details',
         size: 50,
         accessorKey: 'details',
+        enableSorting: false,
         Cell: ({ row }: { row: any }) => {
           const transactionDetails = row.original as Transaction;
           return (
-            <div className="ml-9">
+            <div className="ml-6">
               <ActionIcon
                 color={'black'}
                 variant="subtle"
@@ -94,6 +95,7 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
         header: 'Txid',
         accessorKey: 'txid',
         size: 100,
+        enableSorting: false,
         Cell: ({ row }) => {
           const prefix = row.original.txid.substring(0, 4);
           const suffix = row.original.txid.substring(
@@ -137,6 +139,12 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
         header: 'Total Amount',
         accessorKey: 'amount',
         size: 100,
+        sortingFn: (rowA, rowB) => {
+          const amountA = new Number(rowA.original.output_total);
+          const amountB = new Number(rowB.original.output_total);
+          //@ts-ignore
+          return amountA - amountB; // Compare the amounts
+        },
         Cell: ({ row }: { row: any }) => {
           const amount = btcSatHandler(
             Number(row.original.output_total).toFixed(2).toLocaleString(),
@@ -180,6 +188,7 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
     enableMultiRowSelection: false,
     displayColumnDefOptions: { 'mrt-row-select': { header: 'Privacy' } },
     state: { rowSelection },
+    initialState: { sorting: [{ id: 'date', desc: true }] },
     getRowId: (originalRow) => {
       return originalRow.txid;
     },

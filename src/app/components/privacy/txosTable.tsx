@@ -63,6 +63,7 @@ export const TxosTable = ({ btcMetric }: TxosTableProps) => {
         header: 'Address',
         size: 100,
         accessorKey: 'address',
+        enableSorting: false,
         Cell: ({ row }: { row: any }) => {
           const prefix = row.original.address.substring(0, 4);
           const suffix = row.original.address.substring(
@@ -70,7 +71,7 @@ export const TxosTable = ({ btcMetric }: TxosTableProps) => {
           );
           const abrv = `${prefix}....${suffix}`;
           return (
-            <div className="flex justify-center items-center">
+            <div className="flex ">
               <Tooltip label={row.original?.address}>
                 <p className="mr-2">{abrv}</p>
               </Tooltip>
@@ -135,6 +136,7 @@ export const TxosTable = ({ btcMetric }: TxosTableProps) => {
         header: 'Labels',
         accessorKey: 'labels',
         size: 250,
+        enableSorting: false,
         Cell: ({ row }) => {
           const allLabels = row.original.labels || [];
           return (
