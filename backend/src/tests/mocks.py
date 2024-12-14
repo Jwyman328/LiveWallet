@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 from bitcoinlib.transactions import Transaction
 from src.my_types import (
     FeeDetails,
@@ -45,6 +46,14 @@ tx_mock = Transaction.parse(
 )
 
 all_transactions_mock = [tx_mock]
+tx_details_mock = Mock()
+tx_details_mock.fee = 100
+tx_details_mock.sent = 200
+tx_details_mock.received = 300
+
+all_transactions_with_details_mock = [
+    (tx_mock, tx_details_mock) for tx_mock in all_transactions_mock
+]
 
 all_outputs_mock = [
     LiveWalletOutput(

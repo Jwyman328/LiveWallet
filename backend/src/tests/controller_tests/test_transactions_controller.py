@@ -7,7 +7,11 @@ from src.my_types.controller_types.utxos_dtos import (
     PopulateOutputLabelsRequestDto,
 )
 from src.services.wallet.wallet import WalletService
-from src.tests.mocks import all_transactions_mock, all_outputs_mock
+from src.tests.mocks import (
+    all_transactions_mock,
+    all_outputs_mock,
+    all_transactions_with_details_mock,
+)
 import json
 
 
@@ -22,7 +26,9 @@ class TestTransactionsController(TestCase):
         )
 
     def test_get_transactions(self):
-        get_all_transactions_mock = AsyncMock(return_value=all_transactions_mock)
+        get_all_transactions_mock = AsyncMock(
+            return_value=all_transactions_with_details_mock
+        )
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_all_transactions = get_all_transactions_mock
             get_transactions_response = self.test_client.get("/transactions/")
@@ -30,8 +36,15 @@ class TestTransactionsController(TestCase):
             get_all_transactions_mock.assert_called_once()
 
             assert get_transactions_response.status == "200 OK"
+            expected_response = []
+            for transaction, transaction_details in all_transactions_with_details_mock:
+                dto = transaction.as_dict()
+                dto["user_spent_amount"] = transaction_details.sent
+                dto["user_received_amount"] = transaction_details.received
+                dto["user_total_amount"] = 100
+                expected_response.append(dto)
             assert json.loads(get_transactions_response.data) == {
-                "transactions": [tx.as_dict() for tx in all_transactions_mock]
+                "transactions": expected_response
             }
 
     def test_get_utxos(self):
@@ -39,7 +52,8 @@ class TestTransactionsController(TestCase):
         get_all_outputs_mock = MagicMock(return_value=all_outputs)
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_all_outputs = get_all_outputs_mock
-            get_all_outputs_response = self.test_client.get("transactions/outputs")
+            get_all_outputs_response = self.test_client.get(
+                "transactions/outputs")
 
             get_all_outputs_mock.assert_called_once()
 
@@ -157,7 +171,8 @@ class TestTransactionsController(TestCase):
         )
 
         mock_populate_labels = {"mock-txid-0": [output_label_mock_one]}
-        get_output_labels_unique_mock = MagicMock(return_value=mock_populate_labels)
+        get_output_labels_unique_mock = MagicMock(
+            return_value=mock_populate_labels)
 
         with self.app.container.wallet_service.override(self.mock_wallet_service):
             self.mock_wallet_service.get_output_labels_unique = (

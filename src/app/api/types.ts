@@ -190,6 +190,9 @@ export type Transaction = {
   vsize: number;
   verified: boolean;
   status: string; // e.g., "new"
+  user_spent_amount: number;
+  user_received_amount: number;
+  user_total_amount: number; // may be negative
 };
 export type GetTransactionsResponseType = { transactions: [Transaction] };
 

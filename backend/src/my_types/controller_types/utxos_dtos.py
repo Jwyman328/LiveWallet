@@ -84,6 +84,9 @@ class TransactionDetailDto(BaseModel):
     vsize: int
     verified: bool
     status: str  # new, not sure the other types
+    user_spent_amount: int
+    user_received_amount: int
+    user_total_amount: int
 
 
 class GetUtxosRequestDto(BaseModel):

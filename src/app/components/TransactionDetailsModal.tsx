@@ -75,20 +75,45 @@ export const TransactionDetailsModal = ({
         >
           <div className="px-4">
             <Divider className="mt-4" variant="solid" size={1} />
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col">
               <p className="text-lg font-bold">Amounts</p>
 
-              <div className="flex flex-row items-center">
+              <div className="flex flex-row  mt-2">
                 <TextInput
-                  label={'Input total'}
-                  value={transactionDetails.input_total}
+                  label={'Wallet input'}
+                  value={transactionDetails.user_spent_amount}
                   rightSection={'sats'}
                   disabled={true}
                   className="w-40 mr-8"
                 />
 
                 <TextInput
-                  label={'Outputs total'}
+                  label={'Wallet output'}
+                  value={transactionDetails.user_received_amount}
+                  rightSection={'sats'}
+                  disabled={true}
+                  className="w-40"
+                />
+
+                <TextInput
+                  label={'Wallet total'}
+                  value={transactionDetails.user_total_amount}
+                  rightSection={'sats'}
+                  disabled={true}
+                  className={`w-40 ml-8`}
+                />
+              </div>
+              <div className="flex flex-row items-center mt-2">
+                <TextInput
+                  label={'Tx Fee total'}
+                  value={transactionDetails.fee}
+                  rightSection={'sats'}
+                  disabled={true}
+                  className="w-40 mr-8"
+                />
+
+                <TextInput
+                  label={'Tx Output total'}
                   value={transactionDetails.output_total}
                   rightSection={'sats'}
                   disabled={true}

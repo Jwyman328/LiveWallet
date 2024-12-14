@@ -37,10 +37,19 @@ def get_txos(
     """
     try:
         transactions = asyncio.run(wallet_service.get_all_transactions())
+        transactions_dtos = []
+        for transaction_tuple in transactions:
+            transaction, transaction_details = transaction_tuple
+            dict_dto = transaction.as_dict()
+            dict_dto["user_spent_amount"] = transaction_details.sent
+            dict_dto["user_received_amount"] = transaction_details.received
+            total = round(transaction_details.received -
+                          transaction_details.sent, 8)
+            dict_dto["user_total_amount"] = total
+            transactions_dtos.append(dict_dto)
 
         return GetAllTransactionsResponseDto.model_validate(
-            dict(transactions=[transaction.as_dict()
-                 for transaction in transactions])
+            dict(transactions=transactions_dtos)
         ).model_dump()
 
     except Exception as e:

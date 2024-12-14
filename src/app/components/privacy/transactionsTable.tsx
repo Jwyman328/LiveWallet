@@ -132,29 +132,29 @@ export const TransactionsTable = ({ btcMetric }: TransactionsTableProps) => {
           );
         },
       },
-      // TODO add oclumn for my amount?
-      // add additional values to transaction api response like
-      // how much I sent, how much I received, if a send, recieve or both.
       {
         header: 'Total Amount',
         accessorKey: 'amount',
         size: 100,
         sortingFn: (rowA, rowB) => {
-          const amountA = new Number(rowA.original.output_total);
-          const amountB = new Number(rowB.original.output_total);
+          const amountA = new Number(rowA.original.user_total_amount);
+          const amountB = new Number(rowB.original.user_total_amount);
           //@ts-ignore
           return amountA - amountB; // Compare the amounts
         },
         Cell: ({ row }: { row: any }) => {
           const amount = btcSatHandler(
-            Number(row.original.output_total).toFixed(2).toLocaleString(),
+            Number(row.original.user_total_amount).toFixed(2).toLocaleString(),
             btcMetric,
           );
 
-          // TODO make red if sending transaction, green if receiving
+          const color =
+            row.original.user_total_amount < 0
+              ? 'text-red-500'
+              : 'text-green-500';
           return (
             <div>
-              <p>
+              <p className={`${color}`}>
                 {btcMetric === BtcMetric.BTC
                   ? amount
                   : Number(amount).toLocaleString()}

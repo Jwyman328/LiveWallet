@@ -297,7 +297,7 @@ class WalletService:
     @classmethod
     async def get_all_transactions(
         cls,
-    ) -> List[Transaction]:
+    ) -> List[Tuple[Transaction, bdk.TransactionDetails]]:
         """Get all transactions for the current wallet.
 
         Add the transaction to the database.
@@ -311,7 +311,7 @@ class WalletService:
 
         transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
 
-        all_tx_details: List[Transaction] = []
+        all_tx_details: List[Tuple[Transaction, bdk.TransactionDetails]] = []
         update_tx_details_tasks = []
         # if there are more than 10 requests at once then the electrum server will return an error, therefore limit it to 10.
         semaphore = asyncio.Semaphore(10)
@@ -334,7 +334,7 @@ class WalletService:
         cls,
         transaction: bdk.TransactionDetails,
         index: int,
-        all_tx_details: List[Transaction],
+        all_tx_details: List[Tuple[Transaction, bdk.TransactionDetails]],
     ):
         """Get and cache the transaction and related input txs,
         then add the fetch transaction to the all_tx_details list"""
@@ -373,7 +373,8 @@ class WalletService:
                 # instead of just agnostic values that electrum returns
                 new_tx = cls.add_transaction_to_db(transaction)
                 transaction_response.date = new_tx.confirmed_date_time
-                all_tx_details.append(transaction_response)
+                transaction_response.fee = new_tx.fee
+                all_tx_details.append((transaction_response, transaction))
             else:
                 LOGGER.error(f"Error getting transaction {transaction.txid}")
         except Exception as e:
@@ -495,6 +496,7 @@ class WalletService:
         all_outputs: List[LiveWalletOutput] = []
         all_outputs_dict: Dict[str, LiveWalletOutput] = {}
         for transaction in all_transactions:
+            transaction, transaction_details = transaction
             annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
             for output in transaction.outputs:
                 script = bdk.Script(output.script.raw)
@@ -526,6 +528,7 @@ class WalletService:
         # loop through them all again to mark the outputs
         # that were used as inputs.
         for transaction in all_transactions:
+            transaction, transaction_details = transaction
             for input in transaction.inputs:
                 # if the input is one of my outputs then add it to the inputs
                 input = input.as_dict()
