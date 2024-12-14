@@ -7,12 +7,14 @@ type BitcoinAddressProps = {
   splitCount?: number;
   tooltipLabel?: ReactNode;
   className?: string;
+  fontColor?: string;
 };
 export const BitcoinAddress = ({
   address,
   splitCount = 4,
   tooltipLabel,
   className,
+  fontColor,
 }: BitcoinAddressProps) => {
   const prefix = address.substring(0, splitCount);
   const suffix = address.substring(address?.length - splitCount);
@@ -21,7 +23,7 @@ export const BitcoinAddress = ({
   return (
     <div className={`flex justify-center items-center mt-2 ${className}`}>
       <Tooltip label={tooltip}>
-        <p className="mr-2">{abrv}</p>
+        <p className={`mr-2 ${fontColor}`}>{abrv}</p>
       </Tooltip>
       <CopyButton value={address} timeout={2000}>
         {({ copied, copy }) => (

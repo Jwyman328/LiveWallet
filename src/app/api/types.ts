@@ -128,7 +128,7 @@ export type TransactionInputType = {
   unlocking_script_unsigned: string;
   witness_type: string; // e.g., "segwit"
   witness?: string;
-  sort: boolean;
+  sort: boolean; // This is a huge hack, sort is really "is_mine" determining if the input is the users or not. I couldn't easily add another field to the input without a refactor and will do that at a later date.
   valid?: boolean;
 };
 
@@ -141,7 +141,7 @@ export type TransactionOutputType = {
   address: string;
   output_n: number;
   spent: boolean;
-  spending_txid: string;
+  spending_txid: "mine" | "not_mine"; // this is a huge hack on the backend, spending_txid is really used to tell if an output is the users or not. I couldn't reasily add another field to the output without a refactor and will do that at a later date.
   spending_index_n?: number;
   txid: string;
   annominity_set: number;

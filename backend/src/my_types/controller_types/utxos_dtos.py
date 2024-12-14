@@ -37,6 +37,7 @@ class InputDto(BaseModel):
     unlocking_script_unsigned: str
     witness_type: str  # segwit, what are other options
     witness: Optional[str]
+    # Massive hack we are using sort boolean to represent if an input is the users or not. This is awful but I didn't feel like adding a new property to the Input class.
     sort: bool
     valid: Optional[bool]
 
@@ -50,6 +51,7 @@ class OutputDto(BaseModel):
     address: str
     output_n: int
     spent: bool
+    # Massive hack we are using spending_txid as "mine" or "not_mine" to represent if an output is the users or not. This is awful but I didn't feel like adding a new property to the Output class.
     spending_txid: str
     spending_index_n: Optional[int]
 

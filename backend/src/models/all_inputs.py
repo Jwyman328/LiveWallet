@@ -17,3 +17,5 @@ class AllInput(DB.Model):
     address = DB.Column(DB.String(), nullable=False)
 
     value = DB.Column(DB.Integer, nullable=True)  # in sats
+    # is this input the users input for this wallet or not?
+    is_mine = DB.Column(DB.Boolean, nullable=False, default=False)

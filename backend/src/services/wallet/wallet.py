@@ -167,7 +167,8 @@ class WalletService:
         )
 
         wallet_change_descriptor = (
-            bdk.Descriptor(change_descriptor, bdk.Network._value2member_map_[network])
+            bdk.Descriptor(change_descriptor,
+                           bdk.Network._value2member_map_[network])
             if change_descriptor
             else None
         )
@@ -189,7 +190,8 @@ class WalletService:
             database_config=db_config,
         )
 
-        LOGGER.info(f"Connecting a new wallet to electrum server {wallet_details_id}")
+        LOGGER.info(
+            f"Connecting a new wallet to electrum server {wallet_details_id}")
         LOGGER.info(f"xpub {wallet_descriptor.as_string()}")
 
         wallet.sync(blockchain, None)
@@ -238,7 +240,8 @@ class WalletService:
         twelve_word_secret = bdk.Mnemonic(bdk.WordCount.WORDS12)
 
         # xpriv
-        descriptor_secret_key = bdk.DescriptorSecretKey(network, twelve_word_secret, "")
+        descriptor_secret_key = bdk.DescriptorSecretKey(
+            network, twelve_word_secret, "")
 
         wallet_descriptor = None
         if script_type == ScriptType.P2PKH:
@@ -309,7 +312,8 @@ class WalletService:
             LOGGER.error("No electrum wallet or wallet details found.")
             return []
 
-        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(False)
+        transactions: list[bdk.TransactionDetails] = cls.wallet.list_transactions(
+            False)
 
         all_tx_details: List[Tuple[Transaction, bdk.TransactionDetails]] = []
         update_tx_details_tasks = []
@@ -348,22 +352,37 @@ class WalletService:
                 inputs_that_need_to_be_fetched = []
                 for input in transaction_response.inputs:
                     try:
-                        # try to get it from the db
-
-                        # if not then get it from electrum and add it to the db
-
                         input_dict = input.as_dict()
+
+                        # try to get it from the db
+                        # if not then get it from electrum and add it to the db
                         LOGGER.info(f"input prev_txid {input_dict}")
                         all_input = cls.get_all_input_from_db(
                             input_dict["prev_txid"], input_dict["output_n"]
                         )
                         if all_input is not None:
                             input.value = all_input.value
+                            # This is a huge hack I am using the sort property
+                            # to hold the is_mine
+                            input.sort = all_input.is_mine
                         else:
-                            task = cls.update_input_amount_value(input_dict, input)
+                            task = cls.update_input_amount_and_is_mine_value(
+                                input_dict, input
+                            )
                             inputs_that_need_to_be_fetched.append(task)
                     except Exception as e:
                         LOGGER.error(f"Error getting input tx {e}")
+
+                for output in transaction_response.outputs:
+                    # This is a ridiculous hack, instead of adding an additional property to the output
+                    # to determine if it is mine or not, I am using the
+                    # spending_txid to hold that value.
+                    # TODO I should refactor this and have an actual property to determine
+                    # if the output is mine or not.
+                    if cls.wallet and cls.wallet.is_mine(bdk.Script(output.script.raw)):
+                        output.spending_txid = "mine"
+                    else:
+                        output.spending_txid = "not_mine"
                 # update all the input values concurrently
                 await asyncio.gather(*inputs_that_need_to_be_fetched)
 
@@ -378,7 +397,8 @@ class WalletService:
             else:
                 LOGGER.error(f"Error getting transaction {transaction.txid}")
         except Exception as e:
-            LOGGER.error(f"Error getting transaction in exception {transaction.txid}")
+            LOGGER.error(
+                f"Error getting transaction in exception {transaction.txid}")
 
     @classmethod
     async def update_all_tx_details_for_tx_with_semaphore(
@@ -389,7 +409,9 @@ class WalletService:
             await cls.update_all_tx_details_for_tx(transaction, index, all_tx_details)
 
     @classmethod
-    async def update_input_amount_value(cls, input_dict: dict, input: Input) -> None:
+    async def update_input_amount_and_is_mine_value(
+        cls, input_dict: dict, input: Input
+    ) -> None:
         """Get the transaction that the input was used in as an output
         and add its value to the input."""
         try:
@@ -398,16 +420,32 @@ class WalletService:
                 return
 
             inputs_amount = inputs_tx.outputs[input_dict["output_n"]].value
+
+            raw_script = inputs_tx.outputs[input_dict["output_n"]].script.raw
+
+            # THIS IS A MASSIVE HACK, I am putting the is_mine value in the sort property
+            # TODO actually refactor this so that input can have an is_mine property
+            if cls.wallet and cls.wallet.is_mine(bdk.Script(raw_script)):
+                # this is really is_mine but just putting that value in the
+                # sort property since it is unused.
+                input.sort = True
+            else:
+                # this is really is_mine but just putting that value in the
+                # sort property since it is unused.
+                input.sort = False
+
             input.value = inputs_amount
             cls.add_all_input_to_db(
                 input_dict["prev_txid"],
                 input_dict["output_n"],
                 input_dict["address"],
                 inputs_amount,
+                input.sort,
             )
 
         except Exception as e:
-            LOGGER.error(f"Error getting and updating the input amount value {e}")
+            LOGGER.error(
+                f"Error getting and updating the input amount value {e}")
 
     @classmethod
     async def get_transaction(cls, txid, index=1) -> Optional[Transaction]:
@@ -447,7 +485,8 @@ class WalletService:
     @classmethod
     def get_transaction_details(cls, txid) -> Optional[TransactionModel]:
         """Get the transaction details from the database."""
-        transaction = DB.session.query(TransactionModel).filter_by(txid=txid).first()
+        transaction = DB.session.query(
+            TransactionModel).filter_by(txid=txid).first()
         return transaction
 
     @classmethod
@@ -497,7 +536,8 @@ class WalletService:
         all_outputs_dict: Dict[str, LiveWalletOutput] = {}
         for transaction in all_transactions:
             transaction, transaction_details = transaction
-            annominity_sets = cls.calculate_output_annominity_sets(transaction.outputs)
+            annominity_sets = cls.calculate_output_annominity_sets(
+                transaction.outputs)
             for output in transaction.outputs:
                 script = bdk.Script(output.script.raw)
                 if cls.wallet and cls.wallet.is_mine(script):
@@ -531,10 +571,11 @@ class WalletService:
             transaction, transaction_details = transaction
             for input in transaction.inputs:
                 # if the input is one of my outputs then add it to the inputs
-                input = input.as_dict()
+                input_dict = input.as_dict()
                 user_output = cls.get_output_from_db(
-                    txid=input["prev_txid"], vout=input["output_n"]
+                    txid=input_dict["prev_txid"], vout=input_dict["output_n"]
                 )
+
                 if user_output is None:
                     # not the users output therefore don't put it in the db
                     LOGGER.info("output is not the users")
@@ -545,12 +586,12 @@ class WalletService:
                         output=user_output, txid=transaction.txid
                     )
                     extended_output = all_outputs_dict.get(
-                        f"{input['prev_txid']}-{input['output_n']}", None
+                        f"{input_dict['prev_txid']}-{input_dict['output_n']}", None
                     )
                     if extended_output:
                         extended_output.spent = True
                         extended_output.spending_txid = transaction.txid
-                        extended_output.spending_index_n = input["index_n"]
+                        extended_output.spending_index_n = input_dict["index_n"]
 
         return all_outputs
 
@@ -712,7 +753,8 @@ class WalletService:
             model_dump = populate_output_labels.model_dump()
             for unique_output_txid_vout in model_dump.keys():
                 txid, vout, address = unique_output_txid_vout.split("-")
-                cls.sync_local_db_with_incoming_output(txid, int(vout), address)
+                cls.sync_local_db_with_incoming_output(
+                    txid, int(vout), address)
                 output_labels = model_dump[unique_output_txid_vout]
                 for label in output_labels:
                     display_name = label["display_name"]
@@ -770,13 +812,11 @@ class WalletService:
 
     @classmethod
     def add_all_input_to_db(
-        cls,
-        txid: str,
-        vout: str,
-        address: str,
-        value: int,
+        cls, txid: str, vout: str, address: str, value: int, is_mine: bool
     ) -> None:
-        all_input = AllInput(txid=txid, vout=vout, address=address, value=value)
+        all_input = AllInput(
+            txid=txid, vout=vout, address=address, value=value, is_mine=is_mine
+        )
         DB.session.add(all_input)
         DB.session.commit()
 
@@ -895,7 +935,8 @@ class WalletService:
                         script, amount_per_recipient_output
                     )
 
-            built_transaction: bdk.TxBuilderResult = tx_builder.finish(self.wallet)
+            built_transaction: bdk.TxBuilderResult = tx_builder.finish(
+                self.wallet)
 
             built_transaction.transaction_details.transaction
             return BuildTransactionResponseType(
@@ -974,7 +1015,8 @@ class WalletService:
     @classmethod
     def is_address_reused(self, address: str) -> bool:
         """Check if the address has been used in the wallet more than once."""
-        outputs_with_this_address = OutputModel.query.filter_by(address=address).all()
+        outputs_with_this_address = OutputModel.query.filter_by(
+            address=address).all()
         address_used_count = len(outputs_with_this_address)
 
         if address_used_count > 1:
