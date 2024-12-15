@@ -6,6 +6,7 @@ import {
   Divider,
   Switch,
   Collapse,
+  NumberInput,
 } from '@mantine/core';
 import { Transaction } from '../api/types';
 import { BtcMetric } from '../types/btcSatHandler';
@@ -34,6 +35,10 @@ export const TransactionDetailsModal = ({
   const date = transactionDetails.date
     ? new Date(transactionDetails.date).toLocaleString()
     : null;
+
+  const isTotalAmountNeeded =
+    transactionDetails.user_spent_amount !== 0 &&
+    transactionDetails.user_received_amount !== 0;
 
   return (
     <Modal
@@ -79,45 +84,51 @@ export const TransactionDetailsModal = ({
               <p className="text-lg font-bold">Amounts</p>
 
               <div className="flex flex-row  mt-2">
-                <TextInput
+                <NumberInput
                   label={'Wallet input'}
                   value={transactionDetails.user_spent_amount}
-                  rightSection={'sats'}
+                  rightSection={<div className="mr-6">sats</div>}
                   disabled={true}
                   className="w-40 mr-8"
+                  thousandSeparator=","
                 />
 
-                <TextInput
+                <NumberInput
                   label={'Wallet output'}
                   value={transactionDetails.user_received_amount}
-                  rightSection={'sats'}
+                  rightSection={<div className="mr-6">sats</div>}
                   disabled={true}
                   className="w-40"
+                  thousandSeparator=","
                 />
-
-                <TextInput
-                  label={'Wallet total'}
-                  value={transactionDetails.user_total_amount}
-                  rightSection={'sats'}
-                  disabled={true}
-                  className={`w-40 ml-8`}
-                />
+                {isTotalAmountNeeded && (
+                  <NumberInput
+                    label={'Wallet total'}
+                    value={transactionDetails.user_total_amount}
+                    rightSection={<div className="mr-6">sats</div>}
+                    disabled={true}
+                    className={`w-40 ml-8`}
+                    thousandSeparator=","
+                  />
+                )}
               </div>
               <div className="flex flex-row items-center mt-2">
-                <TextInput
+                <NumberInput
                   label={'Tx Fee total'}
                   value={transactionDetails.fee}
-                  rightSection={'sats'}
+                  rightSection={<div className="mr-6">sats</div>}
                   disabled={true}
                   className="w-40 mr-8"
+                  thousandSeparator=","
                 />
 
-                <TextInput
+                <NumberInput
                   label={'Tx Output total'}
                   value={transactionDetails.output_total}
-                  rightSection={'sats'}
+                  rightSection={<div className="mr-6">sats</div>}
                   disabled={true}
                   className="w-40"
+                  thousandSeparator=","
                 />
               </div>
             </div>
@@ -142,7 +153,13 @@ export const TransactionDetailsModal = ({
                 transitionTimingFunction="linear"
               >
                 <div className="flex flex-row justify-between w-3/4 mt-8 ml-auto mr-auto">
-                  <div className="flex flex-col border-t-2 border-gray-900 border-r-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center bg-blue-300 justify-center">
+                  <div
+                    className={`flex flex-col border-t-2 border-gray-900 border-r-2 border-b-2 p-2 h-40 max-h-40 overflow-y-scroll w-60 items-center bg-blue-300 ${
+                      transactionDetails.inputs.length > 4
+                        ? 'justify-between'
+                        : 'justify-center'
+                    } `}
+                  >
                     {transactionDetails.inputs.map((input) => {
                       // This is a huge hack done on the backend, if the input is the users or not is hidden inside the sort property
                       // this adding an actual field like is_mine would require a refactor.
@@ -180,7 +197,13 @@ export const TransactionDetailsModal = ({
 
                   <Divider className="flex-1 mt-60" variant="solid" size={2} />
 
-                  <div className="flex flex-col border-t-2 border-gray-900 border-l-2 border-b-2 p-2 h-40  overflow-y-scroll w-60 items-center mt-40 bg-green-300 justify-center">
+                  <div
+                    className={`flex flex-col border-t-2 border-gray-900 border-l-2 border-b-2 p-2 h-40  overflow-y-scroll w-60 items-center mt-40 bg-green-300 ${
+                      transactionDetails.outputs.length > 4
+                        ? 'justify-between'
+                        : 'justify-center'
+                    } `}
+                  >
                     {transactionDetails.outputs.map((output) => {
                       // This is a huge hack done on the backend, if the output is the users or not is hidden inside the spending_txid property
                       // this adding an actual field like is_mine would require a refactor.
@@ -242,15 +265,6 @@ export const TransactionDetailsModal = ({
                 disabled={true}
               />
             </div>
-
-            {/**
-        // This data is being returned as null
-        <div>
-          <h1>Fee</h1>
-          <p>Amount: {transactionDetails.fee} </p>
-          <p>Rate: {transactionDetails.fee_per_kb} sats/vB </p>
-        </div>
-        */}
           </div>
         </Collapse>
 
@@ -271,7 +285,6 @@ export const TransactionDetailsModal = ({
           transitionTimingFunction="linear"
         >
           <TransactionPrivacyModal
-            // opened={true}
             btcMetric={btcMetric}
             transactionDetails={transactionDetails}
           />

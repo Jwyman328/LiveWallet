@@ -104,6 +104,12 @@ export const TxosTable = ({ btcMetric }: TxosTableProps) => {
         header: 'Amount',
         accessorKey: 'amount',
         size: 100,
+
+        sortingFn: (rowA, rowB) => {
+          const amountOne = Number(rowA.original.value);
+          const amountTwo = Number(rowB.original.value);
+          return amountOne - amountTwo;
+        },
         Cell: ({ row }: { row: any }) => {
           const amount = btcSatHandler(
             Number(row.original.value).toFixed(2).toLocaleString(),
@@ -154,7 +160,7 @@ export const TxosTable = ({ btcMetric }: TxosTableProps) => {
                   </Chip>
                 ))
               ) : (
-                <p className="mt-auto">None</p>
+                <p className="mt-auto"></p>
               )}
 
               <ActionIcon
