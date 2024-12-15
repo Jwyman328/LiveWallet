@@ -4,6 +4,8 @@ import structlog
 import asyncio
 import random
 
+from time import sleep
+
 LOGGER = structlog.get_logger()
 
 
@@ -27,10 +29,10 @@ async def fund_wallet(address: str, amount: float):
         data = FundWalletRequestBody(address, amount)
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=asdict(data)) as response:
-                return await response.text()
+                response = await response.text()
+                return response
     except Exception as e:
-        LOGGER.error("Failed to fund wallet",
-                     address=address, amount=amount, error=e)
+        LOGGER.error("Failed to fund wallet", address=address, amount=amount, error=e)
 
 
 async def fund_wallet_with_multiple_txs(
@@ -42,7 +44,10 @@ async def fund_wallet_with_multiple_txs(
 
 
 def randomly_fund_mock_wallet(
-    address: str, amount_min: float, amount_max: float, transaction_count: int
+    address: str,
+    amount_min: float,
+    amount_max: float,
+    transaction_count: int,
 ):
     """Generate transactions inside a min and max btc amount to a specified address"""
     LOGGER.info(
@@ -59,3 +64,10 @@ def randomly_fund_mock_wallet(
 
     for response in responses:
         LOGGER.info(f"Fund wallet response: {response}")
+
+
+def mine_a_block_to_miner():
+    mock_miner_mock_address = "n4qq7z7NUXeDW2hjJ4WzwCu8KqVmCXMNEg"
+    asyncio.run(fund_wallet(mock_miner_mock_address, 0.0001))
+    # brief sleep to allow the block to be mined
+    sleep(2)

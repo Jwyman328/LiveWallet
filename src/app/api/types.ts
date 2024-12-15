@@ -103,3 +103,142 @@ export type GetBTCPriceResponseType = {
   AUD: number;
   JPY: number;
 };
+
+export type TransactionInputType = {
+  index_n: number;
+  prev_txid: string;
+  output_n: number;
+  script_type: string; // e.g., "sig_pubkey"
+  address: string;
+  value: number;
+  public_keys: string;
+  compressed: boolean;
+  encoding: string; // e.g., "bech32"
+  double_spend: boolean;
+  script: string; // can be an empty string
+  redeemscript: string;
+  sequence: number;
+  signatures: string[];
+  sigs_required: number;
+  locktime_cltv?: string | number;
+  locktime_csv?: string | number;
+  public_hash: string;
+  script_code: string;
+  unlocking_script: string;
+  unlocking_script_unsigned: string;
+  witness_type: string; // e.g., "segwit"
+  witness?: string;
+  sort: boolean; // This is a huge hack, sort is really "is_mine" determining if the input is the users or not. I couldn't easily add another field to the input without a refactor and will do that at a later date.
+  valid?: boolean;
+};
+
+export type TransactionOutputType = {
+  value: number; // in sats
+  script: string;
+  script_type: string; // e.g., "p2wpkh"
+  public_key: string;
+  public_hash: string;
+  address: string;
+  output_n: number;
+  spent: boolean;
+  spending_txid: "mine" | "not_mine"; // this is a huge hack on the backend, spending_txid is really used to tell if an output is the users or not. I couldn't reasily add another field to the output without a refactor and will do that at a later date.
+  spending_index_n?: number;
+  txid: string;
+  annominity_set: number;
+  labels: string[];
+};
+
+export type OutputLabelType = {
+  label: string;
+  display_name: string;
+  description: string;
+};
+export type GetOutputLabelsResponseType = {
+  labels: [OutputLabelType];
+};
+export type GetOutputLabelsPopulateResponseType = {
+  [key: string]: OutputLabelType;
+};
+export type PopulateOutputLabelsBodyType = {
+  [key: string]: OutputLabelType;
+};
+
+export type PopulateOutputLabelsResponse = {
+  success: boolean;
+};
+export type Transaction = {
+  txid: string;
+  date?: string;
+  network: string; // e.g., "bitcoin"
+  witness_type: string; // e.g., "segwit"
+  coinbase: boolean;
+  flag: number;
+  txhash: string;
+  confirmations?: number;
+  block_height?: number;
+  block_hash?: string;
+  fee?: number;
+  fee_per_kb?: number;
+  inputs: TransactionInputType[];
+  outputs: TransactionOutputType[];
+  input_total: number;
+  output_total: number;
+  version: number;
+  locktime: number;
+  raw: string;
+  size: number;
+  vsize: number;
+  verified: boolean;
+  status: string; // e.g., "new"
+  user_spent_amount: number;
+  user_received_amount: number;
+  user_total_amount: number; // may be negative
+};
+export type GetTransactionsResponseType = { transactions: [Transaction] };
+
+export type GetOutputsResponseType = {
+  outputs: TransactionOutputType[];
+};
+
+export type AddLabelRequestBody = {
+  txid: string;
+  vout: number;
+  labelName: string;
+};
+
+export type AddLabelResponseType = {
+  labels: [OutputLabelType];
+};
+
+export type RemoveLabelRequestParams = {
+  txid: string;
+  vout: number;
+  labelName: string;
+};
+
+export type RemoveLabelResponseType = {
+  labels: OutputLabelType[];
+};
+
+export type PrivacyMetric = {
+  name: string;
+  display_name: string;
+  description: string;
+};
+
+export type GetPrivacyMetricsResponseType = {
+  metrics: PrivacyMetric[];
+};
+
+export type AnalyzeTxPrivacyRequestBody = {
+  txid: string;
+  privacy_metrics: string[];
+};
+
+export type PrivacyResults = {
+  [key: string]: boolean;
+};
+
+export type AnalyzeTxPrivacyResponseType = {
+  results: PrivacyResults;
+};

@@ -15,23 +15,25 @@ import {
   SegmentedControl,
   ActionIcon,
   NumberInput,
-  Tooltip,
   Collapse,
 } from '@mantine/core';
 import { useDeleteCurrentWallet, useGetWalletType } from '../hooks/wallet';
 import { useQueryClient } from 'react-query';
 import { BtcMetric, btcSatHandler } from '../types/btcSatHandler';
 import { SettingsSlideout } from '../components/SettingsSlideout';
-import { IconAdjustments, IconInfoCircle } from '@tabler/icons-react';
+import { IconAdjustments } from '@tabler/icons-react';
 import { FeeRateColorChangeInputs } from '../components/FeeRateColorChangeInputs';
 import {
   CreateTxFeeEstimationResponseType,
   GetBTCPriceResponseType,
+  GetOutputLabelsPopulateResponseType,
 } from '../api/types';
 import { Wallet, WalletConfigs } from '../types/wallet';
 import { useGetBtcPrice } from '../hooks/price';
 import { Pages } from '../../renderer/pages';
 import { ScriptTypes } from '../types/scriptTypes';
+import { Privacy } from './Privacy';
+import { usePopulateOutputLabels } from '../hooks/transactions';
 
 export type ScaleOption = {
   value: string;
@@ -43,6 +45,10 @@ export enum TxMode {
   SINGLE = 'SINGLE',
   BATCH = 'BATCH',
   CONSOLIDATE = 'CONSOLIDATE',
+}
+export enum DisplayType {
+  PRIVACY = 'PRIVACY',
+  EFFICENCY = 'EFFICIENCY',
 }
 function Home() {
   const getBalanceQueryRequest = useGetBalance();
@@ -61,6 +67,8 @@ function Home() {
 
   const [txMode, setTxMode] = useState(TxMode.SINGLE);
   const isCreateBatchTx = txMode === TxMode.BATCH;
+
+  const [displayType, setDisplayType] = useState(DisplayType.EFFICENCY);
 
   const location = useLocation();
   const { numberOfXpubs, signaturesNeeded } = location.state as {
@@ -122,6 +130,10 @@ function Home() {
   const [feeScale, setFeeScale] = useState(scaleOptions[1]);
   const [minFeeScale, setMinFeeScale] = useState(minScaleOptions[0]);
   const [feeRate, setFeeRate] = useState(parseInt(minFeeScale.value));
+  // use the labels to populate the backend.
+  const [importedOutputLabels, setImportedOutputLabels] = useState<
+    undefined | null | GetOutputLabelsPopulateResponseType
+  >(null);
 
   // Initially set the current future fee rate to the current medium fee rate
   // if it was not set by an imported wallet.
@@ -195,6 +207,8 @@ function Home() {
     isCreateBatchTx,
   ]);
 
+  const populateBackendWithLabels = usePopulateOutputLabels();
+
   const handleWalletData = (walletData?: Wallet) => {
     console.log('walletData loaded', walletData);
     const isConfigDataLoaded =
@@ -212,8 +226,31 @@ function Home() {
       setBtcMetric(walletData.btcMetric!);
       setFeeRateColorMapValues(walletData.feeRateColorMapValues!);
     }
+
+    const isLabelDataLoaded = !!walletData?.labels;
+
+    if (isLabelDataLoaded) {
+      setImportedOutputLabels(walletData.labels);
+    }
     setHasInitialWalletConfigDataBeenLoaded(true);
   };
+
+  useEffect(() => {
+    if (
+      populateBackendWithLabels.isLoading ||
+      populateBackendWithLabels.isSuccess
+    ) {
+      console.log(
+        'The backend has already been populated with labels, therefore do not make the request again.',
+      );
+    } else if (importedOutputLabels && !populateBackendWithLabels.isSuccess) {
+      populateBackendWithLabels.mutate(importedOutputLabels);
+    } else {
+      console.log(
+        'there are no output labels to populate the db with, therefore do not make the request.',
+      );
+    }
+  }, [importedOutputLabels]);
 
   useEffect(() => {
     // @ts-ignore
@@ -448,9 +485,21 @@ function Home() {
         </div>
       </SettingsSlideout>
 
-      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-4 h-16">
+      <header className="border-2 border-gray-200 border-l-0 border-r-0 mb-0 h-[8vh] ">
         <Container size="xl" className="flex justify-between items-center h-16">
           <CurrentFeeRates />
+          <SegmentedControl
+            style={{ width: '300px' }}
+            value={displayType}
+            onChange={(value) => {
+              const selectedValue =
+                value === DisplayType.EFFICENCY
+                  ? DisplayType.EFFICENCY
+                  : DisplayType.PRIVACY;
+              setDisplayType(selectedValue);
+            }}
+            data={[DisplayType.EFFICENCY, DisplayType.PRIVACY]}
+          />
           <Group gap={5} visibleFrom="xs">
             <p className="mr-5">
               Balance:{' '}
@@ -476,111 +525,115 @@ function Home() {
         </Container>
       </header>
 
-      <div className="flex flex-row justify-evenly"></div>
-      <div className="mx-4 flex flex-col items-center overflow-x-scroll">
-        <div
-          className={`flex flex-row w-full justify-around`}
-          style={maxToggleContainerWidth}
-        >
-          <Collapse
-            in={txMode === TxMode.CONSOLIDATE}
-            transitionDuration={300}
-            transitionTimingFunction="linear"
+      <div className="flex flex-row justify-evenly h-[92vh]"></div>
+      {displayType === DisplayType.PRIVACY ? (
+        <Privacy btcMetric={btcMetric} />
+      ) : (
+        <div className="mx-4 flex flex-col items-center overflow-x-scroll mt-4">
+          <div
+            className={`flex flex-row w-full justify-around`}
+            style={maxToggleContainerWidth}
           >
-            <div className="flex flex-col items-center">
-              <h1 className="text-center font-bold text-xl mt-4 mr-4 mb-2">
-                Consolidation Tx Fee Rate (sat/vB)
+            <Collapse
+              in={txMode === TxMode.CONSOLIDATE}
+              transitionDuration={300}
+              transitionTimingFunction="linear"
+            >
+              <div className="flex flex-col items-center">
+                <h1 className="text-center font-bold text-xl mt-4 mr-4 mb-2">
+                  Consolidation Tx Fee Rate (sat/vB)
+                </h1>
+                <NumberInput
+                  data-testid="consolidation-fee-rate-input"
+                  className={`mb-4 w-40 mt-2`}
+                  allowNegative={false}
+                  clampBehavior="strict"
+                  value={consolidationFeeRate}
+                  onChange={onConsolidationFeeRate}
+                  thousandSeparator=","
+                  min={1}
+                  max={10000000}
+                />
+              </div>
+            </Collapse>
+            <div>
+              <h1 className="text-center font-bold text-xl mt-4">
+                Future Fee Environment (sat/vB)
               </h1>
-              <NumberInput
-                data-testid="consolidation-fee-rate-input"
-                className={`mb-4 w-40 mt-2`}
-                allowNegative={false}
-                clampBehavior="strict"
-                value={consolidationFeeRate}
-                onChange={onConsolidationFeeRate}
-                thousandSeparator=","
-                min={1}
-                max={10000000}
-              />
-            </div>
-          </Collapse>
-          <div>
-            <h1 className="text-center font-bold text-xl mt-4">
-              Future Fee Environment (sat/vB)
-            </h1>
-            <div className="mb-10">
-              <div className="flex flex-row items-center ">
-                <div
-                  style={{ width: '30rem' }}
-                  className="ml-8 mr-8 relative top-4"
-                >
-                  <Slider
-                    data-testid="fee-rate-slider"
-                    marks={feeRateMarks}
-                    defaultValue={parseInt(minFeeScale.value)}
-                    min={parseInt(minFeeScale.value)}
-                    max={parseInt(feeScale.value)}
-                    step={10}
-                    value={feeRate}
-                    onChange={handleFeeRateChange}
-                    label={`${feeRate.toLocaleString()} sat/vB`}
-                    thumbSize={26}
-                    styles={{
-                      track: { height: '16px' },
-                      markLabel: { marginTop: '16px' },
-                      mark: { height: '0px', display: 'none' },
-                    }}
-                  />
+              <div className="mb-10">
+                <div className="flex flex-row items-center ">
+                  <div
+                    style={{ width: '30rem' }}
+                    className="ml-8 mr-8 relative top-4"
+                  >
+                    <Slider
+                      data-testid="fee-rate-slider"
+                      marks={feeRateMarks}
+                      defaultValue={parseInt(minFeeScale.value)}
+                      min={parseInt(minFeeScale.value)}
+                      max={parseInt(feeScale.value)}
+                      step={10}
+                      value={feeRate}
+                      onChange={handleFeeRateChange}
+                      label={`${feeRate.toLocaleString()} sat/vB`}
+                      thumbSize={26}
+                      styles={{
+                        track: { height: '16px' },
+                        markLabel: { marginTop: '16px' },
+                        mark: { height: '0px', display: 'none' },
+                      }}
+                    />
 
-                  <InputLabel className="text-center mt-6">
-                    Fee rate: {feeRate.toLocaleString()} sat/vB
-                  </InputLabel>
+                    <InputLabel className="text-center mt-6">
+                      Fee rate: {feeRate.toLocaleString()} sat/vB
+                    </InputLabel>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="ml-2">
+              <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
+              <NumberInput
+                data-testid="btc-price-input"
+                className={`mb-4 w-40 mt-2`}
+                prefix="$"
+                allowNegative={false}
+                value={btcPrice}
+                onChange={onBtcPriceChange}
+                thousandSeparator=","
+                min={1}
+              />
+            </div>
           </div>
 
-          <div className="ml-2">
-            <h1 className="text-center font-bold text-xl mt-4">BTC Price</h1>
-            <NumberInput
-              data-testid="btc-price-input"
-              className={`mb-4 w-40 mt-2`}
-              prefix="$"
-              allowNegative={false}
-              value={btcPrice}
-              onChange={onBtcPriceChange}
-              thousandSeparator=","
-              min={1}
-            />
-          </div>
+          <UtxosDisplay
+            feeRateColorValues={feeRateColorMapValues}
+            btcMetric={btcMetric}
+            feeRate={feeRate}
+            utxos={getUtxosQueryRequest?.data?.utxos || []}
+            walletType={
+              (getWalletTypeQueryRequest.data as ScriptTypes) ||
+              ScriptTypes.P2WPKH
+            }
+            isLoading={
+              getUtxosQueryRequest.isLoading ||
+              getWalletTypeQueryRequest.isLoading ||
+              getBtcPriceResponse.isLoading
+            }
+            isError={
+              getUtxosQueryRequest.isError || getWalletTypeQueryRequest.isError
+            }
+            currentBatchedTxData={currentBatchedTxData}
+            setCurrentBatchedTxData={setCurrentBatchedTxData}
+            btcPrice={btcPrice}
+            numberOfXpubs={numberOfXpubs || 1}
+            signaturesNeeded={signaturesNeeded || 1}
+            txMode={txMode}
+            consolidationFeeRate={consolidationFeeRate}
+          />
         </div>
-
-        <UtxosDisplay
-          feeRateColorValues={feeRateColorMapValues}
-          btcMetric={btcMetric}
-          feeRate={feeRate}
-          utxos={getUtxosQueryRequest?.data?.utxos || []}
-          walletType={
-            (getWalletTypeQueryRequest.data as ScriptTypes) ||
-            ScriptTypes.P2WPKH
-          }
-          isLoading={
-            getUtxosQueryRequest.isLoading ||
-            getWalletTypeQueryRequest.isLoading ||
-            getBtcPriceResponse.isLoading
-          }
-          isError={
-            getUtxosQueryRequest.isError || getWalletTypeQueryRequest.isError
-          }
-          currentBatchedTxData={currentBatchedTxData}
-          setCurrentBatchedTxData={setCurrentBatchedTxData}
-          btcPrice={btcPrice}
-          numberOfXpubs={numberOfXpubs || 1}
-          signaturesNeeded={signaturesNeeded || 1}
-          txMode={txMode}
-          consolidationFeeRate={consolidationFeeRate}
-        />
-      </div>
+      )}
     </div>
   );
 }
