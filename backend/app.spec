@@ -14,7 +14,7 @@ a = Analysis(
     ['src/app.py'],
     pathex=[],
     binaries=binaries,
-    datas=[],
+    datas=[('./venv/lib/python3.10/site-packages/bitcoinlib/config', 'bitcoinlib/config')],
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},

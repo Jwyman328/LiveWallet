@@ -6,7 +6,7 @@ source environment.sh
 if [ "$1" == "windows" ]; then
     bash build_windows_executable.sh
 else
-    bash build_executable.sh
+    sudo bash build_executable.sh
 fi
 
 cd ..
