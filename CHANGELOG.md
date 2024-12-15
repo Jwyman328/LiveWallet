@@ -1,3 +1,6 @@
+# 1.0.0
+- Add transaction privacy analyzing
+
 # 0.9.0
 - Build for redhat linux distributions, and windows. 
 - bugfixes
