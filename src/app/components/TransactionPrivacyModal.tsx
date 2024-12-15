@@ -73,6 +73,12 @@ export const TransactionPrivacyModal = ({
         }
       }
     };
+
+    const sentences = privacyMetric.description.match(/[^.!?]*[.!?]/g);
+
+    // Get the last sentence and the rest of the text
+    const failSentence = sentences.pop();
+    const restOfText = sentences.join(' ');
     return (
       <Accordion.Item key={privacyMetric.name} value={privacyMetric.name}>
         <div className="flex flex-row">
@@ -102,7 +108,14 @@ export const TransactionPrivacyModal = ({
           </div>
           <div className="w-full">
             <Accordion.Control>{privacyMetric.display_name}</Accordion.Control>
-            <Accordion.Panel>{privacyMetric.description}</Accordion.Panel>
+            <Accordion.Panel>
+              {
+                <>
+                  <p className="font-bold mb-2">{failSentence}</p>
+                  <p>{restOfText}</p>
+                </>
+              }
+            </Accordion.Panel>
           </div>
         </div>
       </Accordion.Item>
