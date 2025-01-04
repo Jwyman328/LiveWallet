@@ -10,10 +10,15 @@
 
 
 ## Demos
+### Fee efficiency demo
 https://github.com/user-attachments/assets/42f34e55-e6ef-4519-9754-dadb7fed4f7b
 
-## Multisig wallet support demo
+### Privacy Analyzing demo
+https://github.com/user-attachments/assets/d4bd6657-0a93-4310-863b-3d2eae0f4450
+
+### Multisig wallet support demo
 https://github.com/user-attachments/assets/ca5f1332-5443-4283-8c0d-54bdf4363e11
+
 
 
 # Development
