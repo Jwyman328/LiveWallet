@@ -4,7 +4,7 @@
 </div>
 
 ## Description
-- An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos.
+- An application to help estimate the effect of bitcoin transaction fees on invididual utxos and transactions containing multiple utxos. As well, analyzing transaction privacy, helping reduce tx privacy mistakes.
 
 
 
