@@ -192,7 +192,7 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "Live Wallet",
+    "productName": "LiveWallet",
     "appId": "donthaveone",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",

@@ -133,6 +133,10 @@ The linux system that I build the app with does not have to be the one that I te
 		- sudo chown root:root /home/jwyman/Documents/programming/LiveWallet/node_modules/electron/dis/chrome-sandbox 
 		- sudo chmod 4755 /home/jwyman/Documents/programming/LiveWallet/node_modules/electron/dist/chrome-sandbox 
 		- now running npm start works.
+  - RAN INTO THIS AGAIN AND HAD TO RUN
+    - $ sudo chown root:root /home/jwyman/Documents/LiveWallet/node_modules/electron/dist/chrome-sandbox
+    - $ sudo chmod 4755 /home/jwyman/Documents/LiveWallet/node_modules/electron/dist/chrome-sandbox
+
 
  
  	- install docker
@@ -904,4 +908,65 @@ Electrum client is in python
 
 
 
+
+
+
+# latest issues on linux for bitcoin lib
+## I was getting an error when pip installing on linux, this is what chat gpt responded with.
+The error you're encountering when running `pip install` on Linux, but not on macOS, is related to the compilation of C extensions during the installation of the `fastecdsa` package. Specifically, the error message indicates that the `gmp.h` header file is missing:
+
+```
+fatal error: gmp.h: No such file or directory
+```
+
+This suggests that the `fastecdsa` package requires the GMP (GNU Multiple Precision Arithmetic) library for certain computations, and this library is either not installed or not properly configured on your Linux machine.
+
+### Why does this work on macOS but not Linux?
+- **macOS**: macOS typically has a different set of libraries and tools available by default. It's possible that the GMP library or the necessary development headers are already present on your macOS system, either as part of the system installation or via Homebrew or similar package managers.
+  
+- **Linux**: On Linux, especially with certain distributions (e.g., Ubuntu, Debian), the necessary development packages (which include the `gmp.h` header) may not be installed by default, so the compilation fails.
+
+### How to fix this error on Linux:
+To resolve this error, you need to install the GMP development libraries on your Linux system. Here’s how to do that depending on your distribution:
+
+#### For Ubuntu/Debian-based systems:
+You can install the GMP development package using `apt`:
+```bash
+sudo apt update
+sudo apt install libgmp-dev
+```
+
+#### For Fedora-based systems:
+Use `dnf` to install the GMP development package:
+```bash
+sudo dnf install gmp-devel
+```
+
+#### For Arch Linux-based systems:
+Use `pacman`:
+```bash
+sudo pacman -S gmp
+```
+
+Once you've installed the GMP development libraries, try running `pip install fastecdsa` again. It should be able to find `gmp.h` and successfully build the C extension.
+
+### Additional Notes:
+- **Upgrading pip**: As noted in the warning, you're using an outdated version of `pip` (21.2.4), while the latest version is 24.3.1. Although this won't directly affect the error you're seeing, it's a good idea to upgrade `pip` to avoid potential compatibility issues in the future:
+  ```bash
+  python -m pip install --upgrade pip
+  ```
+
+Let me know if you encounter any more issues after installing the required dependencies!
+
+# The solution was I had to run the command below in linux
+-$ sudo apt install libgmp-dev
+- after I can that I could do $ source environment.sh
+- then fastecdsa downloaded and I could run the backend properly.
+- not sure if this will fix the issue of the build though.
+
+# Not sure if I need to attach the libgmp-dev library somehow in the pyinstaller? or
+  ## bringing it in before running pyinstaller was enough ???
+  ## I had to add the libgmp.so file and then link it via the pyinstaller command.
+
+# the issues with bitcoinlib dependencies made it so I could no longer build it for none debian systems or windows.
 
